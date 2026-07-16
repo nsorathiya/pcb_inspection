@@ -1,8 +1,11 @@
 from enum import Enum
 from functools import lru_cache
+from pathlib import Path
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from app.core.runtime_paths import default_runtime_root, resolve_runtime_root
 
 
 class LogLevel(str, Enum):
@@ -25,6 +28,7 @@ class Settings(BaseSettings):
     debug: bool = False
     log_level: LogLevel = LogLevel.INFO
     log_format: LogFormat = LogFormat.PLAIN
+    runtime_root: Path = Field(default_factory=default_runtime_root)
 
     @field_validator("log_level", mode="before")
     @classmethod
@@ -35,6 +39,11 @@ class Settings(BaseSettings):
     @classmethod
     def normalize_log_format(cls, value: object) -> object:
         return value.lower() if isinstance(value, str) else value
+
+    @field_validator("runtime_root", mode="before")
+    @classmethod
+    def normalize_runtime_root(cls, value: object) -> Path:
+        return resolve_runtime_root(Path(value))
 
     model_config = SettingsConfigDict(
         env_prefix="PCB_AOI_",

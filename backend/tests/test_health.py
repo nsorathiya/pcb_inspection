@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from uuid import UUID
 
 from fastapi.testclient import TestClient
@@ -9,7 +10,7 @@ from app.core.request_context import REQUEST_ID_HEADER
 from app.main import create_app
 
 
-def default_settings(monkeypatch) -> Settings:
+def default_settings(monkeypatch, runtime_root: Path) -> Settings:
     for name in (
         "PCB_AOI_APPLICATION_NAME",
         "PCB_AOI_APPLICATION_VERSION",
@@ -18,14 +19,15 @@ def default_settings(monkeypatch) -> Settings:
         "PCB_AOI_DEBUG",
         "PCB_AOI_LOG_LEVEL",
         "PCB_AOI_LOG_FORMAT",
+        "PCB_AOI_RUNTIME_ROOT",
     ):
         monkeypatch.delenv(name, raising=False)
 
-    return Settings(_env_file=None)
+    return Settings(_env_file=None, runtime_root=runtime_root)
 
 
-def test_create_app_does_not_duplicate_logging_handlers(monkeypatch) -> None:
-    settings = default_settings(monkeypatch)
+def test_create_app_does_not_duplicate_logging_handlers(monkeypatch, tmp_path) -> None:
+    settings = default_settings(monkeypatch, tmp_path / "runtime")
 
     first_application = create_app(settings)
     second_application = create_app(settings)
@@ -39,8 +41,8 @@ def test_create_app_does_not_duplicate_logging_handlers(monkeypatch) -> None:
     assert second_application.state.logger is logger
 
 
-def test_startup_smoke_and_health_endpoint(monkeypatch) -> None:
-    settings = default_settings(monkeypatch)
+def test_startup_smoke_and_health_endpoint(monkeypatch, tmp_path) -> None:
+    settings = default_settings(monkeypatch, tmp_path / "runtime")
 
     with TestClient(create_app(settings)) as client:
         response = client.get("/api/v1/health")
@@ -59,8 +61,11 @@ def test_startup_smoke_and_health_endpoint(monkeypatch) -> None:
     }
 
 
-def test_lifecycle_logs_include_startup_context_and_shutdown(monkeypatch) -> None:
-    settings = default_settings(monkeypatch)
+def test_lifecycle_logs_include_startup_context_and_shutdown(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    settings = default_settings(monkeypatch, tmp_path / "runtime")
     application = create_app(settings)
     logger = logging.getLogger(APPLICATION_LOGGER_NAME)
     records: list[logging.LogRecord] = []
@@ -81,13 +86,13 @@ def test_lifecycle_logs_include_startup_context_and_shutdown(monkeypatch) -> Non
     messages = [record.getMessage() for record in records]
     assert messages == [
         "Application startup service=pcb-aoi-api version=0.1.0 "
-        "environment=development",
+        f"environment=development runtime_root={settings.runtime_root}",
         "Application shutdown",
     ]
 
 
-def test_supplied_request_id_is_returned_unchanged(monkeypatch) -> None:
-    settings = default_settings(monkeypatch)
+def test_supplied_request_id_is_returned_unchanged(monkeypatch, tmp_path) -> None:
+    settings = default_settings(monkeypatch, tmp_path / "runtime")
     supplied_request_id = "operator-request-123"
 
     with TestClient(create_app(settings)) as client:
@@ -100,8 +105,8 @@ def test_supplied_request_id_is_returned_unchanged(monkeypatch) -> None:
     assert response.headers[REQUEST_ID_HEADER] == supplied_request_id
 
 
-def test_missing_request_id_is_generated_as_uuid(monkeypatch) -> None:
-    settings = default_settings(monkeypatch)
+def test_missing_request_id_is_generated_as_uuid(monkeypatch, tmp_path) -> None:
+    settings = default_settings(monkeypatch, tmp_path / "runtime")
 
     with TestClient(create_app(settings)) as client:
         response = client.get("/api/v1/health")

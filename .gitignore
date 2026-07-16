@@ -9,7 +9,8 @@ __pycache__/
 !.env.example
 
 # Runtime uploads and generated results
-runtime/
+runtime/*
+!runtime/.gitkeep
 backend/runtime/
 backend/uploads/*
 backend/annotated_output/*

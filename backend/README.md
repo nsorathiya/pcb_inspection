@@ -44,6 +44,12 @@ Run the focused logging, startup, health, and request-ID tests:
 python -m pytest .\backend\tests\test_health.py -q
 ```
 
+Run the focused runtime-storage tests:
+
+```powershell
+python -m pytest .\backend\tests\test_runtime_paths.py -q
+```
+
 Run the complete backend foundation test suite:
 
 ```powershell
@@ -62,6 +68,7 @@ $env:PCB_AOI_API_PREFIX = "/api/v1"
 $env:PCB_AOI_DEBUG = "false"
 $env:PCB_AOI_LOG_LEVEL = "INFO"
 $env:PCB_AOI_LOG_FORMAT = "plain"
+$env:PCB_AOI_RUNTIME_ROOT = "runtime"
 ```
 
 The supported variables are:
@@ -75,12 +82,41 @@ The supported variables are:
 | `PCB_AOI_DEBUG` | `false` |
 | `PCB_AOI_LOG_LEVEL` | `INFO` |
 | `PCB_AOI_LOG_FORMAT` | `plain` |
+| `PCB_AOI_RUNTIME_ROOT` | Repository-local `runtime` directory |
 
 `PCB_AOI_LOG_LEVEL` accepts `DEBUG`, `INFO`, `WARNING`, `ERROR`, or
 `CRITICAL`. The current `plain` format is readable development output with
 timestamps, severity, logger name, service name, and request ID. Format
 selection is centralized so a JSON formatter can be introduced later without
 changing application call sites; JSON output is not implemented in this phase.
+
+## Runtime storage
+
+`PCB_AOI_RUNTIME_ROOT` defines the local root for future runtime-generated
+files. The default is the repository's `runtime` directory, resolved from the
+installed backend source location rather than the process working directory.
+Relative overrides are also resolved from the repository root, so changing the
+directory from which Uvicorn is launched does not change the storage location.
+
+The application creates this directory tree idempotently during startup:
+
+| Directory | Intended purpose |
+| --- | --- |
+| `runtime/raw_uploads` | Future immutable raw uploads |
+| `runtime/previews` | Future generated previews |
+| `runtime/results` | Future processing results |
+| `runtime/reports` | Future generated reports |
+| `runtime/tmp` | Temporary runtime files |
+
+To select a different location for the current PowerShell session:
+
+```powershell
+$env:PCB_AOI_RUNTIME_ROOT = "C:\pcb-aoi-runtime"
+python -m uvicorn app.main:app --app-dir .\backend --reload
+```
+
+If any required directory cannot be created, application startup logs an error
+and fails. The public health response does not include the local runtime path.
 
 ## Request IDs
 
