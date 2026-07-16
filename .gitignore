@@ -1,0 +1,19 @@
+# Python environments and caches
+.venv/
+__pycache__/
+.pytest_cache/
+
+# Local environment configuration
+.env
+.env.*
+!.env.example
+
+# Runtime uploads and generated results
+runtime/
+backend/runtime/
+backend/uploads/*
+backend/annotated_output/*
+
+# Generated model and diagnostic artifacts
+backend/saved_model/*
+backend/neuron_data/*

@@ -1,7 +1,7 @@
+-r requirements-base.txt
+
 torch
 torchvision
 opencv-python
-fastapi
-uvicorn
 python-multipart
 pillow
