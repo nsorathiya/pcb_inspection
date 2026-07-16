@@ -1,0 +1,15 @@
+Please read AGENTS.md, PLANS.md, and TASK_01_REPOSITORY_ASSESSMENT.md.
+
+Start with TASK 01 only.
+
+Important:
+- Planning and repository inspection only
+- Do not implement features yet
+- Do not delete, move, or rename files
+- Do not train any model
+- Inspect the real repository
+- Create the three requested assessment documents
+- Run existing safe tests if configured
+- Report findings, files created, test results, risks, and the recommended first implementation task
+
+Ask me only when a required decision cannot be resolved from the repository or the project documents.
