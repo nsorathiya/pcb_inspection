@@ -1,6 +1,20 @@
+from enum import Enum
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class LogLevel(str, Enum):
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
+
+
+class LogFormat(str, Enum):
+    PLAIN = "plain"
 
 
 class Settings(BaseSettings):
@@ -9,6 +23,18 @@ class Settings(BaseSettings):
     environment: str = "development"
     api_prefix: str = "/api/v1"
     debug: bool = False
+    log_level: LogLevel = LogLevel.INFO
+    log_format: LogFormat = LogFormat.PLAIN
+
+    @field_validator("log_level", mode="before")
+    @classmethod
+    def normalize_log_level(cls, value: object) -> object:
+        return value.upper() if isinstance(value, str) else value
+
+    @field_validator("log_format", mode="before")
+    @classmethod
+    def normalize_log_format(cls, value: object) -> object:
+        return value.lower() if isinstance(value, str) else value
 
     model_config = SettingsConfigDict(
         env_prefix="PCB_AOI_",
