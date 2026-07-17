@@ -90,6 +90,17 @@ class PersistedValidationFinding:
     created_at: datetime
 
 
+@dataclass(frozen=True)
+class _PreparedValidation:
+    inspection_id: str
+    result: InspectionValidationResult
+    validation_key: str
+    result_sha256: str
+    canonical_bytes: bytes
+    canonical_document: Mapping[str, Any]
+    created_at: datetime
+
+
 def _canonical_uuid(value: str, field: str) -> str:
     try:
         canonical = str(UUID(value))
@@ -186,58 +197,84 @@ class InspectionValidationRepository:
         result: InspectionValidationResult,
         validation_key: str,
     ) -> ValidationPersistenceResult:
+        prepared = self._prepare_validation(inspection_id, result, validation_key)
+        try:
+            async with self._sessions() as session, session.begin():
+                return await self._persist_prepared(session, prepared)
+        except IntegrityError as exc:
+            existing = await self.get_by_inspection_and_key(inspection_id, validation_key)
+            if existing is not None:
+                return self._idempotent_response(existing, prepared.result_sha256)
+            raise ValidationPersistenceIntegrityError(
+                "validation result and findings were not persisted"
+            ) from exc
+
+    def _prepare_validation(
+        self,
+        inspection_id: str,
+        result: InspectionValidationResult,
+        validation_key: str,
+    ) -> _PreparedValidation:
+        """Validate and canonicalize before any transaction mutates data."""
         _canonical_uuid(inspection_id, "inspection_id")
         if not _SHA256.fullmatch(validation_key):
             raise ValueError("validation_key must be a lowercase SHA-256")
         self._validate_result(inspection_id, result)
-        canonical_bytes = canonical_result_bytes(result)
-        result_sha256 = canonical_result_sha256(result)
-        canonical_document = result_to_dict(result)
-        created_at = _aware_utc(self._clock(), "created_at")
+        return _PreparedValidation(
+            inspection_id=inspection_id,
+            result=result,
+            validation_key=validation_key,
+            result_sha256=canonical_result_sha256(result),
+            canonical_bytes=canonical_result_bytes(result),
+            canonical_document=result_to_dict(result),
+            created_at=_aware_utc(self._clock(), "created_at"),
+        )
 
-        existing = await self.get_by_inspection_and_key(inspection_id, validation_key)
+    async def _persist_prepared(
+        self,
+        session: AsyncSession,
+        prepared: _PreparedValidation,
+    ) -> ValidationPersistenceResult:
+        """Persist through an externally owned transaction without committing it."""
+        statement = select(InspectionValidation).where(
+            InspectionValidation.inspection_id == prepared.inspection_id,
+            InspectionValidation.validation_key == prepared.validation_key,
+        )
+        existing = await session.scalar(statement)
         if existing is not None:
-            return self._idempotent_response(existing, result_sha256)
+            return self._record_response(
+                existing,
+                prepared.result_sha256,
+                idempotent_existing=True,
+            )
 
+        result = prepared.result
+        document = prepared.canonical_document
         record = InspectionValidation(
             id=result.validation_id,
-            inspection_id=inspection_id,
+            inspection_id=prepared.inspection_id,
             contract_version=result.contract_version,
             policy_id=result.validation_policy_id,
             policy_version=result.validation_policy_version,
             validator_version=result.validator_version,
-            validation_key=validation_key,
+            validation_key=prepared.validation_key,
             outcome=result.outcome,
             started_at=_aware_utc(result.started_at, "started_at"),
             completed_at=_aware_utc(result.completed_at, "completed_at"),
-            rgb_summary_json=_json_object_text(canonical_document["rgb_artifact"]),
-            height_summary_json=_json_object_text(canonical_document["height_artifact"]),
-            summary_json=_json_object_text(canonical_document["summary"]),
-            result_json=canonical_bytes.decode("utf-8"),
-            result_sha256=result_sha256,
-            created_at=created_at,
+            rgb_summary_json=_json_object_text(document["rgb_artifact"]),
+            height_summary_json=_json_object_text(document["height_artifact"]),
+            summary_json=_json_object_text(document["summary"]),
+            result_json=prepared.canonical_bytes.decode("utf-8"),
+            result_sha256=prepared.result_sha256,
+            created_at=prepared.created_at,
         )
-        finding_records = self._finding_records(result, created_at)
-        try:
-            async with self._sessions() as session, session.begin():
-                session.add(record)
-                await session.flush()
-                session.add_all(finding_records)
-                await session.flush()
-        except IntegrityError as exc:
-            existing = await self.get_by_inspection_and_key(inspection_id, validation_key)
-            if existing is not None:
-                return self._idempotent_response(existing, result_sha256)
-            raise ValidationPersistenceIntegrityError(
-                "validation result and findings were not persisted"
-            ) from exc
-        return ValidationPersistenceResult(
-            validation_id=record.id,
-            inspection_id=record.inspection_id,
-            validation_key=record.validation_key,
-            result_sha256=record.result_sha256,
-            outcome=record.outcome,
-            created_at=created_at,
+        session.add(record)
+        await session.flush()
+        session.add_all(self._finding_records(result, prepared.created_at))
+        await session.flush()
+        return self._record_response(
+            record,
+            prepared.result_sha256,
             idempotent_existing=False,
         )
 
@@ -402,6 +439,27 @@ class InspectionValidationRepository:
             outcome=existing.outcome,
             created_at=existing.created_at,
             idempotent_existing=True,
+        )
+
+    @staticmethod
+    def _record_response(
+        record: InspectionValidation,
+        result_sha256: str,
+        *,
+        idempotent_existing: bool,
+    ) -> ValidationPersistenceResult:
+        if record.result_sha256 != result_sha256:
+            raise ValidationPersistenceConflictError(
+                "validation key already identifies a different canonical result"
+            )
+        return ValidationPersistenceResult(
+            validation_id=record.id,
+            inspection_id=record.inspection_id,
+            validation_key=record.validation_key,
+            result_sha256=record.result_sha256,
+            outcome=record.outcome,
+            created_at=_retrieved_utc(record.created_at),
+            idempotent_existing=idempotent_existing,
         )
 
     @staticmethod

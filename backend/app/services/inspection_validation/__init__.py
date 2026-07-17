@@ -12,6 +12,18 @@ from app.services.inspection_validation.format_validation import (
 from app.services.inspection_validation.integrity_validation import (
     StreamingFilesystemIntegrityInspector,
 )
+from app.services.inspection_validation.lifecycle import (
+    AUDIT_ACTION_VALIDATION_ERROR,
+    AUDIT_ACTION_VALIDATION_FAILED,
+    AUDIT_ACTION_VALIDATION_PASSED,
+    InspectionNotFoundError,
+    InvalidInspectionTransitionError,
+    ValidationCommitConflictError,
+    ValidationCommitError,
+    ValidationCommitResult,
+    ValidationCommitService,
+    ValidationLifecycleConsistencyError,
+)
 
 from app.services.inspection_validation.interfaces import (
     ArtifactIntegrityInspection,
@@ -64,6 +76,9 @@ from app.services.inspection_validation.validation_key import (
 __all__ = [
     "ArtifactIntegrityInspection",
     "ArtifactTechnicalSummary",
+    "AUDIT_ACTION_VALIDATION_ERROR",
+    "AUDIT_ACTION_VALIDATION_FAILED",
+    "AUDIT_ACTION_VALIDATION_PASSED",
     "ContractValidationPolicyEvaluator",
     "DatabaseValidationArtifactRetriever",
     "DimensionRelationship",
@@ -71,11 +86,13 @@ __all__ = [
     "FindingCategory",
     "FindingSeverity",
     "InspectionPairValidator",
+    "InspectionNotFoundError",
     "InspectionValidationPolicy",
     "InspectionValidationResult",
     "InspectionValidationStatusTransition",
     "InspectionValidationService",
     "InspectionValidationRepository",
+    "InvalidInspectionTransitionError",
     "FindingFactory",
     "ManagedArtifactPathResolver",
     "NativeFormatInspector",
@@ -89,6 +106,10 @@ __all__ = [
     "StreamingFilesystemIntegrityInspector",
     "StoredArtifactReference",
     "ValidationArtifactRetriever",
+    "ValidationCommitConflictError",
+    "ValidationCommitError",
+    "ValidationCommitResult",
+    "ValidationCommitService",
     "ValidationFinding",
     "ValidationOutcome",
     "ValidationPersistenceConflictError",
@@ -100,6 +121,7 @@ __all__ = [
     "ValidationSummary",
     "ValidationPolicyLoader",
     "ValidationKeyArtifact",
+    "ValidationLifecycleConsistencyError",
     "canonical_result_bytes",
     "canonical_result_sha256",
     "generate_validation_key",

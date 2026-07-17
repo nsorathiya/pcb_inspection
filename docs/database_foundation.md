@@ -120,6 +120,13 @@ does not change inspection status, artifact metadata, or audit events. See
 `docs/inspection_validation_persistence.md` for canonical hashing, idempotency,
 transaction, and retrieval behavior.
 
+The optional lifecycle coordinator inserts validation evidence, applies exactly
+one conditional `RECEIVED` transition, and appends one lifecycle audit inside a
+single SQLite transaction. It does not change the schema version or add tables.
+See `docs/inspection_validation_lifecycle.md` for transition fields,
+idempotency, concurrency, and rollback semantics. Standalone persistence remains
+append/read only and lifecycle-neutral.
+
 ### `schema_version`
 
 Contains one authoritative row identifying schema version `2`. Startup applies
@@ -157,6 +164,7 @@ From the repository root in Windows PowerShell:
 ```powershell
 python -m pytest .\backend\tests\test_database.py -q
 python -m pytest .\backend\tests\test_inspection_validation_persistence.py -q
+python -m pytest .\backend\tests\test_inspection_validation_lifecycle.py -q
 python -m pytest .\backend\tests\test_health.py .\backend\tests\test_runtime_paths.py -q
 python -m pytest .\backend\tests -q
 ```

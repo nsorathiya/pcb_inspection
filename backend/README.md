@@ -50,14 +50,17 @@ response, error, ordering, and request-ID contracts.
 
 The paired RGB/height semantic-validation domain has versioned result, finding,
 and policy contracts plus a reusable read-only engine. Completed typed results
-now have an append/read-only persistence foundation, but validation is not
-wired to an API or inspection status transition. See
+have both append/read-only standalone persistence and an atomic lifecycle
+coordinator, but neither is wired to an API. See
 `docs/inspection_semantic_validation_contract.md` for the contract and
 `docs/inspection_semantic_validation_engine.md` for policy loading, artifact
 reads, integrity and native-format checks, deterministic execution, and current
 registration-evidence limitations. See
 `docs/inspection_validation_persistence.md` for schema version 2, migration,
 canonical hashes, validation keys, transactions, and idempotent replay.
+See `docs/inspection_validation_lifecycle.md` for the guarded `RECEIVED`
+transitions, lifecycle audit, standalone-result adoption, concurrency, and
+rollback behavior. `READY` means technical readiness, not PCB PASS.
 
 ## Run tests
 
@@ -113,6 +116,12 @@ Run the focused validation-result persistence and schema-migration tests:
 
 ```powershell
 python -m pytest .\backend\tests\test_inspection_validation_persistence.py -q
+```
+
+Run the focused atomic validation-lifecycle tests:
+
+```powershell
+python -m pytest .\backend\tests\test_inspection_validation_lifecycle.py -q
 ```
 
 Run the complete backend foundation test suite:

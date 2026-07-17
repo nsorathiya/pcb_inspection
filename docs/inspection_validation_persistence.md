@@ -101,11 +101,17 @@ connection details, raw SQL, stack traces, or paths.
 
 ## Deferred integration
 
-No API or validation-execution wiring is added here. In particular, persistence
-does not change `RECEIVED`, `READY`, `VALIDATION_FAILED`, `ERROR`, or any other
-inspection status and does not append audit events. The planned orchestration
-task must define one guarded transaction boundary for persistence, status, and
-audit behavior rather than guessing that policy in this layer.
+Standalone persistence continues to store immutable technical evidence without
+changing `RECEIVED`, `READY`, `VALIDATION_FAILED`, `ERROR`, or any other status
+and without appending audit events. `ValidationCommitService` now reuses the
+same validation and canonical persistence logic through an externally owned
+transaction when status and audit must be coordinated. See
+`docs/inspection_validation_lifecycle.md` for allowed transitions, adoption of
+an existing standalone result, concurrency protection, and rollback behavior.
+
+No API or validation-execution wiring exists. Callers that only need immutable
+evidence may use standalone persistence; future application/API code that must
+affect inspection lifecycle should use the atomic coordinator.
 
 ## Tests
 
@@ -113,6 +119,7 @@ From the repository root in Windows PowerShell:
 
 ```powershell
 python -m pytest .\backend\tests\test_inspection_validation_persistence.py -q
+python -m pytest .\backend\tests\test_inspection_validation_lifecycle.py -q
 python -m pytest .\backend\tests\test_database.py -q
 python -m pytest .\backend\tests\test_inspection_semantic_validation_engine.py -q
 python -m pytest .\backend\tests -q
