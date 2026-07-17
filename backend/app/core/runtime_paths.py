@@ -25,10 +25,17 @@ class RuntimePaths:
     results: Path
     reports: Path
     temporary: Path
+    database: Path
+    database_file: Path
 
     @classmethod
-    def from_root(cls, runtime_root: Path) -> "RuntimePaths":
+    def from_root(
+        cls,
+        runtime_root: Path,
+        database_filename: str = "pcb_aoi.sqlite3",
+    ) -> "RuntimePaths":
         root = resolve_runtime_root(runtime_root)
+        database = root / "database"
         return cls(
             root=root,
             raw_uploads=root / "raw_uploads",
@@ -36,6 +43,8 @@ class RuntimePaths:
             results=root / "results",
             reports=root / "reports",
             temporary=root / "tmp",
+            database=database,
+            database_file=database / database_filename,
         )
 
     @property
@@ -47,6 +56,7 @@ class RuntimePaths:
             self.results,
             self.reports,
             self.temporary,
+            self.database,
         )
 
     def create_directories(self) -> None:

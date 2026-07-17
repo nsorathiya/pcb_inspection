@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     log_level: LogLevel = LogLevel.INFO
     log_format: LogFormat = LogFormat.PLAIN
     runtime_root: Path = Field(default_factory=default_runtime_root)
+    database_filename: str = "pcb_aoi.sqlite3"
+    sqlite_busy_timeout_ms: int = Field(default=5000, gt=0, le=60000)
+    database_echo: bool = False
 
     @field_validator("log_level", mode="before")
     @classmethod
@@ -44,6 +47,26 @@ class Settings(BaseSettings):
     @classmethod
     def normalize_runtime_root(cls, value: object) -> Path:
         return resolve_runtime_root(Path(value))
+
+    @field_validator("database_filename", mode="before")
+    @classmethod
+    def validate_database_filename(cls, value: object) -> str:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("database filename must be a non-empty filename")
+        filename = value.strip()
+        path = Path(filename)
+        if (
+            path.is_absolute()
+            or path.name != filename
+            or filename in {".", ".."}
+            or "/" in filename
+            or "\\" in filename
+            or ":" in filename
+        ):
+            raise ValueError(
+                "database filename must not contain a path or escape runtime root"
+            )
+        return filename
 
     model_config = SettingsConfigDict(
         env_prefix="PCB_AOI_",

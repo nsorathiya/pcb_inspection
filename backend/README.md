@@ -50,6 +50,12 @@ Run the focused runtime-storage tests:
 python -m pytest .\backend\tests\test_runtime_paths.py -q
 ```
 
+Run the focused SQLite database, repository, and audit-foundation tests:
+
+```powershell
+python -m pytest .\backend\tests\test_database.py -q
+```
+
 Run the complete backend foundation test suite:
 
 ```powershell
@@ -69,6 +75,9 @@ $env:PCB_AOI_DEBUG = "false"
 $env:PCB_AOI_LOG_LEVEL = "INFO"
 $env:PCB_AOI_LOG_FORMAT = "plain"
 $env:PCB_AOI_RUNTIME_ROOT = "runtime"
+$env:PCB_AOI_DATABASE_FILENAME = "pcb_aoi.sqlite3"
+$env:PCB_AOI_SQLITE_BUSY_TIMEOUT_MS = "5000"
+$env:PCB_AOI_DATABASE_ECHO = "false"
 ```
 
 The supported variables are:
@@ -83,6 +92,9 @@ The supported variables are:
 | `PCB_AOI_LOG_LEVEL` | `INFO` |
 | `PCB_AOI_LOG_FORMAT` | `plain` |
 | `PCB_AOI_RUNTIME_ROOT` | Repository-local `runtime` directory |
+| `PCB_AOI_DATABASE_FILENAME` | `pcb_aoi.sqlite3` |
+| `PCB_AOI_SQLITE_BUSY_TIMEOUT_MS` | `5000` |
+| `PCB_AOI_DATABASE_ECHO` | `false` |
 
 `PCB_AOI_LOG_LEVEL` accepts `DEBUG`, `INFO`, `WARNING`, `ERROR`, or
 `CRITICAL`. The current `plain` format is readable development output with
@@ -107,6 +119,7 @@ The application creates this directory tree idempotently during startup:
 | `runtime/results` | Future processing results |
 | `runtime/reports` | Future generated reports |
 | `runtime/tmp` | Temporary runtime files |
+| `runtime/database` | SQLite metadata database and WAL/SHM files |
 
 To select a different location for the current PowerShell session:
 
@@ -117,6 +130,18 @@ python -m uvicorn app.main:app --app-dir .\backend --reload
 
 If any required directory cannot be created, application startup logs an error
 and fails. The public health response does not include the local runtime path.
+
+The SQLite file is `runtime/database/pcb_aoi.sqlite3` by default. Startup
+enables foreign keys, WAL mode, and the configured busy timeout, creates schema
+version 1 idempotently, and proves the database can answer a query before the
+health endpoint is available. WAL improves reader/writer coexistence but SQLite
+still permits only one writer at a time.
+
+Database rows store metadata and safe relative artifact references; they do not
+replace immutable raw file storage. During live backup, the main database,
+`-wal`, and `-shm` files must be handled consistently. See
+`docs/database_foundation.md` for table/status meanings, repository scope, and
+the deferred migration strategy.
 
 ## Request IDs
 
