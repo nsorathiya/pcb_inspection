@@ -1,0 +1,5213 @@
+{
+  "blocking_issues": [
+    {
+      "code": "cross_partition_duplicates",
+      "count": 32,
+      "message": "Exact source-image content occurs in more than one partition/source."
+    },
+    {
+      "code": "training_test_overlap",
+      "count": 10,
+      "message": "Test images are exact byte-for-byte matches of training images."
+    },
+    {
+      "code": "unsupported_source_files",
+      "count": 1,
+      "message": "Unsupported files are present inside source-data locations."
+    },
+    {
+      "code": "significant_class_imbalance",
+      "count": 4,
+      "message": "Training class imbalance exceeds the documented 3:1 audit threshold."
+    }
+  ],
+  "class_counts": {
+    "dispense_error": 9,
+    "misalignment": 1,
+    "missing_part": 4,
+    "no_defect": 18
+  },
+  "class_imbalance": {
+    "observed_max_to_min_ratio": 18.0,
+    "significant": true,
+    "threshold_ratio": 3.0
+  },
+  "contract_schema_version": "1.0",
+  "cross_partition_duplicate_groups": [
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_712.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_712.jpg",
+        "backend/test/no_defect_1970_01_01NGripper_2_FAIL_712.jpg"
+      ],
+      "sha256": "072701ea602fab97871a637a1e578a1a43adb282a4a1d7db910a68db6f31b0cf",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/missing_part/POS2_240GRADOS.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/NOK/POS2_240GRADOS.bmp"
+      ],
+      "sha256": "15afe29e08ea469a4fb2d3b55bc761b117d2dbcbcbcdf887d0e1330b4e082b46",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/missing_part/2025_04_24_10_48_59N_FAIL_Climp_78832.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/NOK/2025_04_24_10_48_59N_FAIL_Climp_78832.bmp"
+      ],
+      "sha256": "1d22831a4d90512eb10f2f9117125065195a66f1d345f3ea8a70015cba6a8909",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_715.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_715.jpg",
+        "backend/test/no_defect_1970_01_01NGripper_2_FAIL_715.jpg"
+      ],
+      "sha256": "2c1784ace4d22250d07d6baa35a7b2a1976d3604f8ee98b8b34cbae2b90f632b",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143457.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143457.bmp",
+        "backend/test/dispense_error_110219_143457.bmp"
+      ],
+      "sha256": "4327397751c861a38077c880654c0703ade79a53124608e5600543ba1e2bd8bb",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/110219_142056.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142056.bmp",
+        "backend/test/no_defect_110219_142056.bmp"
+      ],
+      "sha256": "4fc125b25c047b3b85019c9f3fc5cbda06fb6f937d962b5f3521e59451f149bf",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/2025_04_24_10_53_23N_FAIL_Climp_1.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/2025_04_24_10_53_23N_FAIL_Climp_1.jpg"
+      ],
+      "sha256": "562be0a98dbbf54366b55889adcd3e0e719f31c43a411303f6342e81e4ee3204",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/110219_142623.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142623.bmp"
+      ],
+      "sha256": "58c6329462dd16eae2c7e1cedb97598707eb9089e5a6e78a21f4bec738216d50",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143047.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143047.bmp"
+      ],
+      "sha256": "58e57cc767bb1e01093c3d51ab09f35381b3996327776471b389a52dc6b0b944",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_980.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_980.jpg"
+      ],
+      "sha256": "5a0af93347899b81e0127aa7e0ceeff480bb482307be2a0f96b4e3c4c4d1a919",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/misalignment/1970_01_01NGripper_2_FAIL_722.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/NG/1970_01_01NGripper_2_FAIL_722.jpg",
+        "backend/test/misalignment_1970_01_01NGripper_2_FAIL_722.jpg"
+      ],
+      "sha256": "5caae12ba7cd46d0e0b92578e4861278ee7be7805d1db998442256d3d1e75faf",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143222.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143222.bmp",
+        "backend/test/dispense_error_110219_143222.bmp"
+      ],
+      "sha256": "64b079db064be20ac0c8551165ab21d22fa8bff9060189ca7128904ac66d632c",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/missing_part/2025_04_24_12_12_52_N_CLIMP_1_FAIL_849.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/NOK/2025_04_24_12_12_52_N_CLIMP_1_FAIL_849.jpg",
+        "backend/test/missing_part_2025_04_24_12_12_52_N_CLIMP_1_FAIL_849.jpg"
+      ],
+      "sha256": "6a0c8c45a1553d939ab8486f5dae5d61b10353a831249e98cff27e603a453a29",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/2025_04_24_12_13_04_N_CLIMP_1_OK_850.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/2025_04_24_12_13_04_N_CLIMP_1_OK_850.jpg"
+      ],
+      "sha256": "6fa1be4d9a232a35f8f0fa61cee4d6982d16981d75122108c556a3ed6ad97cd7",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143144.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143144.bmp"
+      ],
+      "sha256": "7a246e2e663812741c564ce5c64e1dec452180ba036d5d6bd12895e3afccb043",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01_03_14_01N_FAIL_Climp_1827.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/1970_01_01_03_14_01N_FAIL_Climp_1827.jpg"
+      ],
+      "sha256": "7cfeb0cb84c4c7e7515c86f845ded340f5671dc287b0233ef7998c7f628e3c08",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143006.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143006.bmp",
+        "backend/test/dispense_error_110219_143006.bmp"
+      ],
+      "sha256": "8e20539e6fa7f3f07dda67f38ede67f6db36290e8d47929d48f12169bfd51ad2",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/110219_142134.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142134.bmp"
+      ],
+      "sha256": "9314443449cf156ec434c4ffb3c16cdc68e53b834007b2f30c041610f464151a",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/2025_04_24_12_13_04_N_CLIMP_1_OK_851.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/2025_04_24_12_13_04_N_CLIMP_1_OK_851.bmp"
+      ],
+      "sha256": "9f5d9a7a613daec9237ba5b5ae8c54fe679b7fb34522b094cdb5ae58c83ece1c",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_142725.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_142725.bmp"
+      ],
+      "sha256": "a3d3d2c8cbce563fa92074d271d0ecbd6090fa5840b68c08092018ae91b3f7ab",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/missing_part/POS4.69GRADOS.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/NOK/POS4.69GRADOS.bmp",
+        "backend/test/missing_part_POS4.69GRADOS.bmp"
+      ],
+      "sha256": "a624c1d18d837e1e16963a68e9d986cb437d41ef81521dd4276c2a2d041d7a24",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_142915.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_142915.bmp"
+      ],
+      "sha256": "a8f7279a39466ddc6854c74c6098cd9b14782ef4caccc787e256c317799445a1",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/2025_04_24_12_13_04_N_CLIMP_1_OK_852.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/2025_04_24_12_13_04_N_CLIMP_1_OK_852.bmp"
+      ],
+      "sha256": "bb5d6bafcd01968f5a5aa95ae3b2bbae6465285b631a57bd0e9d73e7181b762a",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_718.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_718.jpg"
+      ],
+      "sha256": "c26659efcfed50329be2dbfa8946c85665d226544edfa0326e1944056cdea7eb",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/110219_142059.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142059.bmp"
+      ],
+      "sha256": "c38929e811d0a8cb460330e12a18283bb800f83aede9beb0b605f87c912bcb98",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143341.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143341.bmp"
+      ],
+      "sha256": "c6e6b3f880baf577ecd5ae60a841bb426ebe4e32c89a83e0a92cb0d91caef38b",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_711.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_711.jpg",
+        "backend/test/no_defect_1970_01_01NGripper_2_FAIL_711.jpg"
+      ],
+      "sha256": "cba05806cbcd0c3e4b8b86a9dfef090dc5f35a6425340e7b824070e72476465c",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143613.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143613.bmp"
+      ],
+      "sha256": "e1fa1d80a167e694ce69a6132b9bdfca654190999dc322193f14a858413e6586",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/2025_04_24_10_55_04N_FAIL_Climp_4.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/2025_04_24_10_55_04N_FAIL_Climp_4.bmp"
+      ],
+      "sha256": "e75916e25e048cabb44db28e452ea9b0c580bc4d3e4ac709dc073814f39e08a7",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_976.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_976.jpg"
+      ],
+      "sha256": "ef583b0556cb594c26e39db24939388191862b88079557110cdd8a195df2904b",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_714.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_714.jpg"
+      ],
+      "sha256": "ef6d2eecc3db3eaedad0265f47830dd0e1978446c5a8d43894505b15cfa7e562",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/110219_142105.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142105.bmp"
+      ],
+      "sha256": "efd1fc1905e397e5ccb8268432edb8b4d7e602f7b3d6ffbf9645274b6ebc2590",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    }
+  ],
+  "duplicate_filenames_different_content": [],
+  "empty_class_directories": [],
+  "exact_duplicate_groups": [
+    {
+      "partitions": [
+        "annotated_outputs"
+      ],
+      "paths": [
+        "backend/annotated_output/missing_part_no_defect_110219_142056.bmp",
+        "backend/annotated_output/pred_missing_part_110219_142056.bmp"
+      ],
+      "sha256": "03edf428e07535aa8f149576a4686203cc63e47850b7b3e0d8117ef70b68e219",
+      "sources": [
+        "annotated_outputs"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_712.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_712.jpg",
+        "backend/test/no_defect_1970_01_01NGripper_2_FAIL_712.jpg"
+      ],
+      "sha256": "072701ea602fab97871a637a1e578a1a43adb282a4a1d7db910a68db6f31b0cf",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/missing_part/POS2_240GRADOS.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/NOK/POS2_240GRADOS.bmp"
+      ],
+      "sha256": "15afe29e08ea469a4fb2d3b55bc761b117d2dbcbcbcdf887d0e1330b4e082b46",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/missing_part/2025_04_24_10_48_59N_FAIL_Climp_78832.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/NOK/2025_04_24_10_48_59N_FAIL_Climp_78832.bmp"
+      ],
+      "sha256": "1d22831a4d90512eb10f2f9117125065195a66f1d345f3ea8a70015cba6a8909",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_715.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_715.jpg",
+        "backend/test/no_defect_1970_01_01NGripper_2_FAIL_715.jpg"
+      ],
+      "sha256": "2c1784ace4d22250d07d6baa35a7b2a1976d3604f8ee98b8b34cbae2b90f632b",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143457.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143457.bmp",
+        "backend/test/dispense_error_110219_143457.bmp"
+      ],
+      "sha256": "4327397751c861a38077c880654c0703ade79a53124608e5600543ba1e2bd8bb",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "legacy_uploads",
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/110219_142056.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142056.bmp",
+        "backend/test/no_defect_110219_142056.bmp",
+        "backend/uploads/temp_586d36ff90c94d79b3b029ecd3d92a9a.jpg",
+        "backend/uploads/temp_c03c66abde5143dfb736f19202d377bb.bmp",
+        "backend/uploads/temp_cb906fccf13e4dce824011370f20c6b0.bmp"
+      ],
+      "sha256": "4fc125b25c047b3b85019c9f3fc5cbda06fb6f937d962b5f3521e59451f149bf",
+      "sources": [
+        "legacy_uploads",
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/2025_04_24_10_53_23N_FAIL_Climp_1.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/2025_04_24_10_53_23N_FAIL_Climp_1.jpg"
+      ],
+      "sha256": "562be0a98dbbf54366b55889adcd3e0e719f31c43a411303f6342e81e4ee3204",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/110219_142623.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142623.bmp"
+      ],
+      "sha256": "58c6329462dd16eae2c7e1cedb97598707eb9089e5a6e78a21f4bec738216d50",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143047.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143047.bmp",
+        "backend/uploads/temp_60ba55ecafff47e6a68b9df55b4f78ab.bmp"
+      ],
+      "sha256": "58e57cc767bb1e01093c3d51ab09f35381b3996327776471b389a52dc6b0b944",
+      "sources": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_980.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_980.jpg"
+      ],
+      "sha256": "5a0af93347899b81e0127aa7e0ceeff480bb482307be2a0f96b4e3c4c4d1a919",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "legacy_uploads",
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/misalignment/1970_01_01NGripper_2_FAIL_722.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/NG/1970_01_01NGripper_2_FAIL_722.jpg",
+        "backend/test/misalignment_1970_01_01NGripper_2_FAIL_722.jpg",
+        "backend/uploads/temp_72993171c0b5434aac61c837e898a5f5.jpg",
+        "backend/uploads/temp_7b6a049acb9d44de8aef9352fbd9747c.jpg",
+        "backend/uploads/temp_a20b9111eebf43c9a0424841ce1fa97a.jpg",
+        "backend/uploads/temp_cf626b27aded4aa4becf8dc92a90d55a.jpg"
+      ],
+      "sha256": "5caae12ba7cd46d0e0b92578e4861278ee7be7805d1db998442256d3d1e75faf",
+      "sources": [
+        "legacy_uploads",
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "legacy_uploads",
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143222.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143222.bmp",
+        "backend/test/dispense_error_110219_143222.bmp",
+        "backend/uploads/temp_a7df29db0f4540ea9617a0a1a0823ee9.bmp"
+      ],
+      "sha256": "64b079db064be20ac0c8551165ab21d22fa8bff9060189ca7128904ac66d632c",
+      "sources": [
+        "legacy_uploads",
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/missing_part/2025_04_24_12_12_52_N_CLIMP_1_FAIL_849.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/NOK/2025_04_24_12_12_52_N_CLIMP_1_FAIL_849.jpg",
+        "backend/test/missing_part_2025_04_24_12_12_52_N_CLIMP_1_FAIL_849.jpg"
+      ],
+      "sha256": "6a0c8c45a1553d939ab8486f5dae5d61b10353a831249e98cff27e603a453a29",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/2025_04_24_12_13_04_N_CLIMP_1_OK_850.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/2025_04_24_12_13_04_N_CLIMP_1_OK_850.jpg"
+      ],
+      "sha256": "6fa1be4d9a232a35f8f0fa61cee4d6982d16981d75122108c556a3ed6ad97cd7",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143144.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143144.bmp",
+        "backend/uploads/temp_d690ba7607d14bf2b3a14e8509419cc8.jpg"
+      ],
+      "sha256": "7a246e2e663812741c564ce5c64e1dec452180ba036d5d6bd12895e3afccb043",
+      "sources": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01_03_14_01N_FAIL_Climp_1827.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/1970_01_01_03_14_01N_FAIL_Climp_1827.jpg",
+        "backend/uploads/temp_1eda5710581b400f88cc4bb6e3b49342.jpg"
+      ],
+      "sha256": "7cfeb0cb84c4c7e7515c86f845ded340f5671dc287b0233ef7998c7f628e3c08",
+      "sources": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143006.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143006.bmp",
+        "backend/test/dispense_error_110219_143006.bmp"
+      ],
+      "sha256": "8e20539e6fa7f3f07dda67f38ede67f6db36290e8d47929d48f12169bfd51ad2",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/110219_142134.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142134.bmp",
+        "backend/uploads/temp_27bbfd6402964b4eaa7dcae1783f7718.jpg",
+        "backend/uploads/temp_3a3b3454af534411a8e0cb8ae2ebf512.bmp",
+        "backend/uploads/temp_b2d61b9617cb4d8798283730eba50226.bmp",
+        "backend/uploads/temp_c827d7814385495b86844d33a5579fb9.bmp",
+        "backend/uploads/temp_fde41a1924cc480dba2e979cbc50ec32.bmp"
+      ],
+      "sha256": "9314443449cf156ec434c4ffb3c16cdc68e53b834007b2f30c041610f464151a",
+      "sources": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/2025_04_24_12_13_04_N_CLIMP_1_OK_851.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/2025_04_24_12_13_04_N_CLIMP_1_OK_851.bmp"
+      ],
+      "sha256": "9f5d9a7a613daec9237ba5b5ae8c54fe679b7fb34522b094cdb5ae58c83ece1c",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_142725.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_142725.bmp",
+        "backend/uploads/temp_5415b0c4caaa41808c69bd8f0e10b565.bmp",
+        "backend/uploads/temp_d918056d52054642a19b918adaff662d.jpg"
+      ],
+      "sha256": "a3d3d2c8cbce563fa92074d271d0ecbd6090fa5840b68c08092018ae91b3f7ab",
+      "sources": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/missing_part/POS4.69GRADOS.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/NOK/POS4.69GRADOS.bmp",
+        "backend/test/missing_part_POS4.69GRADOS.bmp"
+      ],
+      "sha256": "a624c1d18d837e1e16963a68e9d986cb437d41ef81521dd4276c2a2d041d7a24",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_142915.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_142915.bmp"
+      ],
+      "sha256": "a8f7279a39466ddc6854c74c6098cd9b14782ef4caccc787e256c317799445a1",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/2025_04_24_12_13_04_N_CLIMP_1_OK_852.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/2025_04_24_12_13_04_N_CLIMP_1_OK_852.bmp"
+      ],
+      "sha256": "bb5d6bafcd01968f5a5aa95ae3b2bbae6465285b631a57bd0e9d73e7181b762a",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_718.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_718.jpg"
+      ],
+      "sha256": "c26659efcfed50329be2dbfa8946c85665d226544edfa0326e1944056cdea7eb",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/110219_142059.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142059.bmp",
+        "backend/uploads/temp_1fdb0b2f4a2a4bd48dcf609e26d3b2dd.jpg",
+        "backend/uploads/temp_8e37a114393b4f4281e99bb53001a3e7.bmp",
+        "backend/uploads/temp_a8a1db7814524dbb8b9640960e03dfca.bmp",
+        "backend/uploads/temp_bea4ce4e1ba243b69ca0ab4cc8e03174.bmp",
+        "backend/uploads/temp_cacea8a147d64748bd45bf0ed84b74d2.bmp",
+        "backend/uploads/temp_d41ea9cc7b854a76a901b5818e0e20d0.bmp"
+      ],
+      "sha256": "c38929e811d0a8cb460330e12a18283bb800f83aede9beb0b605f87c912bcb98",
+      "sources": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "annotated_outputs"
+      ],
+      "paths": [
+        "backend/annotated_output/missing_part_dispense_error_110219_143222.bmp",
+        "backend/annotated_output/pred_missing_part_110219_143222.bmp"
+      ],
+      "sha256": "c3d874f07ca2fe152746c5816a1a1266e064988c429a0cf4d8a75f6cd4b5a55a",
+      "sources": [
+        "annotated_outputs"
+      ]
+    },
+    {
+      "partitions": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143341.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143341.bmp",
+        "backend/uploads/temp_ec3fc0260cde4e7791621254e726b3f9.bmp"
+      ],
+      "sha256": "c6e6b3f880baf577ecd5ae60a841bb426ebe4e32c89a83e0a92cb0d91caef38b",
+      "sources": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "legacy_uploads",
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_711.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_711.jpg",
+        "backend/test/no_defect_1970_01_01NGripper_2_FAIL_711.jpg",
+        "backend/uploads/temp_46832eef9bbb42b588e42b35453d28c3.jpg"
+      ],
+      "sha256": "cba05806cbcd0c3e4b8b86a9dfef090dc5f35a6425340e7b824070e72476465c",
+      "sources": [
+        "legacy_uploads",
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143613.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143613.bmp",
+        "backend/uploads/temp_7225f5a469d547e082caaeec33d694f6.bmp"
+      ],
+      "sha256": "e1fa1d80a167e694ce69a6132b9bdfca654190999dc322193f14a858413e6586",
+      "sources": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/2025_04_24_10_55_04N_FAIL_Climp_4.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/2025_04_24_10_55_04N_FAIL_Climp_4.bmp"
+      ],
+      "sha256": "e75916e25e048cabb44db28e452ea9b0c580bc4d3e4ac709dc073814f39e08a7",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_976.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_976.jpg"
+      ],
+      "sha256": "ef583b0556cb594c26e39db24939388191862b88079557110cdd8a195df2904b",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_714.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_714.jpg"
+      ],
+      "sha256": "ef6d2eecc3db3eaedad0265f47830dd0e1978446c5a8d43894505b15cfa7e562",
+      "sources": [
+        "raw_source",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/110219_142105.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142105.bmp",
+        "backend/uploads/temp_33913af299b044d7929c4098a0fa37fd.bmp",
+        "backend/uploads/temp_5ebb136ad7bc4ebaa0dceda15d412e0c.bmp",
+        "backend/uploads/temp_89a48e4223ca428d8ad3da9625d14031.bmp",
+        "backend/uploads/temp_c00440a17b0b4a3eb2bb031e00c5e395.bmp",
+        "backend/uploads/temp_e9092ae5254a4035b53cd151ee85dce5.bmp"
+      ],
+      "sha256": "efd1fc1905e397e5ccb8268432edb8b4d7e602f7b3d6ffbf9645274b6ebc2590",
+      "sources": [
+        "legacy_uploads",
+        "raw_source",
+        "training"
+      ]
+    }
+  ],
+  "extension_content_mismatches": [
+    "backend/uploads/temp_1fdb0b2f4a2a4bd48dcf609e26d3b2dd.jpg",
+    "backend/uploads/temp_27bbfd6402964b4eaa7dcae1783f7718.jpg",
+    "backend/uploads/temp_586d36ff90c94d79b3b029ecd3d92a9a.jpg",
+    "backend/uploads/temp_d690ba7607d14bf2b3a14e8509419cc8.jpg",
+    "backend/uploads/temp_d918056d52054642a19b918adaff662d.jpg"
+  ],
+  "files": [
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 4665654,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/missing_part_dispense_error_110219_143006.bmp",
+      "requires_group_review": false,
+      "sha256": "eaad80592a74d900e63edc8e129c8733c68e10db98a64838bbb9273ed8dc3a9e",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 4665654,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/missing_part_dispense_error_110219_143222.bmp",
+      "requires_group_review": false,
+      "sha256": "c3d874f07ca2fe152746c5816a1a1266e064988c429a0cf4d8a75f6cd4b5a55a",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 4665654,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/missing_part_dispense_error_110219_143457.bmp",
+      "requires_group_review": false,
+      "sha256": "9d7b36858b24f89f3a1deb5c1cdef1c0f03689f51e332e3bc52e0373ee5ded35",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 4665654,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/missing_part_no_defect_110219_142056.bmp",
+      "requires_group_review": false,
+      "sha256": "03edf428e07535aa8f149576a4686203cc63e47850b7b3e0d8117ef70b68e219",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 4665654,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_missing_part_110219_142056.bmp",
+      "requires_group_review": false,
+      "sha256": "03edf428e07535aa8f149576a4686203cc63e47850b7b3e0d8117ef70b68e219",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 4665654,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_missing_part_110219_142059.bmp",
+      "requires_group_review": false,
+      "sha256": "992bb0b8bf4bc6c8425079a1318943ec729f4e125bcc3c1bf0d40b3b8a86173a",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 4665654,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_missing_part_110219_142105.bmp",
+      "requires_group_review": false,
+      "sha256": "c1246192513fef8a356760a93473a213f360eb6043870d9c3919ad4fe1c8e3cf",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 4665654,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_missing_part_110219_142134.bmp",
+      "requires_group_review": false,
+      "sha256": "c89a04635b4723733c9b0af595d9e362d0873a34400dd0da42896b89022e5ddb",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 4665654,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_missing_part_110219_142725.bmp",
+      "requires_group_review": false,
+      "sha256": "d9707a4c143b2f6bc7648b4ad15b1198b49ee8f0d25b55e59804454d2694ca1c",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 4665654,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_missing_part_110219_143047.bmp",
+      "requires_group_review": false,
+      "sha256": "3261f7d7b832973a13d57bf15f69bd7e394c2a12a2340f6dc263a0e2b1a843d9",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 4665654,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_missing_part_110219_143222.bmp",
+      "requires_group_review": false,
+      "sha256": "c3d874f07ca2fe152746c5816a1a1266e064988c429a0cf4d8a75f6cd4b5a55a",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 4665654,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_missing_part_110219_143341.bmp",
+      "requires_group_review": false,
+      "sha256": "55f742b57c8c4b141201ec40108c33bf57191c4cf120dd62eca9db3c3a6b697e",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 4665654,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_missing_part_110219_143613.bmp",
+      "requires_group_review": false,
+      "sha256": "5d4606dd0a530b0d6172734ed802f43fcc48986e4f36ed92adceb4e4d55bcbbc",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 633286,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_missing_part_temp_1fdb0b2f4a2a4bd48dcf609e26d3b2dd.jpg",
+      "requires_group_review": false,
+      "sha256": "b4c0ee6dd4d4c3a0f627076e6b4d7ce1ad484895da4f381c85aac9aaa93bea42",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 632474,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_missing_part_temp_27bbfd6402964b4eaa7dcae1783f7718.jpg",
+      "requires_group_review": false,
+      "sha256": "5ad35319a55e271f5bd4427bdfdede73f30a0b69bc278762ccd73c17663cd9f4",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 636858,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_missing_part_temp_586d36ff90c94d79b3b029ecd3d92a9a.jpg",
+      "requires_group_review": false,
+      "sha256": "cb3411ca545bb8e9404293e6ffc49d4dfef7aa47d7839a0fa0bf3f6aafdf46a8",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 656010,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_missing_part_temp_d690ba7607d14bf2b3a14e8509419cc8.jpg",
+      "requires_group_review": false,
+      "sha256": "c4282772e5ebe35646fa14e9c7d00677d474c460ed478fdb064d972265d15ac4",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 645086,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "RGB",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_missing_part_temp_d918056d52054642a19b918adaff662d.jpg",
+      "requires_group_review": false,
+      "sha256": "936b206ae8154e6bc2bb31dfe357c515a5f6e2a06e31bce6245c038a5defb5f3",
+      "source": "annotated_outputs",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 297814,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1200,
+      "image_mode": "RGB",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_no_defect_1970_01_01NGripper_2_FAIL_711.jpg",
+      "requires_group_review": false,
+      "sha256": "9b5b62b8cd054840d23159cf27b26f60c29f6466fd9e9b14f732392c7dac4b1b",
+      "source": "annotated_outputs",
+      "width": 1920
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 269092,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1200,
+      "image_mode": "RGB",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_no_defect_1970_01_01NGripper_2_FAIL_722.jpg",
+      "requires_group_review": false,
+      "sha256": "1be6e25858c38a459702be260c6c010ef05fc9214a8b5eb30f1399ed2f45b35b",
+      "source": "annotated_outputs",
+      "width": 1920
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 3,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 661006,
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "grouping_hint": null,
+      "height": 1200,
+      "image_mode": "RGB",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/annotated_output/pred_no_defect_temp_1eda5710581b400f88cc4bb6e3b49342.jpg",
+      "requires_group_review": false,
+      "sha256": "680cc7f614aa929a5052d5aca400bde2380b91c0312c27f06deac67b7b6a9106",
+      "source": "annotated_outputs",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": null,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": null,
+      "extension": ".zip",
+      "extension_matches_content": null,
+      "file_size": 28886336,
+      "generated_reason": null,
+      "grouping_hint": null,
+      "height": null,
+      "image_mode": null,
+      "inspection_method": null,
+      "is_image_extension": false,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": "unsupported extension .zip",
+      "readability_status": "unsupported_extension",
+      "readable": false,
+      "relative_path": "backend/dataset/dataset.zip",
+      "requires_group_review": false,
+      "sha256": "6f055801cfd3e1e5bbc6b700d13aa7adf59863502be492058c1ab452092333d3",
+      "source": "training",
+      "width": null
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "dispense_error",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_142725"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/dispense_error/110219_142725.bmp",
+      "requires_group_review": true,
+      "sha256": "a3d3d2c8cbce563fa92074d271d0ecbd6090fa5840b68c08092018ae91b3f7ab",
+      "source": "training",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "dispense_error",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_142915"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/dispense_error/110219_142915.bmp",
+      "requires_group_review": true,
+      "sha256": "a8f7279a39466ddc6854c74c6098cd9b14782ef4caccc787e256c317799445a1",
+      "source": "training",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "dispense_error",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143006"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/dispense_error/110219_143006.bmp",
+      "requires_group_review": true,
+      "sha256": "8e20539e6fa7f3f07dda67f38ede67f6db36290e8d47929d48f12169bfd51ad2",
+      "source": "training",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "dispense_error",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143047"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/dispense_error/110219_143047.bmp",
+      "requires_group_review": true,
+      "sha256": "58e57cc767bb1e01093c3d51ab09f35381b3996327776471b389a52dc6b0b944",
+      "source": "training",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "dispense_error",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143144"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/dispense_error/110219_143144.bmp",
+      "requires_group_review": true,
+      "sha256": "7a246e2e663812741c564ce5c64e1dec452180ba036d5d6bd12895e3afccb043",
+      "source": "training",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "dispense_error",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143222"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/dispense_error/110219_143222.bmp",
+      "requires_group_review": true,
+      "sha256": "64b079db064be20ac0c8551165ab21d22fa8bff9060189ca7128904ac66d632c",
+      "source": "training",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "dispense_error",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143341"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/dispense_error/110219_143341.bmp",
+      "requires_group_review": true,
+      "sha256": "c6e6b3f880baf577ecd5ae60a841bb426ebe4e32c89a83e0a92cb0d91caef38b",
+      "source": "training",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "dispense_error",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143457"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/dispense_error/110219_143457.bmp",
+      "requires_group_review": true,
+      "sha256": "4327397751c861a38077c880654c0703ade79a53124608e5600543ba1e2bd8bb",
+      "source": "training",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "dispense_error",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143613"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/dispense_error/110219_143613.bmp",
+      "requires_group_review": true,
+      "sha256": "e1fa1d80a167e694ce69a6132b9bdfca654190999dc322193f14a858413e6586",
+      "source": "training",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "misalignment",
+      "class_label_basis": "class_directory",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 125040,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/misalignment/1970_01_01NGripper_2_FAIL_722.jpg",
+      "requires_group_review": true,
+      "sha256": "5caae12ba7cd46d0e0b92578e4861278ee7be7805d1db998442256d3d1e75faf",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "missing_part",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 2305078,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "2025_04_24"
+      },
+      "height": 1200,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/missing_part/2025_04_24_10_48_59N_FAIL_Climp_78832.bmp",
+      "requires_group_review": true,
+      "sha256": "1d22831a4d90512eb10f2f9117125065195a66f1d345f3ea8a70015cba6a8909",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "missing_part",
+      "class_label_basis": "class_directory",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 278676,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "2025_04_24"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/missing_part/2025_04_24_12_12_52_N_CLIMP_1_FAIL_849.jpg",
+      "requires_group_review": true,
+      "sha256": "6a0c8c45a1553d939ab8486f5dae5d61b10353a831249e98cff27e603a453a29",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "missing_part",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 2305078,
+      "generated_reason": null,
+      "grouping_hint": null,
+      "height": 1200,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/missing_part/POS2_240GRADOS.bmp",
+      "requires_group_review": true,
+      "sha256": "15afe29e08ea469a4fb2d3b55bc761b117d2dbcbcbcdf887d0e1330b4e082b46",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "missing_part",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 2305078,
+      "generated_reason": null,
+      "grouping_hint": null,
+      "height": 1200,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/missing_part/POS4.69GRADOS.bmp",
+      "requires_group_review": true,
+      "sha256": "a624c1d18d837e1e16963a68e9d986cb437d41ef81521dd4276c2a2d041d7a24",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_142056"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/110219_142056.bmp",
+      "requires_group_review": true,
+      "sha256": "4fc125b25c047b3b85019c9f3fc5cbda06fb6f937d962b5f3521e59451f149bf",
+      "source": "training",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_142059"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/110219_142059.bmp",
+      "requires_group_review": true,
+      "sha256": "c38929e811d0a8cb460330e12a18283bb800f83aede9beb0b605f87c912bcb98",
+      "source": "training",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_142105"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/110219_142105.bmp",
+      "requires_group_review": true,
+      "sha256": "efd1fc1905e397e5ccb8268432edb8b4d7e602f7b3d6ffbf9645274b6ebc2590",
+      "source": "training",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_142134"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/110219_142134.bmp",
+      "requires_group_review": true,
+      "sha256": "9314443449cf156ec434c4ffb3c16cdc68e53b834007b2f30c041610f464151a",
+      "source": "training",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_142623"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/110219_142623.bmp",
+      "requires_group_review": true,
+      "sha256": "58c6329462dd16eae2c7e1cedb97598707eb9089e5a6e78a21f4bec738216d50",
+      "source": "training",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 138861,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_711.jpg",
+      "requires_group_review": true,
+      "sha256": "cba05806cbcd0c3e4b8b86a9dfef090dc5f35a6425340e7b824070e72476465c",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 137336,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_712.jpg",
+      "requires_group_review": true,
+      "sha256": "072701ea602fab97871a637a1e578a1a43adb282a4a1d7db910a68db6f31b0cf",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 127441,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_714.jpg",
+      "requires_group_review": true,
+      "sha256": "ef6d2eecc3db3eaedad0265f47830dd0e1978446c5a8d43894505b15cfa7e562",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 128897,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_715.jpg",
+      "requires_group_review": true,
+      "sha256": "2c1784ace4d22250d07d6baa35a7b2a1976d3604f8ee98b8b34cbae2b90f632b",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 125085,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_718.jpg",
+      "requires_group_review": true,
+      "sha256": "c26659efcfed50329be2dbfa8946c85665d226544edfa0326e1944056cdea7eb",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 127918,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_976.jpg",
+      "requires_group_review": true,
+      "sha256": "ef583b0556cb594c26e39db24939388191862b88079557110cdd8a195df2904b",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 255854,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_980.jpg",
+      "requires_group_review": true,
+      "sha256": "5a0af93347899b81e0127aa7e0ceeff480bb482307be2a0f96b4e3c4c4d1a919",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 326226,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/1970_01_01_03_14_01N_FAIL_Climp_1827.jpg",
+      "requires_group_review": true,
+      "sha256": "7cfeb0cb84c4c7e7515c86f845ded340f5671dc287b0233ef7998c7f628e3c08",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 325582,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "2025_04_24"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/2025_04_24_10_53_23N_FAIL_Climp_1.jpg",
+      "requires_group_review": true,
+      "sha256": "562be0a98dbbf54366b55889adcd3e0e719f31c43a411303f6342e81e4ee3204",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 2305078,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "2025_04_24"
+      },
+      "height": 1200,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/2025_04_24_10_55_04N_FAIL_Climp_4.bmp",
+      "requires_group_review": true,
+      "sha256": "e75916e25e048cabb44db28e452ea9b0c580bc4d3e4ac709dc073814f39e08a7",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 324444,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "2025_04_24"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/2025_04_24_12_13_04_N_CLIMP_1_OK_850.jpg",
+      "requires_group_review": true,
+      "sha256": "6fa1be4d9a232a35f8f0fa61cee4d6982d16981d75122108c556a3ed6ad97cd7",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 2305078,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "2025_04_24"
+      },
+      "height": 1200,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/2025_04_24_12_13_04_N_CLIMP_1_OK_851.bmp",
+      "requires_group_review": true,
+      "sha256": "9f5d9a7a613daec9237ba5b5ae8c54fe679b7fb34522b094cdb5ae58c83ece1c",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "class_directory",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 2305078,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "2025_04_24"
+      },
+      "height": 1200,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "training",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset/no_defect/2025_04_24_12_13_04_N_CLIMP_1_OK_852.bmp",
+      "requires_group_review": true,
+      "sha256": "bb5d6bafcd01968f5a5aa95ae3b2bbae6465285b631a57bd0e9d73e7181b762a",
+      "source": "training",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 2305078,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "2025_04_24"
+      },
+      "height": 1200,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Crimp/NOK/2025_04_24_10_48_59N_FAIL_Climp_78832.bmp",
+      "requires_group_review": true,
+      "sha256": "1d22831a4d90512eb10f2f9117125065195a66f1d345f3ea8a70015cba6a8909",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 278676,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "2025_04_24"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Crimp/NOK/2025_04_24_12_12_52_N_CLIMP_1_FAIL_849.jpg",
+      "requires_group_review": true,
+      "sha256": "6a0c8c45a1553d939ab8486f5dae5d61b10353a831249e98cff27e603a453a29",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 2305078,
+      "generated_reason": null,
+      "grouping_hint": null,
+      "height": 1200,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Crimp/NOK/POS2_240GRADOS.bmp",
+      "requires_group_review": true,
+      "sha256": "15afe29e08ea469a4fb2d3b55bc761b117d2dbcbcbcdf887d0e1330b4e082b46",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 2305078,
+      "generated_reason": null,
+      "grouping_hint": null,
+      "height": 1200,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Crimp/NOK/POS4.69GRADOS.bmp",
+      "requires_group_review": true,
+      "sha256": "a624c1d18d837e1e16963a68e9d986cb437d41ef81521dd4276c2a2d041d7a24",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 326226,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/1970_01_01_03_14_01N_FAIL_Climp_1827.jpg",
+      "requires_group_review": true,
+      "sha256": "7cfeb0cb84c4c7e7515c86f845ded340f5671dc287b0233ef7998c7f628e3c08",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 325582,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "2025_04_24"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/2025_04_24_10_53_23N_FAIL_Climp_1.jpg",
+      "requires_group_review": true,
+      "sha256": "562be0a98dbbf54366b55889adcd3e0e719f31c43a411303f6342e81e4ee3204",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 2305078,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "2025_04_24"
+      },
+      "height": 1200,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/2025_04_24_10_55_04N_FAIL_Climp_4.bmp",
+      "requires_group_review": true,
+      "sha256": "e75916e25e048cabb44db28e452ea9b0c580bc4d3e4ac709dc073814f39e08a7",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 324444,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "2025_04_24"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/2025_04_24_12_13_04_N_CLIMP_1_OK_850.jpg",
+      "requires_group_review": true,
+      "sha256": "6fa1be4d9a232a35f8f0fa61cee4d6982d16981d75122108c556a3ed6ad97cd7",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 2305078,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "2025_04_24"
+      },
+      "height": 1200,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/2025_04_24_12_13_04_N_CLIMP_1_OK_851.bmp",
+      "requires_group_review": true,
+      "sha256": "9f5d9a7a613daec9237ba5b5ae8c54fe679b7fb34522b094cdb5ae58c83ece1c",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 2305078,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "2025_04_24"
+      },
+      "height": 1200,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Crimp/OK/2025_04_24_12_13_04_N_CLIMP_1_OK_852.bmp",
+      "requires_group_review": true,
+      "sha256": "bb5d6bafcd01968f5a5aa95ae3b2bbae6465285b631a57bd0e9d73e7181b762a",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_142725"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_142725.bmp",
+      "requires_group_review": true,
+      "sha256": "a3d3d2c8cbce563fa92074d271d0ecbd6090fa5840b68c08092018ae91b3f7ab",
+      "source": "raw_source",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_142915"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_142915.bmp",
+      "requires_group_review": true,
+      "sha256": "a8f7279a39466ddc6854c74c6098cd9b14782ef4caccc787e256c317799445a1",
+      "source": "raw_source",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143006"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143006.bmp",
+      "requires_group_review": true,
+      "sha256": "8e20539e6fa7f3f07dda67f38ede67f6db36290e8d47929d48f12169bfd51ad2",
+      "source": "raw_source",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143047"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143047.bmp",
+      "requires_group_review": true,
+      "sha256": "58e57cc767bb1e01093c3d51ab09f35381b3996327776471b389a52dc6b0b944",
+      "source": "raw_source",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143144"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143144.bmp",
+      "requires_group_review": true,
+      "sha256": "7a246e2e663812741c564ce5c64e1dec452180ba036d5d6bd12895e3afccb043",
+      "source": "raw_source",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143222"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143222.bmp",
+      "requires_group_review": true,
+      "sha256": "64b079db064be20ac0c8551165ab21d22fa8bff9060189ca7128904ac66d632c",
+      "source": "raw_source",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143341"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143341.bmp",
+      "requires_group_review": true,
+      "sha256": "c6e6b3f880baf577ecd5ae60a841bb426ebe4e32c89a83e0a92cb0d91caef38b",
+      "source": "raw_source",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143457"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143457.bmp",
+      "requires_group_review": true,
+      "sha256": "4327397751c861a38077c880654c0703ade79a53124608e5600543ba1e2bd8bb",
+      "source": "raw_source",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143613"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143613.bmp",
+      "requires_group_review": true,
+      "sha256": "e1fa1d80a167e694ce69a6132b9bdfca654190999dc322193f14a858413e6586",
+      "source": "raw_source",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_142056"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142056.bmp",
+      "requires_group_review": true,
+      "sha256": "4fc125b25c047b3b85019c9f3fc5cbda06fb6f937d962b5f3521e59451f149bf",
+      "source": "raw_source",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_142059"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142059.bmp",
+      "requires_group_review": true,
+      "sha256": "c38929e811d0a8cb460330e12a18283bb800f83aede9beb0b605f87c912bcb98",
+      "source": "raw_source",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_142105"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142105.bmp",
+      "requires_group_review": true,
+      "sha256": "efd1fc1905e397e5ccb8268432edb8b4d7e602f7b3d6ffbf9645274b6ebc2590",
+      "source": "raw_source",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_142134"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142134.bmp",
+      "requires_group_review": true,
+      "sha256": "9314443449cf156ec434c4ffb3c16cdc68e53b834007b2f30c041610f464151a",
+      "source": "raw_source",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_142623"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142623.bmp",
+      "requires_group_review": true,
+      "sha256": "58c6329462dd16eae2c7e1cedb97598707eb9089e5a6e78a21f4bec738216d50",
+      "source": "raw_source",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 125040,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/PINS/NG/1970_01_01NGripper_2_FAIL_722.jpg",
+      "requires_group_review": true,
+      "sha256": "5caae12ba7cd46d0e0b92578e4861278ee7be7805d1db998442256d3d1e75faf",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 138861,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_711.jpg",
+      "requires_group_review": true,
+      "sha256": "cba05806cbcd0c3e4b8b86a9dfef090dc5f35a6425340e7b824070e72476465c",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 137336,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_712.jpg",
+      "requires_group_review": true,
+      "sha256": "072701ea602fab97871a637a1e578a1a43adb282a4a1d7db910a68db6f31b0cf",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 127441,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_714.jpg",
+      "requires_group_review": true,
+      "sha256": "ef6d2eecc3db3eaedad0265f47830dd0e1978446c5a8d43894505b15cfa7e562",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 128897,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_715.jpg",
+      "requires_group_review": true,
+      "sha256": "2c1784ace4d22250d07d6baa35a7b2a1976d3604f8ee98b8b34cbae2b90f632b",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 125085,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_718.jpg",
+      "requires_group_review": true,
+      "sha256": "c26659efcfed50329be2dbfa8946c85665d226544edfa0326e1944056cdea7eb",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 127918,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_976.jpg",
+      "requires_group_review": true,
+      "sha256": "ef583b0556cb594c26e39db24939388191862b88079557110cdd8a195df2904b",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 255854,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "raw_source",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_980.jpg",
+      "requires_group_review": true,
+      "sha256": "5a0af93347899b81e0127aa7e0ceeff480bb482307be2a0f96b4e3c4c4d1a919",
+      "source": "raw_source",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "dispense_error",
+      "class_label_basis": "filename_prefix",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143006"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "test",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/test/dispense_error_110219_143006.bmp",
+      "requires_group_review": true,
+      "sha256": "8e20539e6fa7f3f07dda67f38ede67f6db36290e8d47929d48f12169bfd51ad2",
+      "source": "test",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "dispense_error",
+      "class_label_basis": "filename_prefix",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143222"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "test",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/test/dispense_error_110219_143222.bmp",
+      "requires_group_review": true,
+      "sha256": "64b079db064be20ac0c8551165ab21d22fa8bff9060189ca7128904ac66d632c",
+      "source": "test",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "dispense_error",
+      "class_label_basis": "filename_prefix",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_143457"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "test",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/test/dispense_error_110219_143457.bmp",
+      "requires_group_review": true,
+      "sha256": "4327397751c861a38077c880654c0703ade79a53124608e5600543ba1e2bd8bb",
+      "source": "test",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "misalignment",
+      "class_label_basis": "filename_prefix",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 125040,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "test",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/test/misalignment_1970_01_01NGripper_2_FAIL_722.jpg",
+      "requires_group_review": true,
+      "sha256": "5caae12ba7cd46d0e0b92578e4861278ee7be7805d1db998442256d3d1e75faf",
+      "source": "test",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "missing_part",
+      "class_label_basis": "filename_prefix",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 278676,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "2025_04_24"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "test",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/test/missing_part_2025_04_24_12_12_52_N_CLIMP_1_FAIL_849.jpg",
+      "requires_group_review": true,
+      "sha256": "6a0c8c45a1553d939ab8486f5dae5d61b10353a831249e98cff27e603a453a29",
+      "source": "test",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "missing_part",
+      "class_label_basis": "filename_prefix",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 2305078,
+      "generated_reason": null,
+      "grouping_hint": null,
+      "height": 1200,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "test",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/test/missing_part_POS4.69GRADOS.bmp",
+      "requires_group_review": true,
+      "sha256": "a624c1d18d837e1e16963a68e9d986cb437d41ef81521dd4276c2a2d041d7a24",
+      "source": "test",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "filename_prefix",
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "numeric_timestamp_like_prefix",
+        "value": "110219_142056"
+      },
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "test",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/test/no_defect_110219_142056.bmp",
+      "requires_group_review": true,
+      "sha256": "4fc125b25c047b3b85019c9f3fc5cbda06fb6f937d962b5f3521e59451f149bf",
+      "source": "test",
+      "width": 1440
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "filename_prefix",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 138861,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "test",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/test/no_defect_1970_01_01NGripper_2_FAIL_711.jpg",
+      "requires_group_review": true,
+      "sha256": "cba05806cbcd0c3e4b8b86a9dfef090dc5f35a6425340e7b824070e72476465c",
+      "source": "test",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "filename_prefix",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 137336,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "test",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/test/no_defect_1970_01_01NGripper_2_FAIL_712.jpg",
+      "requires_group_review": true,
+      "sha256": "072701ea602fab97871a637a1e578a1a43adb282a4a1d7db910a68db6f31b0cf",
+      "source": "test",
+      "width": 1920
+    },
+    {
+      "appears_generated": false,
+      "channel_count": 1,
+      "class_label": "no_defect",
+      "class_label_basis": "filename_prefix",
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 128897,
+      "generated_reason": null,
+      "grouping_hint": {
+        "certainty": "heuristic_only",
+        "kind": "filename_date_like_prefix",
+        "value": "1970_01_01"
+      },
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": true,
+      "partition": "test",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/test/no_defect_1970_01_01NGripper_2_FAIL_715.jpg",
+      "requires_group_review": true,
+      "sha256": "2c1784ace4d22250d07d6baa35a7b2a1976d3604f8ee98b8b34cbae2b90f632b",
+      "source": "test",
+      "width": 1920
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 326226,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_1eda5710581b400f88cc4bb6e3b49342.jpg",
+      "requires_group_review": false,
+      "sha256": "7cfeb0cb84c4c7e7515c86f845ded340f5671dc287b0233ef7998c7f628e3c08",
+      "source": "legacy_uploads",
+      "width": 1920
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".jpg",
+      "extension_matches_content": false,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_1fdb0b2f4a2a4bd48dcf609e26d3b2dd.jpg",
+      "requires_group_review": false,
+      "sha256": "c38929e811d0a8cb460330e12a18283bb800f83aede9beb0b605f87c912bcb98",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".jpg",
+      "extension_matches_content": false,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_27bbfd6402964b4eaa7dcae1783f7718.jpg",
+      "requires_group_review": false,
+      "sha256": "9314443449cf156ec434c4ffb3c16cdc68e53b834007b2f30c041610f464151a",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_33913af299b044d7929c4098a0fa37fd.bmp",
+      "requires_group_review": false,
+      "sha256": "efd1fc1905e397e5ccb8268432edb8b4d7e602f7b3d6ffbf9645274b6ebc2590",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_3a3b3454af534411a8e0cb8ae2ebf512.bmp",
+      "requires_group_review": false,
+      "sha256": "9314443449cf156ec434c4ffb3c16cdc68e53b834007b2f30c041610f464151a",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 138861,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_46832eef9bbb42b588e42b35453d28c3.jpg",
+      "requires_group_review": false,
+      "sha256": "cba05806cbcd0c3e4b8b86a9dfef090dc5f35a6425340e7b824070e72476465c",
+      "source": "legacy_uploads",
+      "width": 1920
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_5415b0c4caaa41808c69bd8f0e10b565.bmp",
+      "requires_group_review": false,
+      "sha256": "a3d3d2c8cbce563fa92074d271d0ecbd6090fa5840b68c08092018ae91b3f7ab",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".jpg",
+      "extension_matches_content": false,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_586d36ff90c94d79b3b029ecd3d92a9a.jpg",
+      "requires_group_review": false,
+      "sha256": "4fc125b25c047b3b85019c9f3fc5cbda06fb6f937d962b5f3521e59451f149bf",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_5ebb136ad7bc4ebaa0dceda15d412e0c.bmp",
+      "requires_group_review": false,
+      "sha256": "efd1fc1905e397e5ccb8268432edb8b4d7e602f7b3d6ffbf9645274b6ebc2590",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_60ba55ecafff47e6a68b9df55b4f78ab.bmp",
+      "requires_group_review": false,
+      "sha256": "58e57cc767bb1e01093c3d51ab09f35381b3996327776471b389a52dc6b0b944",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_7225f5a469d547e082caaeec33d694f6.bmp",
+      "requires_group_review": false,
+      "sha256": "e1fa1d80a167e694ce69a6132b9bdfca654190999dc322193f14a858413e6586",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 125040,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_72993171c0b5434aac61c837e898a5f5.jpg",
+      "requires_group_review": false,
+      "sha256": "5caae12ba7cd46d0e0b92578e4861278ee7be7805d1db998442256d3d1e75faf",
+      "source": "legacy_uploads",
+      "width": 1920
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 125040,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_7b6a049acb9d44de8aef9352fbd9747c.jpg",
+      "requires_group_review": false,
+      "sha256": "5caae12ba7cd46d0e0b92578e4861278ee7be7805d1db998442256d3d1e75faf",
+      "source": "legacy_uploads",
+      "width": 1920
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_89a48e4223ca428d8ad3da9625d14031.bmp",
+      "requires_group_review": false,
+      "sha256": "efd1fc1905e397e5ccb8268432edb8b4d7e602f7b3d6ffbf9645274b6ebc2590",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_8e37a114393b4f4281e99bb53001a3e7.bmp",
+      "requires_group_review": false,
+      "sha256": "c38929e811d0a8cb460330e12a18283bb800f83aede9beb0b605f87c912bcb98",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 125040,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_a20b9111eebf43c9a0424841ce1fa97a.jpg",
+      "requires_group_review": false,
+      "sha256": "5caae12ba7cd46d0e0b92578e4861278ee7be7805d1db998442256d3d1e75faf",
+      "source": "legacy_uploads",
+      "width": 1920
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_a7df29db0f4540ea9617a0a1a0823ee9.bmp",
+      "requires_group_review": false,
+      "sha256": "64b079db064be20ac0c8551165ab21d22fa8bff9060189ca7128904ac66d632c",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_a8a1db7814524dbb8b9640960e03dfca.bmp",
+      "requires_group_review": false,
+      "sha256": "c38929e811d0a8cb460330e12a18283bb800f83aede9beb0b605f87c912bcb98",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_b2d61b9617cb4d8798283730eba50226.bmp",
+      "requires_group_review": false,
+      "sha256": "9314443449cf156ec434c4ffb3c16cdc68e53b834007b2f30c041610f464151a",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_bea4ce4e1ba243b69ca0ab4cc8e03174.bmp",
+      "requires_group_review": false,
+      "sha256": "c38929e811d0a8cb460330e12a18283bb800f83aede9beb0b605f87c912bcb98",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_c00440a17b0b4a3eb2bb031e00c5e395.bmp",
+      "requires_group_review": false,
+      "sha256": "efd1fc1905e397e5ccb8268432edb8b4d7e602f7b3d6ffbf9645274b6ebc2590",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_c03c66abde5143dfb736f19202d377bb.bmp",
+      "requires_group_review": false,
+      "sha256": "4fc125b25c047b3b85019c9f3fc5cbda06fb6f937d962b5f3521e59451f149bf",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_c827d7814385495b86844d33a5579fb9.bmp",
+      "requires_group_review": false,
+      "sha256": "9314443449cf156ec434c4ffb3c16cdc68e53b834007b2f30c041610f464151a",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_cacea8a147d64748bd45bf0ed84b74d2.bmp",
+      "requires_group_review": false,
+      "sha256": "c38929e811d0a8cb460330e12a18283bb800f83aede9beb0b605f87c912bcb98",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_cb906fccf13e4dce824011370f20c6b0.bmp",
+      "requires_group_review": false,
+      "sha256": "4fc125b25c047b3b85019c9f3fc5cbda06fb6f937d962b5f3521e59451f149bf",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "JPEG",
+      "extension": ".jpg",
+      "extension_matches_content": true,
+      "file_size": 125040,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1200,
+      "image_mode": "L",
+      "inspection_method": "JPEG frame header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_cf626b27aded4aa4becf8dc92a90d55a.jpg",
+      "requires_group_review": false,
+      "sha256": "5caae12ba7cd46d0e0b92578e4861278ee7be7805d1db998442256d3d1e75faf",
+      "source": "legacy_uploads",
+      "width": 1920
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_d41ea9cc7b854a76a901b5818e0e20d0.bmp",
+      "requires_group_review": false,
+      "sha256": "c38929e811d0a8cb460330e12a18283bb800f83aede9beb0b605f87c912bcb98",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".jpg",
+      "extension_matches_content": false,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_d690ba7607d14bf2b3a14e8509419cc8.jpg",
+      "requires_group_review": false,
+      "sha256": "7a246e2e663812741c564ce5c64e1dec452180ba036d5d6bd12895e3afccb043",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".jpg",
+      "extension_matches_content": false,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_d918056d52054642a19b918adaff662d.jpg",
+      "requires_group_review": false,
+      "sha256": "a3d3d2c8cbce563fa92074d271d0ecbd6090fa5840b68c08092018ae91b3f7ab",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_e9092ae5254a4035b53cd151ee85dce5.bmp",
+      "requires_group_review": false,
+      "sha256": "efd1fc1905e397e5ccb8268432edb8b4d7e602f7b3d6ffbf9645274b6ebc2590",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_ec3fc0260cde4e7791621254e726b3f9.bmp",
+      "requires_group_review": false,
+      "sha256": "c6e6b3f880baf577ecd5ae60a841bb426ebe4e32c89a83e0a92cb0d91caef38b",
+      "source": "legacy_uploads",
+      "width": 1440
+    },
+    {
+      "appears_generated": true,
+      "channel_count": 1,
+      "class_label": null,
+      "class_label_basis": null,
+      "detected_format": "BMP",
+      "extension": ".bmp",
+      "extension_matches_content": true,
+      "file_size": 1556328,
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "grouping_hint": null,
+      "height": 1080,
+      "image_mode": "8-bit indexed/grayscale",
+      "inspection_method": "BMP header",
+      "is_image_extension": true,
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "production_group_proven": false,
+      "readability_error": null,
+      "readability_status": "readable",
+      "readable": true,
+      "relative_path": "backend/uploads/temp_fde41a1924cc480dba2e979cbc50ec32.bmp",
+      "requires_group_review": false,
+      "sha256": "9314443449cf156ec434c4ffb3c16cdc68e53b834007b2f30c041610f464151a",
+      "source": "legacy_uploads",
+      "width": 1440
+    }
+  ],
+  "generated_files": [
+    "backend/annotated_output/missing_part_dispense_error_110219_143006.bmp",
+    "backend/annotated_output/missing_part_dispense_error_110219_143222.bmp",
+    "backend/annotated_output/missing_part_dispense_error_110219_143457.bmp",
+    "backend/annotated_output/missing_part_no_defect_110219_142056.bmp",
+    "backend/annotated_output/pred_missing_part_110219_142056.bmp",
+    "backend/annotated_output/pred_missing_part_110219_142059.bmp",
+    "backend/annotated_output/pred_missing_part_110219_142105.bmp",
+    "backend/annotated_output/pred_missing_part_110219_142134.bmp",
+    "backend/annotated_output/pred_missing_part_110219_142725.bmp",
+    "backend/annotated_output/pred_missing_part_110219_143047.bmp",
+    "backend/annotated_output/pred_missing_part_110219_143222.bmp",
+    "backend/annotated_output/pred_missing_part_110219_143341.bmp",
+    "backend/annotated_output/pred_missing_part_110219_143613.bmp",
+    "backend/annotated_output/pred_missing_part_temp_1fdb0b2f4a2a4bd48dcf609e26d3b2dd.jpg",
+    "backend/annotated_output/pred_missing_part_temp_27bbfd6402964b4eaa7dcae1783f7718.jpg",
+    "backend/annotated_output/pred_missing_part_temp_586d36ff90c94d79b3b029ecd3d92a9a.jpg",
+    "backend/annotated_output/pred_missing_part_temp_d690ba7607d14bf2b3a14e8509419cc8.jpg",
+    "backend/annotated_output/pred_missing_part_temp_d918056d52054642a19b918adaff662d.jpg",
+    "backend/annotated_output/pred_no_defect_1970_01_01NGripper_2_FAIL_711.jpg",
+    "backend/annotated_output/pred_no_defect_1970_01_01NGripper_2_FAIL_722.jpg",
+    "backend/annotated_output/pred_no_defect_temp_1eda5710581b400f88cc4bb6e3b49342.jpg",
+    "backend/uploads/temp_1eda5710581b400f88cc4bb6e3b49342.jpg",
+    "backend/uploads/temp_1fdb0b2f4a2a4bd48dcf609e26d3b2dd.jpg",
+    "backend/uploads/temp_27bbfd6402964b4eaa7dcae1783f7718.jpg",
+    "backend/uploads/temp_33913af299b044d7929c4098a0fa37fd.bmp",
+    "backend/uploads/temp_3a3b3454af534411a8e0cb8ae2ebf512.bmp",
+    "backend/uploads/temp_46832eef9bbb42b588e42b35453d28c3.jpg",
+    "backend/uploads/temp_5415b0c4caaa41808c69bd8f0e10b565.bmp",
+    "backend/uploads/temp_586d36ff90c94d79b3b029ecd3d92a9a.jpg",
+    "backend/uploads/temp_5ebb136ad7bc4ebaa0dceda15d412e0c.bmp",
+    "backend/uploads/temp_60ba55ecafff47e6a68b9df55b4f78ab.bmp",
+    "backend/uploads/temp_7225f5a469d547e082caaeec33d694f6.bmp",
+    "backend/uploads/temp_72993171c0b5434aac61c837e898a5f5.jpg",
+    "backend/uploads/temp_7b6a049acb9d44de8aef9352fbd9747c.jpg",
+    "backend/uploads/temp_89a48e4223ca428d8ad3da9625d14031.bmp",
+    "backend/uploads/temp_8e37a114393b4f4281e99bb53001a3e7.bmp",
+    "backend/uploads/temp_a20b9111eebf43c9a0424841ce1fa97a.jpg",
+    "backend/uploads/temp_a7df29db0f4540ea9617a0a1a0823ee9.bmp",
+    "backend/uploads/temp_a8a1db7814524dbb8b9640960e03dfca.bmp",
+    "backend/uploads/temp_b2d61b9617cb4d8798283730eba50226.bmp",
+    "backend/uploads/temp_bea4ce4e1ba243b69ca0ab4cc8e03174.bmp",
+    "backend/uploads/temp_c00440a17b0b4a3eb2bb031e00c5e395.bmp",
+    "backend/uploads/temp_c03c66abde5143dfb736f19202d377bb.bmp",
+    "backend/uploads/temp_c827d7814385495b86844d33a5579fb9.bmp",
+    "backend/uploads/temp_cacea8a147d64748bd45bf0ed84b74d2.bmp",
+    "backend/uploads/temp_cb906fccf13e4dce824011370f20c6b0.bmp",
+    "backend/uploads/temp_cf626b27aded4aa4becf8dc92a90d55a.jpg",
+    "backend/uploads/temp_d41ea9cc7b854a76a901b5818e0e20d0.bmp",
+    "backend/uploads/temp_d690ba7607d14bf2b3a14e8509419cc8.jpg",
+    "backend/uploads/temp_d918056d52054642a19b918adaff662d.jpg",
+    "backend/uploads/temp_e9092ae5254a4035b53cd151ee85dce5.bmp",
+    "backend/uploads/temp_ec3fc0260cde4e7791621254e726b3f9.bmp",
+    "backend/uploads/temp_fde41a1924cc480dba2e979cbc50ec32.bmp"
+  ],
+  "grouping_assessment": {
+    "proven_production_group_count": 0,
+    "source_images_requiring_human_group_review": 74,
+    "statement": "Filename date/timestamp-like prefixes are heuristic hints only; no board, lot, panel, session, or batch grouping is proven."
+  },
+  "images_outside_contract": [],
+  "missing_class_directories": [],
+  "missing_source_directories": [],
+  "partition_counts": {
+    "annotated_outputs": 21,
+    "legacy_uploads": 32,
+    "raw_source": 32,
+    "test": 10,
+    "training": 32,
+    "validation": 0
+  },
+  "retraining_blockers": [
+    "cross_partition_duplicates",
+    "training_test_overlap",
+    "unsupported_source_files",
+    "significant_class_imbalance",
+    "production_group_metadata_not_proven"
+  ],
+  "schema_version": "1.0",
+  "scope": [
+    {
+      "generated_reason": null,
+      "is_source": true,
+      "partition": "training",
+      "relative_root": "backend/dataset",
+      "source": "training"
+    },
+    {
+      "generated_reason": null,
+      "is_source": true,
+      "partition": "raw_source",
+      "relative_root": "backend/dataset_raw",
+      "source": "raw_source"
+    },
+    {
+      "generated_reason": null,
+      "is_source": true,
+      "partition": "test",
+      "relative_root": "backend/test",
+      "source": "test"
+    },
+    {
+      "generated_reason": "Legacy runtime upload copy; not an authoritative dataset source.",
+      "is_source": false,
+      "partition": "legacy_uploads",
+      "relative_root": "backend/uploads",
+      "source": "legacy_uploads"
+    },
+    {
+      "generated_reason": "Generated prediction/annotation output; never source data.",
+      "is_source": false,
+      "partition": "annotated_outputs",
+      "relative_root": "backend/annotated_output",
+      "source": "annotated_outputs"
+    }
+  ],
+  "source_counts": {
+    "annotated_outputs": 21,
+    "legacy_uploads": 32,
+    "raw_source": 32,
+    "test": 10,
+    "training": 32
+  },
+  "summary": {
+    "audit_exit_code": 1,
+    "cross_partition_duplicate_groups": 32,
+    "dataset_suitable_for_retraining": false,
+    "evaluation_trustworthy": false,
+    "exact_duplicate_groups": 34,
+    "extension_content_mismatches": 5,
+    "generated_or_runtime_files": 53,
+    "readable_image_files": 127,
+    "source_image_files": 74,
+    "total_files": 128,
+    "total_image_files": 127,
+    "training_test_overlap_count": 10,
+    "unreadable_image_files": 0,
+    "unsupported_files": 1
+  },
+  "training_test_overlaps": [
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_712.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_712.jpg",
+        "backend/test/no_defect_1970_01_01NGripper_2_FAIL_712.jpg"
+      ],
+      "sha256": "072701ea602fab97871a637a1e578a1a43adb282a4a1d7db910a68db6f31b0cf",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_715.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_715.jpg",
+        "backend/test/no_defect_1970_01_01NGripper_2_FAIL_715.jpg"
+      ],
+      "sha256": "2c1784ace4d22250d07d6baa35a7b2a1976d3604f8ee98b8b34cbae2b90f632b",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143457.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143457.bmp",
+        "backend/test/dispense_error_110219_143457.bmp"
+      ],
+      "sha256": "4327397751c861a38077c880654c0703ade79a53124608e5600543ba1e2bd8bb",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/110219_142056.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/OK/110219_142056.bmp",
+        "backend/test/no_defect_110219_142056.bmp"
+      ],
+      "sha256": "4fc125b25c047b3b85019c9f3fc5cbda06fb6f937d962b5f3521e59451f149bf",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/misalignment/1970_01_01NGripper_2_FAIL_722.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/NG/1970_01_01NGripper_2_FAIL_722.jpg",
+        "backend/test/misalignment_1970_01_01NGripper_2_FAIL_722.jpg"
+      ],
+      "sha256": "5caae12ba7cd46d0e0b92578e4861278ee7be7805d1db998442256d3d1e75faf",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143222.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143222.bmp",
+        "backend/test/dispense_error_110219_143222.bmp"
+      ],
+      "sha256": "64b079db064be20ac0c8551165ab21d22fa8bff9060189ca7128904ac66d632c",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/missing_part/2025_04_24_12_12_52_N_CLIMP_1_FAIL_849.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/NOK/2025_04_24_12_12_52_N_CLIMP_1_FAIL_849.jpg",
+        "backend/test/missing_part_2025_04_24_12_12_52_N_CLIMP_1_FAIL_849.jpg"
+      ],
+      "sha256": "6a0c8c45a1553d939ab8486f5dae5d61b10353a831249e98cff27e603a453a29",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/dispense_error/110219_143006.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Dispensing/NG/110219_143006.bmp",
+        "backend/test/dispense_error_110219_143006.bmp"
+      ],
+      "sha256": "8e20539e6fa7f3f07dda67f38ede67f6db36290e8d47929d48f12169bfd51ad2",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/missing_part/POS4.69GRADOS.bmp",
+        "backend/dataset_raw/Imagenes OK& NOK/Crimp/NOK/POS4.69GRADOS.bmp",
+        "backend/test/missing_part_POS4.69GRADOS.bmp"
+      ],
+      "sha256": "a624c1d18d837e1e16963a68e9d986cb437d41ef81521dd4276c2a2d041d7a24",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    },
+    {
+      "partitions": [
+        "raw_source",
+        "test",
+        "training"
+      ],
+      "paths": [
+        "backend/dataset/no_defect/1970_01_01NGripper_2_FAIL_711.jpg",
+        "backend/dataset_raw/Imagenes OK& NOK/PINS/OK/1970_01_01NGripper_2_FAIL_711.jpg",
+        "backend/test/no_defect_1970_01_01NGripper_2_FAIL_711.jpg"
+      ],
+      "sha256": "cba05806cbcd0c3e4b8b86a9dfef090dc5f35a6425340e7b824070e72476465c",
+      "sources": [
+        "raw_source",
+        "test",
+        "training"
+      ]
+    }
+  ],
+  "unexpected_class_directories": [],
+  "unreadable_files": [],
+  "unsupported_files": [
+    "backend/dataset/dataset.zip"
+  ]
+}
