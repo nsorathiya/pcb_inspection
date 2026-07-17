@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aoi-for-pcb.local/contracts/synthetic-inspection-scenario/1.0",
+  "title": "PCB AOI Synthetic Inspection Software-Fixture Scenario",
+  "description": "Expected intake and technical-validation behavior for deterministic synthetic RGB/height software fixtures. This is not PCB-quality or model-accuracy evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "scenario_id",
+    "scenario_uuid",
+    "description",
+    "synthetic",
+    "generator_id",
+    "generator_version",
+    "seed",
+    "fixture_timestamp",
+    "fixture_statement",
+    "training_approved",
+    "production_approved",
+    "model_accuracy_evidence",
+    "expected_intake_outcome",
+    "expected_technical_validation_outcome",
+    "expected_finding_codes",
+    "policy",
+    "artifacts",
+    "notes"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "pcb-aoi-synthetic-inspection-scenario/1.0"
+    },
+    "scenario_id": {"$ref": "#/$defs/identifier"},
+    "scenario_uuid": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "description": {"type": "string", "minLength": 1, "maxLength": 1000},
+    "synthetic": {"const": true},
+    "generator_id": {"const": "pcb-aoi-synthetic-inspection-fixtures"},
+    "generator_version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "seed": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
+    "fixture_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "fixture_statement": {
+      "const": "Synthetic fixture for software validation only."
+    },
+    "training_approved": {"const": false},
+    "production_approved": {"const": false},
+    "model_accuracy_evidence": {"const": false},
+    "expected_intake_outcome": {"enum": ["ACCEPTED", "REJECTED"]},
+    "expected_technical_validation_outcome": {
+      "enum": [
+        "VALIDATION_PASSED",
+        "VALIDATION_FAILED",
+        "VALIDATION_ERROR",
+        "NOT_APPLICABLE"
+      ]
+    },
+    "expected_finding_codes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/finding_code"}
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_id", "policy_version"],
+      "properties": {
+        "policy_id": {"$ref": "#/$defs/identifier"},
+        "policy_version": {"$ref": "#/$defs/identifier"}
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "rgb": {"$ref": "#/$defs/artifact"},
+        "height": {"$ref": "#/$defs/artifact"},
+        "mask": {"$ref": "#/$defs/artifact"},
+        "calibration": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "notes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1000}
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "finding_code": {
+      "enum": [
+        "RGB_RAW_MISSING",
+        "HEIGHT_RAW_MISSING",
+        "DUPLICATE_RGB_RAW",
+        "DUPLICATE_HEIGHT_RAW",
+        "INCOMPLETE_RAW_PAIR",
+        "VALIDITY_MASK_MISSING",
+        "ARTIFACT_FILE_MISSING",
+        "ARTIFACT_SIZE_MISMATCH",
+        "ARTIFACT_SHA256_MISMATCH",
+        "ARTIFACT_PATH_UNSAFE",
+        "ARTIFACT_NOT_REGULAR_FILE",
+        "ARTIFACT_SYMLINK_REJECTED",
+        "RGB_FORMAT_UNSUPPORTED",
+        "HEIGHT_FORMAT_UNSUPPORTED",
+        "EXTENSION_CONTENT_MISMATCH",
+        "MEDIA_TYPE_CONTENT_MISMATCH",
+        "FILE_UNREADABLE",
+        "RGB_DIMENSIONS_INVALID",
+        "RGB_CHANNELS_UNSUPPORTED",
+        "RGB_BIT_DEPTH_UNSUPPORTED",
+        "RGB_COLOR_MODE_UNSUPPORTED",
+        "HEIGHT_DIMENSIONS_INVALID",
+        "HEIGHT_NOT_SINGLE_CHANNEL",
+        "HEIGHT_STORAGE_TYPE_UNSUPPORTED",
+        "HEIGHT_BIT_DEPTH_TOO_LOW",
+        "HEIGHT_COLORIZED_PREVIEW_REJECTED",
+        "HEIGHT_NAN_POLICY_INCOMPATIBLE",
+        "HEIGHT_INVALID_VALUE_POLICY_MISSING",
+        "DIMENSION_RELATIONSHIP_UNSUPPORTED",
+        "REGISTRATION_EVIDENCE_MISSING",
+        "CALIBRATION_EVIDENCE_MISSING",
+        "POLICY_NOT_FOUND",
+        "POLICY_VERSION_UNSUPPORTED",
+        "VALIDATOR_INTERNAL_ERROR"
+      ]
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "references",
+        "generated_file",
+        "reference_expected_to_resolve",
+        "media_type",
+        "actual_sha256",
+        "actual_byte_size",
+        "declared_sha256",
+        "declared_byte_size"
+      ],
+      "properties": {
+        "role": {"enum": ["rgb", "height", "mask", "calibration"]},
+        "references": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": {"type": "string", "minLength": 1, "maxLength": 512}
+        },
+        "generated_file": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "reference_expected_to_resolve": {"type": "boolean"},
+        "media_type": {"type": "string", "minLength": 1, "maxLength": 128},
+        "actual_sha256": {"$ref": "#/$defs/sha256"},
+        "actual_byte_size": {"type": "integer", "minimum": 0},
+        "declared_sha256": {"$ref": "#/$defs/sha256"},
+        "declared_byte_size": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

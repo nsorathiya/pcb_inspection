@@ -9,6 +9,10 @@ from app.services.dataset_validation.file_inspection import (
     inspect_height,
     inspect_rgb,
 )
+from app.testing.synthetic_aoi.raster_generation import (
+    encode_classic_tiff,
+    encode_png,
+)
 
 
 def _png_chunk(kind: bytes, data: bytes) -> bytes:
@@ -28,30 +32,15 @@ def _png_bytes(
 ) -> bytes:
     channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}[color_type]
     row_bytes = (width * channels * bit_depth + 7) // 8
-    raw = b"".join(b"\x00" + bytes(row_bytes) for _ in range(height))
-    ihdr = struct.pack(
-        ">IIBBBBB",
+    return encode_png(
         width,
         height,
-        bit_depth,
-        color_type,
-        0,
-        0,
-        interlace,
+        bit_depth=bit_depth,
+        color_type=color_type,
+        pixel_bytes=bytes(row_bytes * height),
+        interlace=interlace,
+        compressed_data=compressed_data,
     )
-    chunks = [_png_chunk(b"IHDR", ihdr)]
-    if color_type == 3:
-        chunks.append(_png_chunk(b"PLTE", b"\x00\x00\x00\xff\xff\xff"))
-    chunks.extend(
-        (
-            _png_chunk(
-                b"IDAT",
-                zlib.compress(raw) if compressed_data is None else compressed_data,
-            ),
-            _png_chunk(b"IEND", b""),
-        )
-    )
-    return b"\x89PNG\r\n\x1a\n" + b"".join(chunks)
 
 
 def _tiff_bytes(
@@ -67,61 +56,20 @@ def _tiff_bytes(
     bits_count: int | None = None,
     tiled: bool = False,
 ) -> bytes:
-    endian = "<" if byte_order == "little" else ">"
-    marker = b"II" if byte_order == "little" else b"MM"
-    bits_values = [bits] * (samples if bits_count is None else bits_count)
     raw_pixels = bytes(width * height * samples * (bits // 8))
-    strip_data = zlib.compress(raw_pixels) if compression in {8, 32946} else raw_pixels
-
-    entries: list[tuple[int, int, list[int]]] = [
-        (256, 4, [width]),
-        (257, 4, [height]),
-        (258, 3, bits_values),
-        (259, 3, [compression]),
-        (262, 3, [photometric]),
-        (273, 4, [0]),
-        (277, 3, [samples]),
-        (278, 4, [height]),
-        (279, 4, [len(strip_data)]),
-        (284, 3, [planar_configuration]),
-        (339, 3, [1] * samples),
-    ]
-    if tiled:
-        entries.append((322, 4, [width]))
-    entries.sort(key=lambda entry: entry[0])
-
-    ifd_end = 8 + 2 + len(entries) * 12 + 4
-    external = bytearray()
-    external_offsets: dict[int, int] = {}
-    for tag, field_type, values in entries:
-        item_size = {3: 2, 4: 4}[field_type]
-        if item_size * len(values) > 4:
-            external_offsets[tag] = ifd_end + len(external)
-            value_format = "H" if field_type == 3 else "I"
-            external.extend(struct.pack(endian + value_format * len(values), *values))
-    pixel_offset = ifd_end + len(external)
-    entries = [
-        (tag, field_type, [pixel_offset] if tag == 273 else values)
-        for tag, field_type, values in entries
-    ]
-
-    output = bytearray(marker)
-    output.extend(struct.pack(endian + "H", 42))
-    output.extend(struct.pack(endian + "I", 8))
-    output.extend(struct.pack(endian + "H", len(entries)))
-    for tag, field_type, values in entries:
-        output.extend(struct.pack(endian + "HHI", tag, field_type, len(values)))
-        item_size = {3: 2, 4: 4}[field_type]
-        if item_size * len(values) > 4:
-            output.extend(struct.pack(endian + "I", external_offsets[tag]))
-        else:
-            value_format = "H" if field_type == 3 else "I"
-            inline = struct.pack(endian + value_format * len(values), *values)
-            output.extend(inline + bytes(4 - len(inline)))
-    output.extend(struct.pack(endian + "I", 0))
-    output.extend(external)
-    output.extend(strip_data)
-    return bytes(output)
+    return encode_classic_tiff(
+        width,
+        height,
+        samples=samples,
+        bits=bits,
+        photometric=photometric,
+        pixel_bytes=raw_pixels,
+        compression=compression,
+        byte_order=byte_order,
+        planar_configuration=planar_configuration,
+        bits_count=bits_count,
+        tiled=tiled,
+    )
 
 
 def test_uncompressed_rgb_tiff_returns_typed_native_metadata(tmp_path) -> None:
