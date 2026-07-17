@@ -5,9 +5,9 @@ import hashlib
 import math
 import struct
 import zlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from pathlib import Path, PurePosixPath
-from typing import BinaryIO
+from typing import BinaryIO, Mapping
 
 
 class PathSafetyError(ValueError):
@@ -22,13 +22,51 @@ class FileInspectionError(ValueError):
 
 @dataclass(frozen=True)
 class InspectedRaster:
-    format: str
+    """Read-only, path-free metadata returned by native raster inspectors."""
+
+    detected_format: str
     width: int
     height: int
     channels: int
     bit_depth: int
-    mode: str
+    color_mode: str
     storage_data_type: str | None = None
+    readability_status: str = "READABLE"
+    safe_details: Mapping[str, str | int | float | bool | None] = field(
+        default_factory=dict
+    )
+    warnings: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        forbidden_keys = {
+            "path",
+            "absolute_path",
+            "relative_path",
+            "filename",
+            "source_filename",
+        }
+        details = dict(self.safe_details)
+        if forbidden_keys.intersection(details):
+            raise ValueError("Native raster details must not contain filesystem paths")
+        if any(
+            not isinstance(value, (str, int, float, bool, type(None)))
+            for value in details.values()
+        ):
+            raise TypeError("Native raster details must contain safe primitive values")
+        object.__setattr__(self, "safe_details", details)
+        object.__setattr__(self, "warnings", tuple(self.warnings))
+
+    @property
+    def format(self) -> str:
+        """Backward-compatible lowercase format used by dataset contract 1.0."""
+
+        return self.detected_format.lower()
+
+    @property
+    def mode(self) -> str:
+        """Backward-compatible alias used by the paired-dataset validator."""
+
+        return self.color_mode
 
 
 def is_within(path: Path, root: Path) -> bool:
@@ -102,13 +140,31 @@ def sha256_file(path: Path) -> str:
 
 def _inspect_png(path: Path) -> InspectedRaster:
     signature = b"\x89PNG\r\n\x1a\n"
+    channels_by_type = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}
+    modes = {0: "GRAY", 2: "RGB", 3: "PALETTE", 4: "GRAY_ALPHA", 6: "RGBA"}
+    allowed_bit_depths = {
+        0: {1, 2, 4, 8, 16},
+        2: {8, 16},
+        3: {1, 2, 4, 8},
+        4: {8, 16},
+        6: {8, 16},
+    }
     with path.open("rb") as source:
         if source.read(8) != signature:
             raise FileInspectionError("Invalid PNG signature")
+        file_size = path.stat().st_size
         width = height = bit_depth = color_type = None
+        compression_method = filter_method = interlace_method = None
         decompressor = zlib.decompressobj()
+        decoded = bytearray()
+        expected_decoded_size = None
+        saw_ihdr = False
+        saw_plte = False
         saw_idat = False
         saw_iend = False
+        idat_ended = False
+        idat_chunks = 0
+        chunk_index = 0
         while True:
             raw_length = source.read(4)
             if not raw_length:
@@ -117,9 +173,11 @@ def _inspect_png(path: Path) -> InspectedRaster:
                 raise FileInspectionError("Truncated PNG chunk length")
             length = struct.unpack(">I", raw_length)[0]
             chunk_type = source.read(4)
+            if len(chunk_type) != 4 or length > file_size - source.tell() - 4:
+                raise FileInspectionError("Truncated PNG chunk")
             data = source.read(length)
             raw_crc = source.read(4)
-            if len(chunk_type) != 4 or len(data) != length or len(raw_crc) != 4:
+            if len(data) != length or len(raw_crc) != 4:
                 raise FileInspectionError("Truncated PNG chunk")
             expected_crc = struct.unpack(">I", raw_crc)[0]
             actual_crc = zlib.crc32(chunk_type)
@@ -127,41 +185,130 @@ def _inspect_png(path: Path) -> InspectedRaster:
             if expected_crc != actual_crc:
                 raise FileInspectionError("PNG chunk CRC mismatch")
             if chunk_type == b"IHDR":
+                if chunk_index != 0 or saw_ihdr:
+                    raise FileInspectionError("PNG IHDR must be the first and only IHDR chunk")
                 if length != 13:
                     raise FileInspectionError("Invalid PNG IHDR length")
-                width, height, bit_depth, color_type = struct.unpack(">IIBB", data[:10])
+                (
+                    width,
+                    height,
+                    bit_depth,
+                    color_type,
+                    compression_method,
+                    filter_method,
+                    interlace_method,
+                ) = struct.unpack(">IIBBBBB", data)
                 if width <= 0 or height <= 0:
                     raise FileInspectionError("Invalid PNG dimensions")
+                if color_type not in channels_by_type:
+                    raise FileInspectionError(f"Unsupported PNG color type {color_type}")
+                if bit_depth not in allowed_bit_depths[color_type]:
+                    raise FileInspectionError(
+                        f"Invalid PNG bit depth {bit_depth} for color type {color_type}"
+                    )
+                if compression_method != 0 or filter_method != 0:
+                    raise FileInspectionError("Unsupported PNG compression or filter method")
+                if interlace_method != 0:
+                    raise FileInspectionError("Interlaced PNG is not supported by this inspector")
+                row_bytes = math.ceil(
+                    width * channels_by_type[color_type] * bit_depth / 8
+                )
+                expected_decoded_size = height * (row_bytes + 1)
+                saw_ihdr = True
+            elif not saw_ihdr:
+                raise FileInspectionError("PNG IHDR must be the first chunk")
+            elif chunk_type == b"PLTE":
+                if saw_idat:
+                    raise FileInspectionError("PNG PLTE must precede IDAT")
+                if saw_plte:
+                    raise FileInspectionError("PNG contains duplicate PLTE chunks")
+                if color_type in {0, 4}:
+                    raise FileInspectionError("PNG PLTE is invalid for grayscale color types")
+                if length == 0 or length % 3 != 0 or length > 768:
+                    raise FileInspectionError("Invalid PNG PLTE length")
+                saw_plte = True
             elif chunk_type == b"IDAT":
+                if idat_ended:
+                    raise FileInspectionError("PNG IDAT chunks must be consecutive")
+                if color_type == 3 and not saw_plte:
+                    raise FileInspectionError("Palette PNG is missing PLTE before IDAT")
                 saw_idat = True
+                idat_chunks += 1
                 try:
-                    decompressor.decompress(data)
+                    pending = data
+                    while pending:
+                        limit = max(
+                            1,
+                            int(expected_decoded_size) + 1 - len(decoded),
+                        )
+                        output = decompressor.decompress(pending, limit)
+                        decoded.extend(output)
+                        if len(decoded) > int(expected_decoded_size):
+                            raise FileInspectionError(
+                                "PNG image data exceeds declared dimensions"
+                            )
+                        remaining = decompressor.unconsumed_tail
+                        if not remaining:
+                            break
+                        if remaining == pending and not output:
+                            raise FileInspectionError("Unreadable PNG compressed image data")
+                        pending = remaining
                 except zlib.error as exc:
                     raise FileInspectionError(f"Unreadable PNG image data: {exc}") from exc
             elif chunk_type == b"IEND":
+                if length != 0:
+                    raise FileInspectionError("Invalid PNG IEND length")
+                if not saw_idat:
+                    raise FileInspectionError("PNG IEND appears before IDAT")
                 saw_iend = True
+                if source.read(1):
+                    raise FileInspectionError("PNG contains trailing data after IEND")
                 break
+            else:
+                if saw_idat:
+                    idat_ended = True
+                if 65 <= chunk_type[0] <= 90:
+                    raise FileInspectionError(
+                        f"Unsupported critical PNG chunk {chunk_type.decode('ascii', 'replace')}"
+                    )
+            chunk_index += 1
         if None in (width, height, bit_depth, color_type):
             raise FileInspectionError("PNG IHDR is missing")
         if not saw_idat or not saw_iend:
             raise FileInspectionError("PNG IDAT or IEND is missing")
         try:
-            decompressor.flush()
+            output = decompressor.flush(
+                max(1, int(expected_decoded_size) + 1 - len(decoded))
+            )
+            decoded.extend(output)
         except zlib.error as exc:
             raise FileInspectionError(f"Unreadable PNG image data: {exc}") from exc
         if not decompressor.eof:
             raise FileInspectionError("Truncated PNG compressed image data")
-    channels_by_type = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}
-    modes = {0: "GRAY", 2: "RGB", 3: "PALETTE", 4: "GRAY_ALPHA", 6: "RGBA"}
-    if color_type not in channels_by_type:
-        raise FileInspectionError(f"Unsupported PNG color type {color_type}")
+        if decompressor.unused_data:
+            raise FileInspectionError("PNG IDAT contains data after the compressed stream")
+        if len(decoded) != expected_decoded_size:
+            raise FileInspectionError("PNG image data does not match declared dimensions")
+        row_bytes = math.ceil(width * channels_by_type[color_type] * bit_depth / 8)
+        for row in range(height):
+            if decoded[row * (row_bytes + 1)] not in {0, 1, 2, 3, 4}:
+                raise FileInspectionError("PNG scanline uses an invalid filter type")
     return InspectedRaster(
-        format="png",
+        detected_format="PNG",
         width=int(width),
         height=int(height),
         channels=channels_by_type[color_type],
         bit_depth=int(bit_depth),
-        mode=modes[color_type],
+        color_mode=modes[color_type],
+        storage_data_type=f"uint{bit_depth}" if bit_depth in {8, 16} else None,
+        safe_details={
+            "png_color_type": int(color_type),
+            "png_compression_method": int(compression_method),
+            "png_filter_method": int(filter_method),
+            "png_interlace_method": int(interlace_method),
+            "png_idat_chunk_count": idat_chunks,
+            "chunk_crc_verified": True,
+        },
     )
 
 
@@ -184,7 +331,15 @@ def _inspect_bmp(path: Path) -> InspectedRaster:
         raise FileInspectionError("Unsupported BMP dimensions or bit depth")
     channels = 1 if bit_depth == 8 else bit_depth // 8
     mode = "GRAY" if channels == 1 else ("RGB" if channels == 3 else "RGBA")
-    return InspectedRaster("bmp", width, abs(signed_height), channels, bit_depth // channels, mode)
+    return InspectedRaster(
+        "BMP",
+        width,
+        abs(signed_height),
+        channels,
+        bit_depth // channels,
+        mode,
+        f"uint{bit_depth // channels}",
+    )
 
 
 def _inspect_jpeg(path: Path) -> InspectedRaster:
@@ -224,7 +379,15 @@ def _inspect_jpeg(path: Path) -> InspectedRaster:
                 height, width = struct.unpack_from(">HH", data, 1)
                 channels = data[5]
                 mode = {1: "GRAY", 3: "RGB", 4: "CMYK"}.get(channels, "UNKNOWN")
-                return InspectedRaster("jpeg", width, height, channels, bit_depth, mode)
+                return InspectedRaster(
+                    "JPEG",
+                    width,
+                    height,
+                    channels,
+                    bit_depth,
+                    mode,
+                    f"uint{bit_depth}",
+                )
     raise FileInspectionError("JPEG frame header not found")
 
 
@@ -237,19 +400,41 @@ def inspect_rgb(path: Path) -> InspectedRaster:
         return _inspect_bmp(path)
     if signature.startswith(b"\xff\xd8"):
         return _inspect_jpeg(path)
-    raise FileInspectionError("Unsupported RGB image content; supported formats are PNG, BMP, and JPEG")
+    if signature[:2] in {b"II", b"MM"}:
+        return _inspect_rgb_tiff(path)
+    raise FileInspectionError(
+        "Unsupported RGB image content; supported formats are PNG, BMP, JPEG, and TIFF"
+    )
 
 
-def _tiff_values(source: BinaryIO, endian: str, field_type: int, count: int, raw_value: bytes) -> list[int]:
+def _read_exact(source: BinaryIO, size: int, message: str) -> bytes:
+    value = source.read(size)
+    if len(value) != size:
+        raise FileInspectionError(message)
+    return value
+
+
+def _tiff_values(
+    source: BinaryIO,
+    endian: str,
+    field_type: int,
+    count: int,
+    raw_value: bytes,
+    file_size: int,
+) -> list[int]:
     sizes = {1: 1, 3: 2, 4: 4}
     formats = {1: "B", 3: "H", 4: "I"}
     if field_type not in sizes:
         raise FileInspectionError(f"Unsupported TIFF field type {field_type}")
+    if count <= 0:
+        raise FileInspectionError("TIFF field value count must be positive")
     byte_count = sizes[field_type] * count
     if byte_count <= 4:
         data = raw_value[:byte_count]
     else:
         offset = struct.unpack(endian + "I", raw_value)[0]
+        if offset <= 0 or byte_count > file_size - offset:
+            raise FileInspectionError("Truncated TIFF field value")
         position = source.tell()
         source.seek(offset)
         data = source.read(byte_count)
@@ -261,49 +446,138 @@ def _tiff_values(source: BinaryIO, endian: str, field_type: int, count: int, raw
 
 def _inspect_tiff(path: Path) -> InspectedRaster:
     with path.open("rb") as source:
+        file_size = path.stat().st_size
         byte_order = source.read(2)
         if byte_order == b"II":
             endian = "<"
+            byte_order_name = "LITTLE_ENDIAN"
         elif byte_order == b"MM":
             endian = ">"
+            byte_order_name = "BIG_ENDIAN"
         else:
             raise FileInspectionError("Invalid TIFF byte order")
-        if struct.unpack(endian + "H", source.read(2))[0] != 42:
+        magic = struct.unpack(
+            endian + "H", _read_exact(source, 2, "Truncated TIFF header")
+        )[0]
+        if magic != 42:
             raise FileInspectionError("BigTIFF or invalid TIFF is unsupported")
-        ifd_offset = struct.unpack(endian + "I", source.read(4))[0]
+        ifd_offset = struct.unpack(
+            endian + "I", _read_exact(source, 4, "Truncated TIFF header")
+        )[0]
+        if ifd_offset < 8 or ifd_offset > file_size - 2:
+            raise FileInspectionError("Invalid TIFF IFD offset")
         source.seek(ifd_offset)
-        raw_count = source.read(2)
-        if len(raw_count) != 2:
-            raise FileInspectionError("Truncated TIFF IFD")
+        raw_count = _read_exact(source, 2, "Truncated TIFF IFD")
         entry_count = struct.unpack(endian + "H", raw_count)[0]
         tags: dict[int, list[int]] = {}
+        tag_types: dict[int, int] = {}
+        recognized_tags = {
+            256,
+            257,
+            258,
+            259,
+            262,
+            273,
+            277,
+            278,
+            279,
+            284,
+            322,
+            323,
+            324,
+            325,
+            339,
+        }
         for _ in range(entry_count):
-            entry = source.read(12)
-            if len(entry) != 12:
-                raise FileInspectionError("Truncated TIFF IFD entry")
+            entry = _read_exact(source, 12, "Truncated TIFF IFD entry")
             tag, field_type, count = struct.unpack(endian + "HHI", entry[:8])
-            if tag in {256, 257, 258, 259, 262, 273, 277, 278, 279, 322, 323, 324, 325, 339}:
-                tags[tag] = _tiff_values(source, endian, field_type, count, entry[8:12])
+            if tag in recognized_tags:
+                if tag in tags:
+                    raise FileInspectionError(f"Duplicate TIFF tag {tag}")
+                tags[tag] = _tiff_values(
+                    source,
+                    endian,
+                    field_type,
+                    count,
+                    entry[8:12],
+                    file_size,
+                )
+                tag_types[tag] = field_type
+        next_ifd_offset = struct.unpack(
+            endian + "I",
+            _read_exact(source, 4, "Truncated TIFF next-IFD offset"),
+        )[0]
+        if next_ifd_offset != 0:
+            raise FileInspectionError("Multi-page TIFF is unsupported")
         width = tags.get(256, [0])[0]
         height = tags.get(257, [0])[0]
         bits = tags.get(258, [0])
         samples = tags.get(277, [1])[0]
         compression = tags.get(259, [1])[0]
-        sample_format = tags.get(339, [1])[0]
-        if width <= 0 or height <= 0 or not bits:
+        photometric = tags.get(262, [-1])[0]
+        sample_formats = tags.get(339, [1])
+        sample_format = sample_formats[0]
+        planar_configuration = tags.get(284, [1])[0]
+        rows_per_strip = tags.get(278, [height])[0]
+        if width <= 0 or height <= 0 or not bits or samples <= 0:
             raise FileInspectionError("TIFF dimensions or bit depth are missing")
+        if tag_types.get(256) not in {3, 4} or tag_types.get(257) not in {3, 4}:
+            raise FileInspectionError("TIFF dimensions use unsupported field types")
+        if tag_types.get(258) != 3:
+            raise FileInspectionError("TIFF BitsPerSample must use SHORT values")
+        expected_tag_types = {
+            259: {3},
+            262: {3},
+            273: {3, 4},
+            277: {3},
+            278: {3, 4},
+            279: {3, 4},
+            284: {3},
+            339: {3},
+        }
+        for tag, allowed_types in expected_tag_types.items():
+            if tag in tag_types and tag_types[tag] not in allowed_types:
+                raise FileInspectionError(f"TIFF tag {tag} uses an invalid field type")
+        if len(bits) not in {1, samples}:
+            raise FileInspectionError(
+                "TIFF BitsPerSample count contradicts SamplesPerPixel"
+            )
         if any(bit != bits[0] for bit in bits):
             raise FileInspectionError("Mixed TIFF sample bit depths are unsupported")
-        if 322 in tags or 324 in tags:
+        if 339 in tags and len(sample_formats) != samples:
+            raise FileInspectionError(
+                "TIFF SampleFormat count contradicts SamplesPerPixel"
+            )
+        if any(value != sample_format for value in sample_formats):
+            raise FileInspectionError("Mixed TIFF sample formats are unsupported")
+        if planar_configuration != 1:
+            raise FileInspectionError(
+                f"Unsupported TIFF planar configuration {planar_configuration}"
+            )
+        if any(tag in tags for tag in {322, 323, 324, 325}):
             raise FileInspectionError("Tiled TIFF is not supported by this validator version")
+        if photometric == 3:
+            raise FileInspectionError("Palette TIFF is unsupported for native RGB or height data")
         strip_offsets = tags.get(273)
         strip_counts = tags.get(279)
         if not strip_offsets or not strip_counts or len(strip_offsets) != len(strip_counts):
             raise FileInspectionError("TIFF strip offsets/byte counts are missing")
+        if rows_per_strip <= 0:
+            raise FileInspectionError("TIFF RowsPerStrip must be positive")
+        expected_strip_count = math.ceil(height / rows_per_strip)
+        if len(strip_offsets) != expected_strip_count:
+            raise FileInspectionError(
+                "TIFF strip count contradicts image height and RowsPerStrip"
+            )
         if compression not in {1, 8, 32946}:
             raise FileInspectionError(f"Unsupported TIFF compression {compression}")
         decoded_size = 0
-        for offset, byte_count in zip(strip_offsets, strip_counts):
+        row_bytes = math.ceil(width * samples * bits[0] / 8)
+        for strip_index, (offset, byte_count) in enumerate(
+            zip(strip_offsets, strip_counts)
+        ):
+            if offset <= 0 or byte_count <= 0 or byte_count > file_size - offset:
+                raise FileInspectionError("Truncated TIFF strip")
             source.seek(offset)
             data = source.read(byte_count)
             if len(data) != byte_count:
@@ -313,16 +587,82 @@ def _inspect_tiff(path: Path) -> InspectedRaster:
                     data = zlib.decompress(data)
                 except zlib.error as exc:
                     raise FileInspectionError(f"Unreadable TIFF Deflate strip: {exc}") from exc
+            strip_start_row = strip_index * rows_per_strip
+            strip_rows = min(rows_per_strip, height - strip_start_row)
+            expected_strip_size = row_bytes * strip_rows
+            if len(data) != expected_strip_size:
+                raise FileInspectionError(
+                    "TIFF strip data size contradicts declared raster metadata"
+                )
             decoded_size += len(data)
-        minimum_size = math.ceil(width * height * samples * bits[0] / 8)
-        if decoded_size < minimum_size:
+        expected_size = row_bytes * height
+        if decoded_size != expected_size:
             raise FileInspectionError("TIFF pixel data is truncated")
     kind = {1: "uint", 2: "int", 3: "float"}.get(sample_format)
     if kind is None or bits[0] not in {8, 16, 32, 64}:
         raise FileInspectionError("Unsupported TIFF sample format or bit depth")
     dtype = f"{kind}{bits[0]}"
     mode = "SCALAR" if samples == 1 else "MULTI_SAMPLE"
-    return InspectedRaster("tiff", width, height, samples, bits[0], mode, dtype)
+    compression_name = "UNCOMPRESSED" if compression == 1 else "DEFLATE"
+    photometric_name = {
+        0: "WHITE_IS_ZERO",
+        1: "BLACK_IS_ZERO",
+        2: "RGB",
+    }.get(photometric, "UNSUPPORTED_OR_UNSPECIFIED")
+    return InspectedRaster(
+        "TIFF",
+        width,
+        height,
+        samples,
+        bits[0],
+        mode,
+        dtype,
+        safe_details={
+            "tiff_byte_order": byte_order_name,
+            "tiff_compression": compression_name,
+            "tiff_compression_code": compression,
+            "tiff_photometric": photometric_name,
+            "tiff_photometric_code": photometric,
+            "tiff_planar_configuration": planar_configuration,
+            "tiff_rows_per_strip": rows_per_strip,
+            "tiff_strip_count": len(strip_offsets),
+            "tiff_sample_format": sample_format,
+            "tiff_bits_per_sample_count": len(bits),
+            "tiff_sample_format_count": len(sample_formats),
+        },
+    )
+
+
+def _inspect_rgb_tiff(path: Path) -> InspectedRaster:
+    inspected = _inspect_tiff(path)
+    details = inspected.safe_details
+    photometric = details["tiff_photometric_code"]
+    if inspected.storage_data_type not in {"uint8", "uint16"}:
+        raise FileInspectionError(
+            "RGB TIFF samples must use unsigned 8-bit or 16-bit storage"
+        )
+    if inspected.channels == 1:
+        if photometric not in {0, 1}:
+            raise FileInspectionError(
+                "Grayscale TIFF requires WhiteIsZero or BlackIsZero photometric interpretation"
+            )
+        warnings = (
+            ("TIFF_WHITE_IS_ZERO_VALUES_ARE_NOT_INVERTED",)
+            if photometric == 0
+            else ()
+        )
+        return replace(inspected, color_mode="GRAY", warnings=warnings)
+    if inspected.channels == 3:
+        if photometric != 2:
+            raise FileInspectionError(
+                "Three-sample RGB TIFF requires RGB photometric interpretation"
+            )
+        if details["tiff_bits_per_sample_count"] != 3:
+            raise FileInspectionError(
+                "RGB TIFF BitsPerSample must declare one value per sample"
+            )
+        return replace(inspected, color_mode="RGB")
+    raise FileInspectionError("RGB TIFF must contain one grayscale or three RGB samples")
 
 
 def _inspect_npy(path: Path) -> InspectedRaster:
@@ -369,7 +709,31 @@ def _inspect_npy(path: Path) -> InspectedRaster:
         expected_size = shape[0] * shape[1] * (bit_depth // 8)
     if path.stat().st_size < data_offset + expected_size:
         raise FileInspectionError("NPY array data is truncated")
-    return InspectedRaster("npy", shape[1], shape[0], 1, bit_depth, "SCALAR", dtype)
+    return InspectedRaster(
+        "NPY",
+        shape[1],
+        shape[0],
+        1,
+        bit_depth,
+        "SCALAR",
+        dtype,
+    )
+
+
+def _inspect_height_png(path: Path) -> InspectedRaster:
+    inspected = _inspect_png(path)
+    color_type = inspected.safe_details["png_color_type"]
+    if color_type != 0 or inspected.channels != 1:
+        raise FileInspectionError(
+            "Native height PNG must use grayscale color type 0 with one channel"
+        )
+    if inspected.bit_depth != 16:
+        raise FileInspectionError("Native height PNG must use 16-bit grayscale storage")
+    return replace(
+        inspected,
+        color_mode="SCALAR",
+        storage_data_type="uint16",
+    )
 
 
 def inspect_height(path: Path) -> InspectedRaster:
@@ -384,7 +748,7 @@ def inspect_height(path: Path) -> InspectedRaster:
     if signature.startswith(b"v/1\x01"):
         raise FileInspectionError("EXR is not supported by this validator version")
     if signature == b"\x89PNG\r\n\x1a\n":
-        raise FileInspectionError("PNG previews are not accepted as native height/depth data")
+        return _inspect_height_png(path)
     raise FileInspectionError("Unsupported native height/depth file content")
 
 

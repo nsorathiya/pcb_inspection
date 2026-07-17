@@ -188,30 +188,52 @@ may require a calibration artifact, validity mask, registration evidence, or a
 registered transform. Validation verifies evidence availability and technical
 consistency; it does not recalibrate sensors or apply a transform.
 
-## Existing parser reuse and known gaps
+## Reusable native parser adapters
 
-The future native-format adapter should reuse
-`app.services.dataset_validation.file_inspection` rather than duplicate binary
-parsers. Existing reusable behavior is:
+Native-format adapters reuse
+`app.services.dataset_validation.file_inspection`; they do not maintain a
+second binary-parser stack. Successful inspection returns one typed, path-free
+metadata representation with detected format, dimensions, channel count, bit
+depth, color mode, native storage data type, readability status, safe
+format-specific details, and warnings.
+
+Reusable behavior now includes:
 
 - content-based PNG, BMP, and JPEG RGB inspection;
-- classic strip-based scalar TIFF with uncompressed/Deflate data;
+- classic strip-based TIFF inspection for RGB, grayscale, and scalar data;
 - two-dimensional scalar NPY inspection;
 - streaming SHA-256, safe relative-path checks, regular-file checks, and
   symlink rejection.
 
-Contract 1.0 intentionally does not change those parsers. Before the example
-policy can be executed in full, focused parser work with representative files
-is required for two gaps:
+The supported RGB TIFF subset is classic TIFF, strip-based, contiguous planar
+configuration, little-endian or big-endian, unsigned 8-bit or 16-bit samples,
+and either three-sample RGB photometric data or one-sample grayscale
+WhiteIsZero/BlackIsZero data. Uncompressed and TIFF Deflate compression codes
+already supported by the shared parser are accepted. The parser validates
+dimensions, BitsPerSample, SamplesPerPixel, SampleFormat, photometric
+interpretation, compression, RowsPerStrip, strip count, strip byte counts, and
+decoded strip size. WhiteIsZero grayscale is reported with a warning; values
+are not inverted.
 
-- RGB TIFF is policy-representable but `inspect_rgb` currently supports only
-  PNG, BMP, and JPEG.
-- Scalar 16-bit height PNG is policy-representable but `inspect_height`
-  currently rejects every PNG as a preview.
+The supported height PNG subset is PNG color type 0, exactly 16 bits per
+sample, one scalar channel, and no interlacing. The parser validates the PNG
+signature, IHDR-first ordering, required IDAT/IEND ordering, chunk lengths,
+critical chunks, CRCs, Deflate stream completion, declared scanline size, and
+scanline filter bytes. It reports native storage as `uint16` without changing
+the pixel values. RGB, RGBA, palette, grayscale-plus-alpha, and 8-bit grayscale
+PNGs remain invalid as native height, even when they are otherwise valid image
+files.
 
-BigTIFF, tiled TIFF, LZW TIFF, HDF5, EXR, point clouds, and meshes remain
-unsupported. Existing parser support for `int32` NPY/TIFF does not make it
-policy-approved; policy contract 1.0 does not allow `int32`.
+BigTIFF, tiled TIFF, LZW TIFF, palette TIFF, separate-plane TIFF, interlaced
+PNG, HDF5, EXR, point clouds, and meshes remain unsupported. Existing parser
+support for `int32` NPY/TIFF does not make it policy-approved; policy contract
+1.0 does not allow `int32`.
+
+Native `uint16` storage means only that each scalar PNG sample is stored as an
+unsigned 16-bit integer. It does not establish Z units, scale, offset,
+invalid/no-return values, calibration, or physical accuracy. Parser success
+also does not prove RGB/height registration, preprocessing readiness under a
+particular recipe, or PCB quality.
 
 ## Future service boundaries
 
@@ -256,11 +278,10 @@ are not production data or performance claims.
 
 Future tasks, each requiring separate review, are:
 
-1. adapt and test the existing parsers for approved additional formats;
-2. add validation result/policy persistence and migrations;
-3. implement read-only artifact retrieval and execution orchestration;
-4. implement the narrow guarded status transitions; and
-5. add an API only after execution, persistence, idempotency, and error
+1. add validation result/policy persistence and migrations;
+2. implement read-only artifact retrieval and execution orchestration;
+3. implement the narrow guarded status transitions; and
+4. add an API only after execution, persistence, idempotency, and error
    contracts are approved.
 
 ## Tests

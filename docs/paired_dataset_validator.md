@@ -115,16 +115,22 @@ prove byte-for-byte repeatability.
   channels/mode, and bit depth.
 - BMP: baseline DIB dimensions, channels, and bit depth.
 - JPEG: frame dimensions, components/mode, and precision.
+- TIFF: the classic strip-based, contiguous, uncompressed/Deflate RGB or
+  grayscale subset documented in the semantic-validation contract.
 
 Native raster 3D inspection supports:
 
 - Classic, strip-based scalar TIFF with uncompressed or Deflate storage.
+- Non-interlaced PNG color type 0 with exactly one 16-bit unsigned scalar
+  channel.
 - Two-dimensional NumPy `.npy` arrays with contract-supported integer or
   floating scalar types.
 
 The validator reads metadata and compressed bytes without converting or
-normalizing values. It blocks color/multi-sample TIFFs and PNG previews as raw
-height data.
+normalizing values. It blocks color/multi-sample TIFFs and rejects 8-bit,
+palette, RGB, RGBA, and grayscale-plus-alpha PNG previews as raw height data.
+Dataset contract 1.0 still controls which declared storage formats are valid
+for a package; parser readability alone does not override that schema.
 
 Current explicit limitations:
 
