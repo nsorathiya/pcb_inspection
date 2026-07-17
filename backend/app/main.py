@@ -8,6 +8,12 @@ from app.core.logging import configure_logging
 from app.core.request_context import RequestIdMiddleware
 from app.core.runtime_paths import RuntimePaths
 from app.db import Database, Repositories
+from app.services.artifact_storage import (
+    ArtifactPathPolicy,
+    ArtifactRegistrationService,
+    ArtifactSizeLimits,
+    ArtifactStorageService,
+)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -24,6 +30,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         echo=application_settings.database_echo,
     )
     repositories = Repositories.from_session_factory(database.session_factory)
+    artifact_storage = ArtifactStorageService(
+        ArtifactPathPolicy(runtime_paths),
+        ArtifactSizeLimits(
+            rgb_bytes=application_settings.max_rgb_bytes,
+            height_bytes=application_settings.max_height_bytes,
+            mask_bytes=application_settings.max_mask_bytes,
+            calibration_bytes=application_settings.max_calibration_bytes,
+            generated_artifact_bytes=(
+                application_settings.max_generated_artifact_bytes
+            ),
+        ),
+    )
+    artifact_registration = ArtifactRegistrationService(
+        artifact_storage,
+        repositories.artifacts,
+    )
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -68,6 +90,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.runtime_paths = runtime_paths
     application.state.database = database
     application.state.repositories = repositories
+    application.state.artifact_storage = artifact_storage
+    application.state.artifact_registration = artifact_registration
     application.add_middleware(RequestIdMiddleware)
     application.include_router(
         health_router,

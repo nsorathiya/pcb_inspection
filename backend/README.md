@@ -56,6 +56,12 @@ Run the focused SQLite database, repository, and audit-foundation tests:
 python -m pytest .\backend\tests\test_database.py -q
 ```
 
+Run the focused immutable artifact-storage tests:
+
+```powershell
+python -m pytest .\backend\tests\test_artifact_storage.py -q
+```
+
 Run the complete backend foundation test suite:
 
 ```powershell
@@ -78,6 +84,11 @@ $env:PCB_AOI_RUNTIME_ROOT = "runtime"
 $env:PCB_AOI_DATABASE_FILENAME = "pcb_aoi.sqlite3"
 $env:PCB_AOI_SQLITE_BUSY_TIMEOUT_MS = "5000"
 $env:PCB_AOI_DATABASE_ECHO = "false"
+$env:PCB_AOI_MAX_RGB_BYTES = "52428800"
+$env:PCB_AOI_MAX_HEIGHT_BYTES = "268435456"
+$env:PCB_AOI_MAX_MASK_BYTES = "67108864"
+$env:PCB_AOI_MAX_CALIBRATION_BYTES = "5242880"
+$env:PCB_AOI_MAX_GENERATED_ARTIFACT_BYTES = "52428800"
 ```
 
 The supported variables are:
@@ -95,6 +106,11 @@ The supported variables are:
 | `PCB_AOI_DATABASE_FILENAME` | `pcb_aoi.sqlite3` |
 | `PCB_AOI_SQLITE_BUSY_TIMEOUT_MS` | `5000` |
 | `PCB_AOI_DATABASE_ECHO` | `false` |
+| `PCB_AOI_MAX_RGB_BYTES` | `52428800` (50 MiB) |
+| `PCB_AOI_MAX_HEIGHT_BYTES` | `268435456` (256 MiB) |
+| `PCB_AOI_MAX_MASK_BYTES` | `67108864` (64 MiB) |
+| `PCB_AOI_MAX_CALIBRATION_BYTES` | `5242880` (5 MiB) |
+| `PCB_AOI_MAX_GENERATED_ARTIFACT_BYTES` | `52428800` (50 MiB) |
 
 `PCB_AOI_LOG_LEVEL` accepts `DEBUG`, `INFO`, `WARNING`, `ERROR`, or
 `CRITICAL`. The current `plain` format is readable development output with
@@ -114,10 +130,10 @@ The application creates this directory tree idempotently during startup:
 
 | Directory | Intended purpose |
 | --- | --- |
-| `runtime/raw_uploads` | Future immutable raw uploads |
-| `runtime/previews` | Future generated previews |
-| `runtime/results` | Future processing results |
-| `runtime/reports` | Future generated reports |
+| `runtime/raw_uploads` | Immutable RGB, height, mask, and calibration bytes |
+| `runtime/previews` | Immutable generated preview artifacts |
+| `runtime/results` | Immutable generated result overlays |
+| `runtime/reports` | Immutable generated report artifacts |
 | `runtime/tmp` | Temporary runtime files |
 | `runtime/database` | SQLite metadata database and WAL/SHM files |
 
@@ -138,7 +154,14 @@ health endpoint is available. WAL improves reader/writer coexistence but SQLite
 still permits only one writer at a time.
 
 Database rows store metadata and safe relative artifact references; they do not
-replace immutable raw file storage. During live backup, the main database,
+replace immutable artifact bytes. The storage service calculates SHA-256 and
+size while streaming, enforces per-category limits, and atomically finalizes
+internally generated filenames without overwriting different content. It does
+not inspect image semantics or expose an upload endpoint. See
+`docs/artifact_storage.md` for the layout, extension policy, rollback behavior,
+and Windows filesystem limitations.
+
+During live backup, the main database,
 `-wal`, and `-shm` files must be handled consistently. See
 `docs/database_foundation.md` for table/status meanings, repository scope, and
 the deferred migration strategy.

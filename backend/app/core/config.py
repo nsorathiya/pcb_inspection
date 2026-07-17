@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     database_filename: str = "pcb_aoi.sqlite3"
     sqlite_busy_timeout_ms: int = Field(default=5000, gt=0, le=60000)
     database_echo: bool = False
+    max_rgb_bytes: int = Field(default=50 * 1024 * 1024, gt=0)
+    max_height_bytes: int = Field(default=256 * 1024 * 1024, gt=0)
+    max_mask_bytes: int = Field(default=64 * 1024 * 1024, gt=0)
+    max_calibration_bytes: int = Field(default=5 * 1024 * 1024, gt=0)
+    max_generated_artifact_bytes: int = Field(default=50 * 1024 * 1024, gt=0)
 
     @field_validator("log_level", mode="before")
     @classmethod

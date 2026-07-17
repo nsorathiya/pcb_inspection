@@ -23,6 +23,11 @@ def default_settings(monkeypatch, runtime_root: Path) -> Settings:
         "PCB_AOI_DATABASE_FILENAME",
         "PCB_AOI_SQLITE_BUSY_TIMEOUT_MS",
         "PCB_AOI_DATABASE_ECHO",
+        "PCB_AOI_MAX_RGB_BYTES",
+        "PCB_AOI_MAX_HEIGHT_BYTES",
+        "PCB_AOI_MAX_MASK_BYTES",
+        "PCB_AOI_MAX_CALIBRATION_BYTES",
+        "PCB_AOI_MAX_GENERATED_ARTIFACT_BYTES",
     ):
         monkeypatch.delenv(name, raising=False)
 

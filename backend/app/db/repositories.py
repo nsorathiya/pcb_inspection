@@ -250,6 +250,24 @@ class InspectionArtifactRepository:
             await session.flush()
         return record
 
+    async def get(self, artifact_id: str) -> InspectionArtifact | None:
+        async with self._sessions() as session:
+            return await session.get(InspectionArtifact, artifact_id)
+
+    async def get_by_location(
+        self,
+        inspection_id: str,
+        artifact_type: ArtifactType,
+        relative_path: str,
+    ) -> InspectionArtifact | None:
+        statement = select(InspectionArtifact).where(
+            InspectionArtifact.inspection_id == inspection_id,
+            InspectionArtifact.artifact_type == ArtifactType(artifact_type),
+            InspectionArtifact.relative_path == relative_path,
+        )
+        async with self._sessions() as session:
+            return await session.scalar(statement)
+
 
 class RecipeRepository:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:

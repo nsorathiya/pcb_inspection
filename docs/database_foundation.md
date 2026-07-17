@@ -10,8 +10,9 @@ upload behavior, image processing, inference, or model registration side
 effect. In particular, the legacy `best_model.pth` is not registered.
 
 Database metadata does not replace immutable raw file storage. Artifact rows
-contain relative references and integrity metadata only; this layer never
-writes inspection artifacts.
+contain relative references and integrity metadata only. The separately
+testable storage and registration coordinator is documented in
+`docs/artifact_storage.md`.
 
 ## Location and configuration
 
