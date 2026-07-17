@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field as dataclass_field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
+from hashlib import sha256
+from math import prod
+from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 
@@ -196,6 +199,28 @@ class ValidatedInspectionInputs:
 
 
 @dataclass(frozen=True)
+class ValidatedArtifactSource:
+    """Internal-only association between public identity and a read-only source."""
+
+    identity: ArtifactInputIdentity
+    source_path: Path | None
+
+
+@dataclass(frozen=True)
+class ValidatedInspectionInput:
+    inspection_id: str
+    validation_id: str
+    inspection_status: str
+    validation_outcome: str | None
+    synthetic_input: bool
+    rgb: ValidatedArtifactSource
+    height: ValidatedArtifactSource
+    validity_mask: ValidatedArtifactSource | None = None
+    calibration: ValidatedArtifactSource | None = None
+    registration_evidence: str | None = None
+
+
+@dataclass(frozen=True)
 class PreprocessedBufferDescriptor:
     """Framework-neutral inference-boundary descriptor; it never contains bytes."""
 
@@ -209,6 +234,30 @@ class PreprocessedBufferDescriptor:
     contiguous: bool
     finite_values_verified: bool
     source_artifact_sha256: str
+
+
+@dataclass(frozen=True)
+class InternalPreprocessedBuffer:
+    """Immutable standard-library float buffer kept outside public results."""
+
+    descriptor: PreprocessedBufferDescriptor
+    data: bytes
+    element_count: int
+    byte_size: int
+    content_sha256: str
+
+    @classmethod
+    def from_bytes(
+        cls, descriptor: PreprocessedBufferDescriptor, data: bytes
+    ) -> "InternalPreprocessedBuffer":
+        immutable = bytes(data)
+        return cls(
+            descriptor=descriptor,
+            data=immutable,
+            element_count=prod(descriptor.shape),
+            byte_size=len(immutable),
+            content_sha256=sha256(immutable).hexdigest(),
+        )
 
 
 @dataclass(frozen=True)
@@ -229,6 +278,18 @@ class HeightPreprocessingOutput(BranchPreprocessingOutput):
     invalid_value_handling: str = "REJECT"
     physical_unit: str | None = None
     physical_scale_applied: bool = False
+
+
+@dataclass(frozen=True)
+class RGBProcessedBranch:
+    buffer: InternalPreprocessedBuffer
+    output: RGBPreprocessingOutput
+
+
+@dataclass(frozen=True)
+class HeightProcessedBranch:
+    buffer: InternalPreprocessedBuffer
+    output: HeightPreprocessingOutput
 
 
 @dataclass(frozen=True)
@@ -306,6 +367,165 @@ class InspectionPreprocessingResult:
     summary: PreprocessingSummary
     validity_mask_input: ArtifactInputIdentity | None = None
     calibration_input: ArtifactInputIdentity | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return preprocessing_result_to_dict(self)
+
+
+@dataclass(frozen=True)
+class SyntheticPreprocessingExecution:
+    result: InspectionPreprocessingResult
+    rgb_buffer: InternalPreprocessedBuffer | None
+    height_buffer: InternalPreprocessedBuffer | None
+    validity_mask_buffer: InternalPreprocessedBuffer | None = None
+    registration_mask_buffer: InternalPreprocessedBuffer | None = None
+
+
+def _timestamp(value: datetime) -> str:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("preprocessing timestamps must include timezone information")
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _artifact_document(value: ArtifactInputIdentity) -> dict[str, Any]:
+    return {
+        "artifact_type": value.artifact_type,
+        "sha256": value.sha256,
+        "byte_size": value.byte_size,
+        "detected_format": value.detected_format,
+        "width": value.width,
+        "height": value.height,
+        "channels": value.channels,
+        "bit_depth": value.bit_depth,
+        "storage_data_type": value.storage_data_type,
+    }
+
+
+def _descriptor_document(value: PreprocessedBufferDescriptor) -> dict[str, Any]:
+    return {
+        "shape": list(value.shape),
+        "layout": value.layout.value,
+        "data_type": value.data_type.value,
+        "channel_count": value.channel_count,
+        "width": value.width,
+        "height": value.height,
+        "byte_order": value.byte_order,
+        "contiguous": value.contiguous,
+        "finite_values_verified": value.finite_values_verified,
+        "source_artifact_sha256": value.source_artifact_sha256,
+    }
+
+
+def _roi_document(value: BranchPreprocessingOutput) -> dict[str, Any]:
+    descriptor = value.descriptor
+    return {
+        "mode": value.roi_mode,
+        "x": 0,
+        "y": 0,
+        "width": descriptor.width,
+        "height": descriptor.height,
+    }
+
+
+def _rgb_output_document(value: RGBPreprocessingOutput | None) -> dict[str, Any] | None:
+    if value is None:
+        return None
+    result = _descriptor_document(value.descriptor)
+    result.update(
+        normalization_mode=value.normalization_mode,
+        roi=_roi_document(value),
+    )
+    if value.safe_statistics is not None:
+        result["safe_statistics"] = dict(value.safe_statistics)
+    return result
+
+
+def _height_output_document(value: HeightPreprocessingOutput | None) -> dict[str, Any] | None:
+    if value is None:
+        return None
+    result = _descriptor_document(value.descriptor)
+    result.update(
+        scaling_mode=value.scaling_mode,
+        invalid_value_handling=value.invalid_value_handling,
+        physical_unit=value.physical_unit,
+        physical_scale_applied=value.physical_scale_applied,
+        roi=_roi_document(value),
+    )
+    if value.safe_statistics is not None:
+        result["safe_statistics"] = dict(value.safe_statistics)
+    return result
+
+
+def _finding_document(value: PreprocessingFinding) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "code": value.code,
+        "severity": value.severity.value,
+        "category": value.category.value,
+        "message": value.message,
+        "blocking": value.blocking,
+    }
+    if value.branch is not None:
+        result["branch"] = value.branch
+    if value.field is not None:
+        result["field"] = value.field
+    if value.details:
+        result["details"] = dict(value.details)
+    return result
+
+
+def preprocessing_result_to_dict(value: InspectionPreprocessingResult) -> dict[str, Any]:
+    registration = value.registration
+    result: dict[str, Any] = {
+        "contract_version": value.contract_version,
+        "preprocessing_id": value.preprocessing_id,
+        "inspection_id": value.inspection_id,
+        "validation_id": value.validation_id,
+        "policy_id": value.policy_id,
+        "policy_version": value.policy_version,
+        "implementation_id": value.implementation_id,
+        "implementation_version": value.implementation_version,
+        "outcome": value.outcome.value,
+        "started_at": _timestamp(value.started_at),
+        "completed_at": _timestamp(value.completed_at),
+        "synthetic_input": value.synthetic_input,
+        "mock_implementation": value.mock_implementation,
+        "production_approved": value.production_approved,
+        "rgb_input": _artifact_document(value.rgb_input),
+        "height_input": _artifact_document(value.height_input),
+        "rgb_output": _rgb_output_document(value.rgb_output),
+        "height_output": _height_output_document(value.height_output),
+        "registration": {
+            "registration_mode": registration.registration_mode,
+            "registration_status": registration.registration_status,
+            "transform_applied": registration.transform_applied,
+            "transform_reference": registration.transform_reference,
+            "synthetic_identity": registration.synthetic_identity,
+            "output_coordinate_reference": registration.output_coordinate_reference,
+            "registration_warning": registration.registration_warning,
+        },
+        "findings": [_finding_document(item) for item in value.findings],
+        "summary": {
+            "total_findings": value.summary.total_findings,
+            "blocking_findings": value.summary.blocking_findings,
+            "warnings": value.summary.warnings,
+            "errors": value.summary.errors,
+        },
+    }
+    if value.validity_mask_input is not None:
+        result["validity_mask_input"] = _artifact_document(value.validity_mask_input)
+    if value.calibration_input is not None:
+        result["calibration_input"] = _artifact_document(value.calibration_input)
+    return result
+
+
+def preprocessing_result_json(value: InspectionPreprocessingResult) -> str:
+    return json.dumps(
+        preprocessing_result_to_dict(value),
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
 
 
 def _require(condition: bool, message: str) -> None:

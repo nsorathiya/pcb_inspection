@@ -69,6 +69,19 @@ class InspectedRaster:
         return self.color_mode
 
 
+@dataclass(frozen=True)
+class DecodedRaster:
+    """Narrow native-value result for validated synthetic raster subsets."""
+
+    metadata: InspectedRaster
+    values: tuple[int | float, ...]
+
+    def __post_init__(self) -> None:
+        expected = self.metadata.width * self.metadata.height * self.metadata.channels
+        if len(self.values) != expected:
+            raise ValueError("decoded raster value count contradicts metadata")
+
+
 def is_within(path: Path, root: Path) -> bool:
     try:
         path.relative_to(root)
@@ -760,3 +773,204 @@ def rgb_color_space_compatible(declared: str, inspected: InspectedRaster) -> boo
     if declared.startswith("BAYER_"):
         return inspected.mode == "GRAY" and inspected.channels == 1
     return False
+
+
+def _paeth(left: int, above: int, upper_left: int) -> int:
+    estimate = left + above - upper_left
+    left_distance = abs(estimate - left)
+    above_distance = abs(estimate - above)
+    upper_left_distance = abs(estimate - upper_left)
+    if left_distance <= above_distance and left_distance <= upper_left_distance:
+        return left
+    if above_distance <= upper_left_distance:
+        return above
+    return upper_left
+
+
+def _decoded_png_bytes(path: Path, inspected: InspectedRaster) -> bytes:
+    """Extract and unfilter samples only after the authoritative PNG inspection."""
+
+    compressed = bytearray()
+    with path.open("rb") as source:
+        if source.read(8) != b"\x89PNG\r\n\x1a\n":
+            raise FileInspectionError("Invalid PNG signature")
+        while True:
+            raw_length = source.read(4)
+            if not raw_length:
+                break
+            length = struct.unpack(">I", raw_length)[0]
+            kind = _read_exact(source, 4, "Truncated PNG chunk")
+            data = _read_exact(source, length, "Truncated PNG chunk")
+            _read_exact(source, 4, "Truncated PNG chunk")
+            if kind == b"IDAT":
+                compressed.extend(data)
+            if kind == b"IEND":
+                break
+    try:
+        scanlines = zlib.decompress(bytes(compressed))
+    except zlib.error as exc:
+        raise FileInspectionError("Unreadable PNG image data") from exc
+    bytes_per_sample = inspected.bit_depth // 8
+    if bytes_per_sample not in {1, 2}:
+        raise FileInspectionError("PNG value decoding requires 8-bit or 16-bit samples")
+    bytes_per_pixel = inspected.channels * bytes_per_sample
+    row_bytes = inspected.width * bytes_per_pixel
+    if len(scanlines) != inspected.height * (row_bytes + 1):
+        raise FileInspectionError("PNG image data does not match declared dimensions")
+    output = bytearray()
+    previous = bytes(row_bytes)
+    for row_index in range(inspected.height):
+        start = row_index * (row_bytes + 1)
+        filter_type = scanlines[start]
+        encoded = scanlines[start + 1 : start + 1 + row_bytes]
+        decoded = bytearray(row_bytes)
+        for index, value in enumerate(encoded):
+            left = decoded[index - bytes_per_pixel] if index >= bytes_per_pixel else 0
+            above = previous[index]
+            upper_left = previous[index - bytes_per_pixel] if index >= bytes_per_pixel else 0
+            if filter_type == 0:
+                decoded[index] = value
+            elif filter_type == 1:
+                decoded[index] = (value + left) & 0xFF
+            elif filter_type == 2:
+                decoded[index] = (value + above) & 0xFF
+            elif filter_type == 3:
+                decoded[index] = (value + ((left + above) // 2)) & 0xFF
+            elif filter_type == 4:
+                decoded[index] = (value + _paeth(left, above, upper_left)) & 0xFF
+            else:
+                raise FileInspectionError("PNG scanline uses an invalid filter type")
+        output.extend(decoded)
+        previous = bytes(decoded)
+    return bytes(output)
+
+
+def _decoded_tiff_bytes(path: Path, inspected: InspectedRaster) -> tuple[str, bytes]:
+    """Read strips from the already-inspected classic contiguous TIFF subset."""
+
+    with path.open("rb") as source:
+        file_size = path.stat().st_size
+        marker = _read_exact(source, 2, "Truncated TIFF header")
+        endian = "<" if marker == b"II" else ">" if marker == b"MM" else ""
+        if not endian:
+            raise FileInspectionError("Invalid TIFF byte order")
+        _read_exact(source, 2, "Truncated TIFF header")
+        ifd_offset = struct.unpack(
+            endian + "I", _read_exact(source, 4, "Truncated TIFF header")
+        )[0]
+        source.seek(ifd_offset)
+        entry_count = struct.unpack(
+            endian + "H", _read_exact(source, 2, "Truncated TIFF IFD")
+        )[0]
+        tags: dict[int, list[int]] = {}
+        for _ in range(entry_count):
+            entry = _read_exact(source, 12, "Truncated TIFF IFD entry")
+            tag, field_type, count = struct.unpack(endian + "HHI", entry[:8])
+            if tag in {259, 273, 279}:
+                tags[tag] = _tiff_values(
+                    source, endian, field_type, count, entry[8:12], file_size
+                )
+        if tags.get(259, [1])[0] != 1:
+            raise FileInspectionError(
+                "Synthetic value decoding supports uncompressed classic TIFF only"
+            )
+        offsets = tags.get(273, [])
+        counts = tags.get(279, [])
+        if not offsets or len(offsets) != len(counts):
+            raise FileInspectionError("TIFF strip offsets/byte counts are missing")
+        data = bytearray()
+        for offset, count in zip(offsets, counts):
+            source.seek(offset)
+            data.extend(_read_exact(source, count, "Truncated TIFF strip"))
+    expected = (
+        inspected.width
+        * inspected.height
+        * inspected.channels
+        * (inspected.bit_depth // 8)
+    )
+    if len(data) != expected:
+        raise FileInspectionError("TIFF pixel data is truncated")
+    return endian, bytes(data)
+
+
+def _decoded_npy_float32(path: Path, inspected: InspectedRaster) -> tuple[float, ...]:
+    with path.open("rb") as source:
+        if source.read(6) != b"\x93NUMPY":
+            raise FileInspectionError("Invalid NPY signature")
+        version = tuple(_read_exact(source, 2, "Truncated NPY header"))
+        if version[0] == 1:
+            header_length = struct.unpack("<H", _read_exact(source, 2, "Truncated NPY header"))[0]
+        elif version[0] in {2, 3}:
+            header_length = struct.unpack("<I", _read_exact(source, 4, "Truncated NPY header"))[0]
+        else:
+            raise FileInspectionError("Unsupported NPY version")
+        try:
+            metadata = ast.literal_eval(
+                _read_exact(source, header_length, "Truncated NPY header")
+                .decode("latin1")
+                .strip()
+            )
+        except (SyntaxError, ValueError) as exc:
+            raise FileInspectionError("Invalid NPY header") from exc
+        if metadata.get("fortran_order") is not False:
+            raise FileInspectionError("Fortran-order NPY height arrays are unsupported")
+        descriptor = metadata.get("descr")
+        if descriptor not in {"<f4", ">f4"}:
+            raise FileInspectionError("Synthetic NPY height decoding requires float32")
+        count = inspected.width * inspected.height
+        payload = source.read()
+    if len(payload) != count * 4:
+        raise FileInspectionError("NPY array data size contradicts declared shape")
+    endian = "<" if descriptor == "<f4" else ">"
+    return tuple(struct.unpack(endian + "f" * count, payload))
+
+
+def decode_rgb_values(path: Path) -> DecodedRaster:
+    """Decode only generated RGB PNG and classic RGB TIFF sample values."""
+
+    inspected = inspect_rgb(path)
+    if inspected.color_mode != "RGB" or inspected.channels != 3:
+        raise FileInspectionError("Synthetic RGB decoding requires three RGB channels")
+    if inspected.bit_depth not in {8, 16}:
+        raise FileInspectionError("Synthetic RGB decoding requires 8-bit or 16-bit samples")
+    if inspected.detected_format == "PNG":
+        raw = _decoded_png_bytes(path, inspected)
+        if inspected.bit_depth == 8:
+            values: tuple[int | float, ...] = tuple(raw)
+        else:
+            count = inspected.width * inspected.height * inspected.channels
+            values = tuple(struct.unpack(">" + "H" * count, raw))
+    elif inspected.detected_format == "TIFF":
+        endian, raw = _decoded_tiff_bytes(path, inspected)
+        count = inspected.width * inspected.height * inspected.channels
+        code = "B" if inspected.bit_depth == 8 else "H"
+        values = tuple(struct.unpack(endian + code * count, raw))
+    else:
+        raise FileInspectionError("Synthetic RGB value format is unsupported")
+    return DecodedRaster(inspected, values)
+
+
+def decode_height_values(path: Path) -> DecodedRaster:
+    """Decode only generated scalar uint16 TIFF/PNG and float32 NPY values."""
+
+    inspected = inspect_height(path)
+    if inspected.channels != 1:
+        raise FileInspectionError("Synthetic height decoding requires one scalar channel")
+    count = inspected.width * inspected.height
+    if inspected.detected_format == "PNG":
+        if inspected.storage_data_type != "uint16":
+            raise FileInspectionError("Synthetic height PNG decoding requires uint16")
+        raw = _decoded_png_bytes(path, inspected)
+        values: tuple[int | float, ...] = tuple(struct.unpack(">" + "H" * count, raw))
+    elif inspected.detected_format == "TIFF":
+        if inspected.storage_data_type != "uint16":
+            raise FileInspectionError("Synthetic height TIFF decoding requires uint16")
+        endian, raw = _decoded_tiff_bytes(path, inspected)
+        values = tuple(struct.unpack(endian + "H" * count, raw))
+    elif inspected.detected_format == "NPY":
+        if inspected.storage_data_type != "float32":
+            raise FileInspectionError("Synthetic height NPY decoding requires float32")
+        values = _decoded_npy_float32(path, inspected)
+    else:
+        raise FileInspectionError("Synthetic height value format is unsupported")
+    return DecodedRaster(inspected, values)

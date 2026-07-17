@@ -19,14 +19,14 @@
     "shape": [3, 12, 16], "layout": "CHW", "data_type": "float32", "channel_count": 3, "width": 16, "height": 12,
     "byte_order": "NATIVE", "contiguous": true, "finite_values_verified": true, "source_artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "normalization_mode": "UNIT_RANGE", "roi": {"mode": "FULL_FRAME", "x": 0, "y": 0, "width": 16, "height": 12},
-    "safe_statistics": {"minimum": 0.047, "maximum": 0.91, "mean": 0.31, "standard_deviation": 0.19, "finite_value_count": 576, "nonfinite_value_count": 0}
+    "safe_statistics": {"minimum": 0.047, "maximum": 0.91, "mean": 0.31, "standard_deviation": 0.19, "finite_value_count": 576, "nonfinite_value_count": 0, "element_count": 576}
   },
   "height_output": {
     "shape": [1, 12, 16], "layout": "CHW", "data_type": "float32", "channel_count": 1, "width": 16, "height": 12,
     "byte_order": "NATIVE", "contiguous": true, "finite_values_verified": true, "source_artifact_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "scaling_mode": "NONE", "invalid_value_handling": "REJECT", "physical_unit": null, "physical_scale_applied": false,
     "roi": {"mode": "FULL_FRAME", "x": 0, "y": 0, "width": 16, "height": 12},
-    "safe_statistics": {"minimum": 1000.0, "maximum": 1320.0, "mean": 1080.0, "standard_deviation": 95.0, "finite_value_count": 192, "nonfinite_value_count": 0}
+    "safe_statistics": {"minimum": 1000.0, "maximum": 1320.0, "mean": 1080.0, "standard_deviation": 95.0, "finite_value_count": 192, "nonfinite_value_count": 0, "element_count": 192}
   },
   "registration": {"registration_mode": "SYNTHETIC_IDENTITY_ONLY", "registration_status": "SYNTHETIC_IDENTITY", "transform_applied": false, "transform_reference": null, "synthetic_identity": true, "output_coordinate_reference": "SHARED_SYNTHETIC", "registration_warning": "Synthetic identity only; equal dimensions do not prove physical registration."},
   "findings": [{"code": "SYNTHETIC_IDENTITY_REGISTRATION_USED", "severity": "WARNING", "category": "REGISTRATION", "message": "Synthetic identity registration was used; this is not physical registration evidence.", "blocking": false, "branch": "REGISTRATION"}],

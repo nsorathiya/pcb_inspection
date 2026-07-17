@@ -53,8 +53,8 @@
     },
     "safe_statistics": {
       "type": "object", "additionalProperties": false,
-      "required": ["minimum", "maximum", "mean", "standard_deviation", "finite_value_count", "nonfinite_value_count"],
-      "properties": {"minimum": {"type": ["number", "null"]}, "maximum": {"type": ["number", "null"]}, "mean": {"type": ["number", "null"]}, "standard_deviation": {"type": ["number", "null"], "minimum": 0}, "finite_value_count": {"type": "integer", "minimum": 0}, "nonfinite_value_count": {"type": "integer", "minimum": 0}}
+      "required": ["minimum", "maximum", "mean", "standard_deviation", "finite_value_count", "nonfinite_value_count", "element_count"],
+      "properties": {"minimum": {"type": ["number", "null"]}, "maximum": {"type": ["number", "null"]}, "mean": {"type": ["number", "null"]}, "standard_deviation": {"type": ["number", "null"], "minimum": 0}, "finite_value_count": {"type": "integer", "minimum": 0}, "nonfinite_value_count": {"type": "integer", "minimum": 0}, "element_count": {"type": "integer", "minimum": 0}}
     },
     "buffer_summary": {
       "type": "object",

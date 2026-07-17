@@ -5,11 +5,13 @@ from __future__ import annotations
 from typing import Protocol
 
 from app.services.inspection_preprocessing.models import (
-    HeightPreprocessingOutput,
+    HeightProcessedBranch,
     InspectionPreprocessingPolicy,
     InspectionPreprocessingResult,
-    RGBPreprocessingOutput,
+    RGBProcessedBranch,
     RegistrationProcessingResult,
+    SyntheticPreprocessingExecution,
+    ValidatedInspectionInput,
     ValidatedInspectionInputs,
 )
 
@@ -23,19 +25,19 @@ class ValidatedInspectionReader(Protocol):
 
 
 class RGBPreprocessor(Protocol):
-    async def preprocess_rgb(self, inputs: ValidatedInspectionInputs, policy: InspectionPreprocessingPolicy) -> RGBPreprocessingOutput: ...
+    async def preprocess_rgb(self, inputs: ValidatedInspectionInput, policy: InspectionPreprocessingPolicy) -> RGBProcessedBranch: ...
 
 
 class HeightPreprocessor(Protocol):
-    async def preprocess_height(self, inputs: ValidatedInspectionInputs, policy: InspectionPreprocessingPolicy) -> HeightPreprocessingOutput: ...
+    async def preprocess_height(self, inputs: ValidatedInspectionInput, policy: InspectionPreprocessingPolicy) -> HeightProcessedBranch: ...
 
 
 class RegistrationProcessor(Protocol):
-    async def coordinate_registration(self, rgb: RGBPreprocessingOutput, height: HeightPreprocessingOutput, inputs: ValidatedInspectionInputs, policy: InspectionPreprocessingPolicy) -> RegistrationProcessingResult: ...
+    async def coordinate_registration(self, rgb: RGBProcessedBranch, height: HeightProcessedBranch, inputs: ValidatedInspectionInput, policy: InspectionPreprocessingPolicy) -> RegistrationProcessingResult: ...
 
 
 class PreprocessingOrchestrator(Protocol):
-    async def preprocess_inspection(self, inspection_id: str, validation_id: str, policy: InspectionPreprocessingPolicy) -> InspectionPreprocessingResult: ...
+    async def preprocess_inspection(self, validated_input: ValidatedInspectionInput, policy: InspectionPreprocessingPolicy) -> SyntheticPreprocessingExecution: ...
 
 
 class PreprocessingResultSink(Protocol):

@@ -6,8 +6,9 @@ This contract defines the future hand-off from a technically validated paired
 inspection to separate RGB (2D) and height/depth (3D raster) preprocessing, a
 registration coordinator, and eventually an inference engine. It provides
 versioned policy and result shapes, typed replaceable interfaces, stable
-technical findings, and synthetic examples. It does not provide an executable
-preprocessor.
+technical findings, and synthetic examples. A separate development-only
+executor now implements the exact synthetic fixture subset; see
+`docs/synthetic_preprocessing_executor.md`.
 
 Preprocessing may be considered only after the inspection is `READY` and its
 selected validation result is `VALIDATION_PASSED`. Validation establishes
@@ -16,11 +17,13 @@ that its own policy accepts the validated metadata.
 
 ## Non-goals
 
-Version 1 does not read artifact files, crop or resize images, normalize pixel
-values, scale height values, create tensors, register geometry, estimate a
-homography, run inference, persist results, expose an API, or change inspection
-status. It does not accept point clouds or meshes. No mode listed in a schema is
-a claim that an implementation exists.
+Version 1 has no production or real-data implementation. The synthetic
+executor reads only explicitly supplied generated fixtures and implements
+full-frame/no-resize RGB unit-range conversion, scalar height conversion
+without scaling, and synthetic identity coordination. It does not create
+framework tensors, estimate geometry, run inference, persist results, expose
+an API, or change inspection status. It does not accept point clouds or meshes.
+No other mode listed in a schema is a claim that an implementation exists.
 
 ## Contract versions
 
@@ -134,13 +137,15 @@ are primitive, path-free values. Codes describe prerequisites, policies, RGB,
 height, registration, output, or internal failures—not defects, classifications,
 model confidence, or PCB quality.
 
-## Future service interfaces
+## Service interfaces and synthetic implementation
 
-The protocol-only package defines replaceable boundaries for policy loading,
+The package defines replaceable boundaries for policy loading,
 validated-inspection metadata reading, RGB preprocessing, height preprocessing,
 registration coordination, orchestration, and a future result sink. The
-orchestrator signature accepts inspection ID, validation ID, and a typed policy.
-No concrete loader, reader, processor, orchestrator, or sink exists yet.
+orchestrator accepts a typed validated input and typed policy. The synthetic
+policy loader, branch processors, identity registration processor, and in-memory
+orchestrator implement only the generated-fixture subset. No database-backed
+reader or result sink exists.
 
 ## Future execution and lifecycle integration
 
