@@ -1,9 +1,15 @@
 import os
+from pathlib import Path
+
 import cv2
 import torch
-import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.transforms as transforms
+
+from app.core.class_labels import load_class_label_contract
+from app.core.model_compatibility import validate_model_label_compatibility
+
 
 class PCBClassifier(nn.Module):
     def __init__(self, num_classes):
@@ -25,10 +31,14 @@ class PCBClassifier(nn.Module):
         x = self.fc2(x)
         return x, {'conv1': conv1_out, 'conv2': conv2_out, 'fc1': fc1_out}
 
+
 class Predictor:
     def __init__(self, model_path):
+        model_path = Path(model_path)
+        self.class_labels = load_class_label_contract()
+        validate_model_label_compatibility(model_path, self.class_labels)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = PCBClassifier(num_classes=4)
+        self.model = PCBClassifier(num_classes=self.class_labels.class_count)
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
         self.model.to(self.device).eval()
         self.transform = transforms.Compose([
@@ -36,7 +46,6 @@ class Predictor:
             transforms.Resize((224, 224)),
             transforms.ToTensor()
         ])
-        self.labels = ["missing_part", "dispense_error", "misalignment", "no_defect"]
 
     def predict_image(self, img_path):
         img = cv2.imread(img_path)
@@ -46,7 +55,7 @@ class Predictor:
             output, activations = self.model(img_tensor)
             probs = F.softmax(output, dim=1)
             pred_class = torch.argmax(probs, 1).item()
-            label = self.labels[pred_class]
+            label = self.class_labels.name_for_index(pred_class)
             confidence = probs[0, pred_class].item()
 
         # 🔴 Draw circle + label on predicted defective image

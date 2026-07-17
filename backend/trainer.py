@@ -1,9 +1,14 @@
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import os
+
+from app.core.class_labels import load_class_label_contract
+from app.core.model_compatibility import write_verified_model_label_metadata
 from data_loader import get_dataloaders
 from model import PCBClassifier
+
 
 class Trainer:
     def __init__(self, data_dir):
@@ -12,7 +17,9 @@ class Trainer:
 
     def train(self):
         loader, class_to_idx = get_dataloaders(self.data_dir)
-        model = PCBClassifier(num_classes=len(class_to_idx)).to(self.device)
+        contract = load_class_label_contract()
+        contract.validate_class_to_idx(class_to_idx, source="Training dataset")
+        model = PCBClassifier(num_classes=contract.class_count).to(self.device)
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.001)
 
@@ -26,5 +33,7 @@ class Trainer:
                 optimizer.step()
             print(f"Epoch {epoch+1}, Loss: {loss.item():.4f}")
 
-        os.makedirs("saved_model", exist_ok=True)
-        torch.save(model.state_dict(), "saved_model/best_model.pth")
+        model_path = Path("saved_model") / "best_model.pth"
+        model_path.parent.mkdir(parents=True, exist_ok=True)
+        torch.save(model.state_dict(), model_path)
+        write_verified_model_label_metadata(model_path, contract, class_to_idx)

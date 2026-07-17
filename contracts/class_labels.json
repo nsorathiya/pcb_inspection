@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "classes": [
+    {
+      "index": 0,
+      "name": "dispense_error"
+    },
+    {
+      "index": 1,
+      "name": "misalignment"
+    },
+    {
+      "index": 2,
+      "name": "missing_part"
+    },
+    {
+      "index": 3,
+      "name": "no_defect"
+    }
+  ]
+}

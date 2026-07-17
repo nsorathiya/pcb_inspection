@@ -17,4 +17,5 @@ backend/annotated_output/*
 
 # Generated model and diagnostic artifacts
 backend/saved_model/*
+!backend/saved_model/*.metadata.json
 backend/neuron_data/*
