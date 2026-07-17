@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated, AsyncIterator
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status
 from pydantic import BaseModel, ValidationError, field_validator
@@ -120,6 +121,30 @@ class InspectionIntakeResponse(BaseModel):
     artifacts: list[IntakeArtifactResponse]
 
 
+class InspectionErrorResponse(BaseModel):
+    code: str
+    message: str
+
+
+class InspectionArtifactDetailResponse(IntakeArtifactResponse):
+    created_at: datetime
+
+
+class InspectionDetailResponse(BaseModel):
+    inspection_id: str
+    status: InspectionStatus
+    board_id: str
+    recipe_id: str
+    recipe_version: str
+    lot_id: str | None
+    intake_request_id: str | None
+    created_at: datetime
+    started_at: datetime | None
+    completed_at: datetime | None
+    error: InspectionErrorResponse | None
+    artifacts: list[InspectionArtifactDetailResponse]
+
+
 class _PairedUploads:
     def __init__(self, rgb_image: UploadFile, height_map: UploadFile) -> None:
         self.rgb_image = rgb_image
@@ -173,6 +198,134 @@ def _map_intake_failure(failure: InspectionIntakeFailure) -> ApiError:
 
 
 router = APIRouter(tags=["inspections"])
+
+
+def _canonical_inspection_id(value: str) -> str:
+    try:
+        parsed = UUID(value)
+    except (AttributeError, ValueError) as exc:
+        raise ApiError(
+            400,
+            "INVALID_INSPECTION_ID",
+            "Inspection ID must be a canonical UUID.",
+        ) from exc
+    if str(parsed) != value:
+        raise ApiError(
+            400,
+            "INVALID_INSPECTION_ID",
+            "Inspection ID must be a canonical UUID.",
+        )
+    return value
+
+
+def _public_inspection_error(
+    inspection_status: InspectionStatus,
+    error_code: str | None,
+    error_message: str | None,
+) -> InspectionErrorResponse | None:
+    if inspection_status not in {
+        InspectionStatus.ERROR,
+        InspectionStatus.VALIDATION_FAILED,
+    }:
+        return None
+
+    safe_known_errors = {
+        "INSPECTION_INTAKE_FAILED": "Paired artifact intake did not complete.",
+    }
+    if (
+        error_code in safe_known_errors
+        and error_message == safe_known_errors[error_code]
+    ):
+        return InspectionErrorResponse(code=error_code, message=error_message)
+    if inspection_status is InspectionStatus.VALIDATION_FAILED:
+        return InspectionErrorResponse(
+            code="INSPECTION_VALIDATION_FAILED",
+            message="Inspection validation failed.",
+        )
+    return InspectionErrorResponse(
+        code="INSPECTION_ERROR",
+        message="Inspection processing failed.",
+    )
+
+
+def _as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+@router.get(
+    "/inspections/{inspection_id}",
+    response_model=InspectionDetailResponse,
+    responses={
+        400: {"model": ApiErrorResponse},
+        404: {"model": ApiErrorResponse},
+        500: {"model": ApiErrorResponse},
+    },
+    summary="Retrieve one inspection and its artifact metadata",
+    description=(
+        "Returns persisted inspection state and registered artifact integrity "
+        "metadata. It does not read artifact bytes, expose storage paths, "
+        "semantically validate files, or classify the inspection."
+    ),
+)
+async def get_inspection(
+    inspection_id: str,
+    request: Request,
+) -> InspectionDetailResponse:
+    canonical_id = _canonical_inspection_id(inspection_id)
+    repositories = request.app.state.repositories
+    try:
+        inspection = await repositories.inspections.get(canonical_id)
+        if inspection is None:
+            raise ApiError(
+                404,
+                "INSPECTION_NOT_FOUND",
+                "Inspection was not found.",
+            )
+        artifacts = await repositories.artifacts.list_for_inspection(canonical_id)
+    except ApiError:
+        raise
+    except Exception as exc:
+        request.app.state.logger.exception(
+            "Inspection detail read failed inspection_id=%s",
+            canonical_id,
+        )
+        raise ApiError(
+            500,
+            "INSPECTION_READ_FAILED",
+            "Inspection details could not be retrieved.",
+        ) from exc
+
+    return InspectionDetailResponse(
+        inspection_id=inspection.id,
+        status=inspection.status,
+        board_id=inspection.board_id,
+        recipe_id=inspection.recipe_id,
+        recipe_version=inspection.recipe_version,
+        lot_id=inspection.lot_id,
+        intake_request_id=inspection.request_id,
+        created_at=_as_utc(inspection.created_at),
+        started_at=_as_utc(inspection.started_at),
+        completed_at=_as_utc(inspection.completed_at),
+        error=_public_inspection_error(
+            inspection.status,
+            inspection.error_code,
+            inspection.error_message,
+        ),
+        artifacts=[
+            InspectionArtifactDetailResponse(
+                artifact_type=artifact.artifact_type,
+                sha256=artifact.sha256,
+                byte_size=artifact.byte_size,
+                media_type=artifact.media_type,
+                created_at=_as_utc(artifact.created_at),
+            )
+            for artifact in artifacts
+        ],
+    )
 
 
 @router.post(

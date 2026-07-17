@@ -9,7 +9,7 @@ from pathlib import PurePosixPath
 from typing import Any, Mapping
 from uuid import UUID, uuid4
 
-from sqlalchemy import select
+from sqlalchemy import case, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.db.models import (
@@ -293,10 +293,22 @@ class InspectionArtifactRepository:
         self,
         inspection_id: str,
     ) -> list[InspectionArtifact]:
+        artifact_types = tuple(ArtifactType)
+        artifact_type_order = case(
+            *(
+                (InspectionArtifact.artifact_type == artifact_type, position)
+                for position, artifact_type in enumerate(artifact_types)
+            ),
+            else_=len(artifact_types),
+        )
         statement = (
             select(InspectionArtifact)
             .where(InspectionArtifact.inspection_id == inspection_id)
-            .order_by(InspectionArtifact.artifact_type.asc())
+            .order_by(
+                artifact_type_order,
+                InspectionArtifact.created_at.asc(),
+                InspectionArtifact.id.asc(),
+            )
         )
         async with self._sessions() as session:
             result = await session.scalars(statement)

@@ -42,6 +42,12 @@ The multipart intake endpoint is `POST /api/v1/inspections`. See
 `docs/inspection_intake_api.md` for fields, a PowerShell example, response and
 error contracts, and the precise meaning of `RECEIVED`.
 
+The read-only details endpoint is
+`GET /api/v1/inspections/{inspection_id}`. It returns persisted lifecycle and
+artifact integrity metadata without storage paths, artifact bytes, semantic
+validation, or classification. See `docs/inspection_details_api.md` for its
+response, error, ordering, and request-ID contracts.
+
 ## Run tests
 
 Run the focused logging, startup, health, and request-ID tests:
@@ -72,6 +78,12 @@ Run the focused paired inspection-intake API tests:
 
 ```powershell
 python -m pytest .\backend\tests\test_inspection_intake.py -q
+```
+
+Run the focused read-only inspection-details API tests:
+
+```powershell
+python -m pytest .\backend\tests\test_inspection_details.py -q
 ```
 
 Run the complete backend foundation test suite:
@@ -186,3 +198,7 @@ Every HTTP response includes an `X-Request-ID` header. If a caller supplies
 application generates a UUID request ID. During request handling the same value
 is available as `request.state.request_id` and is added to application log
 records through request-local context.
+
+For an inspection-details GET, this header identifies the current read
+request. The body field `intake_request_id` is the separately persisted ID from
+the original upload and is not overwritten by the current request ID.

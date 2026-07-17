@@ -116,6 +116,11 @@ The response intentionally omits storage paths, model metadata, confidence,
 classification, preview URLs, and internal artifact row IDs. The existing
 `X-Request-ID` response header is returned and matches `request_id`.
 
+Persisted intake and artifact metadata can later be retrieved with
+`GET /api/v1/inspections/{inspection_id}`. That read-only contract, including
+the distinction between the original intake request ID and the current GET
+request ID, is documented in `docs/inspection_details_api.md`.
+
 ## Size and integrity enforcement
 
 The existing storage limits apply while each upload stream is written:
