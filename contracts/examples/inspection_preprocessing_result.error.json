@@ -1,0 +1,16 @@
+{
+  "contract_version": "pcb-aoi-inspection-preprocessing/1.0",
+  "preprocessing_id": "77777777-7777-4777-8777-777777777777",
+  "inspection_id": "88888888-8888-4888-8888-888888888888",
+  "validation_id": "99999999-9999-4999-8999-999999999999",
+  "policy_id": "synthetic-paired-rgb-height", "policy_version": "1.0",
+  "implementation_id": "future-synthetic-mock-preprocessor", "implementation_version": "0.0-example",
+  "outcome": "PREPROCESSING_ERROR", "started_at": "2026-07-17T12:02:00Z", "completed_at": "2026-07-17T12:02:00.001000Z",
+  "synthetic_input": true, "mock_implementation": true, "production_approved": false,
+  "rgb_input": {"artifact_type": "RGB_RAW", "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "byte_size": 668, "detected_format": "PNG", "width": 16, "height": 12, "channels": 3, "bit_depth": 8, "storage_data_type": "uint8"},
+  "height_input": {"artifact_type": "HEIGHT_RAW", "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "byte_size": 542, "detected_format": "TIFF", "width": 16, "height": 12, "channels": 1, "bit_depth": 16, "storage_data_type": "uint16"},
+  "rgb_output": null, "height_output": null,
+  "registration": {"registration_mode": "SYNTHETIC_IDENTITY_ONLY", "registration_status": "FAILED", "transform_applied": false, "transform_reference": null, "synthetic_identity": false, "output_coordinate_reference": "SHARED_SYNTHETIC", "registration_warning": null},
+  "findings": [{"code": "PREPROCESSING_INTERNAL_ERROR", "severity": "ERROR", "category": "INTERNAL", "message": "Preprocessing could not complete because of an internal error.", "blocking": true}],
+  "summary": {"total_findings": 1, "blocking_findings": 1, "warnings": 0, "errors": 1}
+}

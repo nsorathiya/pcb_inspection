@@ -1,0 +1,44 @@
+"""Replaceable preprocessing boundaries. No implementation is provided here."""
+
+from __future__ import annotations
+
+from typing import Protocol
+
+from app.services.inspection_preprocessing.models import (
+    HeightPreprocessingOutput,
+    InspectionPreprocessingPolicy,
+    InspectionPreprocessingResult,
+    RGBPreprocessingOutput,
+    RegistrationProcessingResult,
+    ValidatedInspectionInputs,
+)
+
+
+class PreprocessingPolicyLoader(Protocol):
+    def load(self, policy_id: str, policy_version: str) -> InspectionPreprocessingPolicy: ...
+
+
+class ValidatedInspectionReader(Protocol):
+    async def read_validated_inspection(self, inspection_id: str, validation_id: str) -> ValidatedInspectionInputs: ...
+
+
+class RGBPreprocessor(Protocol):
+    async def preprocess_rgb(self, inputs: ValidatedInspectionInputs, policy: InspectionPreprocessingPolicy) -> RGBPreprocessingOutput: ...
+
+
+class HeightPreprocessor(Protocol):
+    async def preprocess_height(self, inputs: ValidatedInspectionInputs, policy: InspectionPreprocessingPolicy) -> HeightPreprocessingOutput: ...
+
+
+class RegistrationProcessor(Protocol):
+    async def coordinate_registration(self, rgb: RGBPreprocessingOutput, height: HeightPreprocessingOutput, inputs: ValidatedInspectionInputs, policy: InspectionPreprocessingPolicy) -> RegistrationProcessingResult: ...
+
+
+class PreprocessingOrchestrator(Protocol):
+    async def preprocess_inspection(self, inspection_id: str, validation_id: str, policy: InspectionPreprocessingPolicy) -> InspectionPreprocessingResult: ...
+
+
+class PreprocessingResultSink(Protocol):
+    """Future persistence boundary; this contract does not implement a sink."""
+
+    async def save_preprocessing_result(self, result: InspectionPreprocessingResult) -> None: ...

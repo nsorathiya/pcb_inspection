@@ -1,0 +1,16 @@
+{
+  "contract_version": "pcb-aoi-inspection-preprocessing/1.0",
+  "preprocessing_id": "44444444-4444-4444-8444-444444444444",
+  "inspection_id": "55555555-5555-4555-8555-555555555555",
+  "validation_id": "66666666-6666-4666-8666-666666666666",
+  "policy_id": "synthetic-paired-rgb-height", "policy_version": "1.0",
+  "implementation_id": "future-synthetic-mock-preprocessor", "implementation_version": "0.0-example",
+  "outcome": "PREPROCESSING_FAILED", "started_at": "2026-07-17T12:01:00+00:00", "completed_at": "2026-07-17T12:01:00.005000+00:00",
+  "synthetic_input": true, "mock_implementation": true, "production_approved": false,
+  "rgb_input": {"artifact_type": "RGB_RAW", "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "byte_size": 668, "detected_format": "PNG", "width": 16, "height": 12, "channels": 3, "bit_depth": 8, "storage_data_type": "uint8"},
+  "height_input": {"artifact_type": "HEIGHT_RAW", "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "byte_size": 900, "detected_format": "TIFF", "width": 16, "height": 12, "channels": 1, "bit_depth": 32, "storage_data_type": "float64"},
+  "rgb_output": null, "height_output": null,
+  "registration": {"registration_mode": "SYNTHETIC_IDENTITY_ONLY", "registration_status": "NOT_PERFORMED", "transform_applied": false, "transform_reference": null, "synthetic_identity": false, "output_coordinate_reference": "SHARED_SYNTHETIC", "registration_warning": null},
+  "findings": [{"code": "HEIGHT_STORAGE_TYPE_INCOMPATIBLE", "severity": "ERROR", "category": "HEIGHT", "message": "Height storage type is incompatible with policy.", "blocking": true, "branch": "HEIGHT", "field": "storage_data_type", "details": {"observed": "float64"}}],
+  "summary": {"total_findings": 1, "blocking_findings": 1, "warnings": 0, "errors": 1}
+}

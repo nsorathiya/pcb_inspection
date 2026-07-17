@@ -68,6 +68,15 @@ See `docs/inspection_validation_lifecycle.md` for the guarded `RECEIVED`
 transitions, lifecycle audit, standalone-result adoption, concurrency, and
 rollback behavior. `READY` means technical readiness, not PCB PASS.
 
+The next technical boundary is defined by versioned preprocessing policy,
+result, and finding contracts plus protocol-only replaceable interfaces. This
+contract keeps RGB and height branches separate, describes framework-neutral
+outputs without tensor bytes, and permits only an explicitly nonproduction
+synthetic development policy. It does not read artifacts, execute
+preprocessing, persist results, expose an API, run inference, or change
+inspection status. See `docs/inspection_preprocessing_contract.md` for outcome,
+registration, physical-height, policy, and future lifecycle rules.
+
 ## Run tests
 
 Run the focused logging, startup, health, and request-ID tests:
@@ -134,6 +143,12 @@ Run the focused validation execution/result API tests:
 
 ```powershell
 python -m pytest .\backend\tests\test_inspection_validation_api.py -q
+```
+
+Run the focused preprocessing contract and interface tests:
+
+```powershell
+python -m pytest .\backend\tests\test_inspection_preprocessing_contract.py -q
 ```
 
 Run the complete backend foundation test suite:

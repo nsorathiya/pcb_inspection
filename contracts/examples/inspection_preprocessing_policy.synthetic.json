@@ -1,0 +1,68 @@
+{
+  "contract_version": "pcb-aoi-inspection-preprocessing-policy/1.0",
+  "policy_id": "synthetic-paired-rgb-height",
+  "policy_version": "1.0",
+  "name": "Synthetic paired RGB and height development preprocessing",
+  "description": "Deterministic contract for generated 16x12 software fixtures only; it is not suitable for real camera data or physical-height claims.",
+  "development_only": true,
+  "production_approved": false,
+  "prerequisites": {
+    "required_inspection_status": "READY",
+    "required_validation_outcome": "VALIDATION_PASSED",
+    "accepted_rgb_formats": ["PNG", "TIFF"],
+    "accepted_height_formats": ["PNG", "TIFF", "NPY"],
+    "accepted_rgb_channels": [3],
+    "accepted_rgb_bit_depths": [8],
+    "accepted_height_storage_types": ["uint16", "float32"]
+  },
+  "rgb": {
+    "roi_mode": "FULL_FRAME",
+    "roi_rectangle": null,
+    "resize_mode": "NONE",
+    "target_width": null,
+    "target_height": null,
+    "output_channels": 3,
+    "output_data_type": "float32",
+    "output_layout": "CHW",
+    "normalization_mode": "UNIT_RANGE",
+    "normalization_parameters": {},
+    "preserve_aspect_ratio": true,
+    "interpolation_mode": "BILINEAR"
+  },
+  "height": {
+    "roi_mode": "FULL_FRAME",
+    "roi_rectangle": null,
+    "resize_mode": "NONE",
+    "target_width": null,
+    "target_height": null,
+    "output_channels": 1,
+    "output_data_type": "float32",
+    "output_layout": "CHW",
+    "scaling_mode": "NONE",
+    "scaling_parameters": {},
+    "invalid_value_handling": "REJECT",
+    "requires_validity_mask_input": false,
+    "replacement_value": null,
+    "interpolation_mode": "NEAREST"
+  },
+  "registration": {
+    "registration_mode": "SYNTHETIC_IDENTITY_ONLY",
+    "require_registration_evidence": false,
+    "output_coordinate_reference": "SHARED_SYNTHETIC",
+    "dimension_relationship": "SAME_DIMENSIONS_REQUIRED",
+    "transform_source": null,
+    "allow_synthetic_identity_transform": true
+  },
+  "output": {
+    "require_matching_output_dimensions": true,
+    "include_validity_mask": false,
+    "include_registration_mask": false,
+    "include_safe_summary_statistics": true
+  },
+  "safety": {
+    "allow_mock_implementation": true,
+    "allow_synthetic_input": true,
+    "allow_real_input": false,
+    "allow_uncalibrated_height": true
+  }
+}

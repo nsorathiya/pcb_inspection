@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aoi-for-pcb.local/contracts/inspection-preprocessing-findings/1.0",
+  "title": "PCB AOI Inspection Preprocessing Finding Catalogue",
+  "description": "Authoritative technical preprocessing findings. These codes never express PCB quality or classification.",
+  "catalog_version": "pcb-aoi-inspection-preprocessing-findings/1.0",
+  "preprocessing_contract_version": "pcb-aoi-inspection-preprocessing/1.0",
+  "$defs": {
+    "severity": {"enum": ["INFO", "WARNING", "ERROR"]},
+    "category": {"enum": ["PREREQUISITE", "POLICY", "RGB", "HEIGHT", "REGISTRATION", "OUTPUT", "INTERNAL"]},
+    "branch": {"enum": ["RGB", "HEIGHT", "REGISTRATION", "OUTPUT"]},
+    "finding_code": {
+      "type": "string",
+      "enum": [
+        "INSPECTION_NOT_READY", "VALIDATION_RESULT_REQUIRED", "VALIDATION_NOT_PASSED",
+        "PREPROCESSING_POLICY_NOT_FOUND", "PREPROCESSING_POLICY_VERSION_UNSUPPORTED", "PREPROCESSING_POLICY_INVALID",
+        "RGB_INPUT_UNAVAILABLE", "RGB_FORMAT_INCOMPATIBLE", "RGB_CHANNELS_INCOMPATIBLE", "RGB_BIT_DEPTH_INCOMPATIBLE",
+        "RGB_ROI_INVALID", "RGB_RESIZE_CONFIGURATION_INVALID", "RGB_NORMALIZATION_CONFIGURATION_INVALID", "RGB_PREPROCESSING_UNSUPPORTED",
+        "HEIGHT_INPUT_UNAVAILABLE", "HEIGHT_FORMAT_INCOMPATIBLE", "HEIGHT_STORAGE_TYPE_INCOMPATIBLE", "HEIGHT_CHANNELS_INCOMPATIBLE",
+        "HEIGHT_ROI_INVALID", "HEIGHT_RESIZE_CONFIGURATION_INVALID", "HEIGHT_SCALING_CONFIGURATION_INVALID",
+        "HEIGHT_INVALID_VALUE_POLICY_UNSUPPORTED", "HEIGHT_PREPROCESSING_UNSUPPORTED",
+        "REGISTRATION_EVIDENCE_REQUIRED", "REGISTRATION_MODE_UNSUPPORTED", "REGISTRATION_TRANSFORM_MISSING",
+        "SYNTHETIC_IDENTITY_REGISTRATION_USED", "OUTPUT_DIMENSION_RELATIONSHIP_INVALID",
+        "OUTPUT_SHAPE_INVALID", "OUTPUT_LAYOUT_INVALID", "OUTPUT_DATA_TYPE_INVALID", "OUTPUT_NONFINITE_VALUES",
+        "PREPROCESSING_INTERNAL_ERROR"
+      ]
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "category", "message", "blocking"],
+      "properties": {
+        "code": {"$ref": "#/$defs/finding_code"},
+        "severity": {"$ref": "#/$defs/severity"},
+        "category": {"$ref": "#/$defs/category"},
+        "message": {"type": "string", "minLength": 1, "maxLength": 512},
+        "blocking": {"type": "boolean"},
+        "branch": {"$ref": "#/$defs/branch"},
+        "field": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,127}$"},
+        "details": {"type": "object", "additionalProperties": {"type": ["string", "number", "integer", "boolean", "null"]}}
+      }
+    }
+  },
+  "findings": [
+    {"order": 10, "code": "INSPECTION_NOT_READY", "severity": "ERROR", "category": "PREREQUISITE", "message": "Inspection is not READY for preprocessing.", "default_blocking": true},
+    {"order": 20, "code": "VALIDATION_RESULT_REQUIRED", "severity": "ERROR", "category": "PREREQUISITE", "message": "A completed technical validation result is required.", "default_blocking": true},
+    {"order": 30, "code": "VALIDATION_NOT_PASSED", "severity": "ERROR", "category": "PREREQUISITE", "message": "Technical validation did not pass.", "default_blocking": true},
+    {"order": 40, "code": "PREPROCESSING_POLICY_NOT_FOUND", "severity": "ERROR", "category": "POLICY", "message": "The preprocessing policy was not found.", "default_blocking": true},
+    {"order": 50, "code": "PREPROCESSING_POLICY_VERSION_UNSUPPORTED", "severity": "ERROR", "category": "POLICY", "message": "The preprocessing policy version is unsupported.", "default_blocking": true},
+    {"order": 60, "code": "PREPROCESSING_POLICY_INVALID", "severity": "ERROR", "category": "POLICY", "message": "The preprocessing policy is invalid.", "default_blocking": true},
+    {"order": 100, "code": "RGB_INPUT_UNAVAILABLE", "severity": "ERROR", "category": "RGB", "message": "Validated RGB input is unavailable.", "default_blocking": true},
+    {"order": 110, "code": "RGB_FORMAT_INCOMPATIBLE", "severity": "ERROR", "category": "RGB", "message": "RGB format is incompatible with policy.", "default_blocking": true},
+    {"order": 120, "code": "RGB_CHANNELS_INCOMPATIBLE", "severity": "ERROR", "category": "RGB", "message": "RGB channel count is incompatible with policy.", "default_blocking": true},
+    {"order": 130, "code": "RGB_BIT_DEPTH_INCOMPATIBLE", "severity": "ERROR", "category": "RGB", "message": "RGB bit depth is incompatible with policy.", "default_blocking": true},
+    {"order": 140, "code": "RGB_ROI_INVALID", "severity": "ERROR", "category": "RGB", "message": "RGB region of interest is invalid.", "default_blocking": true},
+    {"order": 150, "code": "RGB_RESIZE_CONFIGURATION_INVALID", "severity": "ERROR", "category": "RGB", "message": "RGB resize configuration is invalid.", "default_blocking": true},
+    {"order": 160, "code": "RGB_NORMALIZATION_CONFIGURATION_INVALID", "severity": "ERROR", "category": "RGB", "message": "RGB normalization configuration is invalid.", "default_blocking": true},
+    {"order": 170, "code": "RGB_PREPROCESSING_UNSUPPORTED", "severity": "ERROR", "category": "RGB", "message": "RGB preprocessing configuration is unsupported by the selected implementation.", "default_blocking": true},
+    {"order": 200, "code": "HEIGHT_INPUT_UNAVAILABLE", "severity": "ERROR", "category": "HEIGHT", "message": "Validated height input is unavailable.", "default_blocking": true},
+    {"order": 210, "code": "HEIGHT_FORMAT_INCOMPATIBLE", "severity": "ERROR", "category": "HEIGHT", "message": "Height format is incompatible with policy.", "default_blocking": true},
+    {"order": 220, "code": "HEIGHT_STORAGE_TYPE_INCOMPATIBLE", "severity": "ERROR", "category": "HEIGHT", "message": "Height storage type is incompatible with policy.", "default_blocking": true},
+    {"order": 230, "code": "HEIGHT_CHANNELS_INCOMPATIBLE", "severity": "ERROR", "category": "HEIGHT", "message": "Height channel count is incompatible with policy.", "default_blocking": true},
+    {"order": 240, "code": "HEIGHT_ROI_INVALID", "severity": "ERROR", "category": "HEIGHT", "message": "Height region of interest is invalid.", "default_blocking": true},
+    {"order": 250, "code": "HEIGHT_RESIZE_CONFIGURATION_INVALID", "severity": "ERROR", "category": "HEIGHT", "message": "Height resize configuration is invalid.", "default_blocking": true},
+    {"order": 260, "code": "HEIGHT_SCALING_CONFIGURATION_INVALID", "severity": "ERROR", "category": "HEIGHT", "message": "Height scaling configuration is invalid.", "default_blocking": true},
+    {"order": 270, "code": "HEIGHT_INVALID_VALUE_POLICY_UNSUPPORTED", "severity": "ERROR", "category": "HEIGHT", "message": "Height invalid-value handling is unsupported.", "default_blocking": true},
+    {"order": 280, "code": "HEIGHT_PREPROCESSING_UNSUPPORTED", "severity": "ERROR", "category": "HEIGHT", "message": "Height preprocessing configuration is unsupported by the selected implementation.", "default_blocking": true},
+    {"order": 300, "code": "REGISTRATION_EVIDENCE_REQUIRED", "severity": "ERROR", "category": "REGISTRATION", "message": "Registration evidence is required.", "default_blocking": true},
+    {"order": 310, "code": "REGISTRATION_MODE_UNSUPPORTED", "severity": "ERROR", "category": "REGISTRATION", "message": "Registration mode is unsupported.", "default_blocking": true},
+    {"order": 320, "code": "REGISTRATION_TRANSFORM_MISSING", "severity": "ERROR", "category": "REGISTRATION", "message": "The declared registration transform is missing.", "default_blocking": true},
+    {"order": 330, "code": "SYNTHETIC_IDENTITY_REGISTRATION_USED", "severity": "WARNING", "category": "REGISTRATION", "message": "Synthetic identity registration was used; this is not physical registration evidence.", "default_blocking": false},
+    {"order": 340, "code": "OUTPUT_DIMENSION_RELATIONSHIP_INVALID", "severity": "ERROR", "category": "REGISTRATION", "message": "RGB and height output dimensions violate policy.", "default_blocking": true},
+    {"order": 400, "code": "OUTPUT_SHAPE_INVALID", "severity": "ERROR", "category": "OUTPUT", "message": "A preprocessing output shape is invalid.", "default_blocking": true},
+    {"order": 410, "code": "OUTPUT_LAYOUT_INVALID", "severity": "ERROR", "category": "OUTPUT", "message": "A preprocessing output layout is invalid.", "default_blocking": true},
+    {"order": 420, "code": "OUTPUT_DATA_TYPE_INVALID", "severity": "ERROR", "category": "OUTPUT", "message": "A preprocessing output data type is invalid.", "default_blocking": true},
+    {"order": 430, "code": "OUTPUT_NONFINITE_VALUES", "severity": "ERROR", "category": "OUTPUT", "message": "A preprocessing output contains disallowed non-finite values.", "default_blocking": true},
+    {"order": 500, "code": "PREPROCESSING_INTERNAL_ERROR", "severity": "ERROR", "category": "INTERNAL", "message": "Preprocessing could not complete because of an internal error.", "default_blocking": true}
+  ]
+}
