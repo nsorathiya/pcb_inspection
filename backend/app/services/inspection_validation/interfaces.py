@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 from typing import Any, Mapping, Protocol, Sequence
 
 from app.db.models import ArtifactType
@@ -56,6 +57,7 @@ class DimensionRelationship(str, Enum):
 class StoredArtifactReference:
     """Internal repository-to-filesystem reference; never part of public results."""
 
+    inspection_id: str
     artifact_type: ArtifactType
     relative_path: str
     registered_sha256: str
@@ -70,6 +72,8 @@ class ArtifactIntegrityInspection:
     byte_size: int | None
     declared_media_type: str | None
     readability_status: ReadabilityStatus
+    resolved_path: Path | None = None
+    failure_code: str | None = None
 
 
 @dataclass(frozen=True)
@@ -85,6 +89,9 @@ class ArtifactTechnicalSummary:
     bit_depth: int | None
     storage_data_type: str | None
     readability_status: ReadabilityStatus
+    color_mode: str | None = None
+    source_extension: str | None = None
+    observed_storage_data_type: str | None = None
 
 
 @dataclass(frozen=True)
@@ -154,12 +161,31 @@ class InspectionValidationResult:
     findings: tuple[ValidationFinding, ...]
     summary: ValidationSummary
 
+    def to_dict(self) -> dict[str, Any]:
+        from app.services.inspection_validation.models import result_to_dict
+
+        return result_to_dict(self)
+
+
+@dataclass(frozen=True)
+class RetrievedInspectionArtifacts:
+    inspection_id: str
+    artifacts: tuple[StoredArtifactReference, ...]
+    registration_evidence_available: bool = False
+    synthetic_example: bool = False
+
+
+@dataclass(frozen=True)
+class NativeFormatInspection:
+    summary: ArtifactTechnicalSummary
+    findings: tuple[ValidationFinding, ...] = ()
+
 
 class ValidationArtifactRetriever(Protocol):
     async def get_validation_artifacts(
         self,
         inspection_id: str,
-    ) -> Sequence[StoredArtifactReference]: ...
+    ) -> RetrievedInspectionArtifacts: ...
 
 
 class FilesystemIntegrityInspector(Protocol):
@@ -174,7 +200,7 @@ class NativeFormatInspector(Protocol):
         self,
         artifact: StoredArtifactReference,
         integrity: ArtifactIntegrityInspection,
-    ) -> ArtifactTechnicalSummary: ...
+    ) -> NativeFormatInspection: ...
 
 
 class ValidationPolicyEvaluator(Protocol):
@@ -182,6 +208,9 @@ class ValidationPolicyEvaluator(Protocol):
         self,
         policy: InspectionValidationPolicy,
         artifacts: Sequence[ArtifactTechnicalSummary],
+        *,
+        registered_artifacts: Sequence[StoredArtifactReference] = (),
+        registration_evidence_available: bool = False,
     ) -> Sequence[ValidationFinding]: ...
 
 

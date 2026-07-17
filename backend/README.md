@@ -48,12 +48,13 @@ artifact integrity metadata without storage paths, artifact bytes, semantic
 validation, or classification. See `docs/inspection_details_api.md` for its
 response, error, ordering, and request-ID contracts.
 
-The future paired RGB/height semantic-validation domain is defined by
-versioned result, finding, and policy contracts. It is not wired to an API,
-database workflow, artifact reader, or status transition. See
-`docs/inspection_semantic_validation_contract.md` for technical-readiness
-semantics, native-data rules, the development-only policy, parser reuse plan,
-and deferred execution stages.
+The paired RGB/height semantic-validation domain has versioned result, finding,
+and policy contracts plus a reusable read-only engine. It is not wired to an
+API, result persistence, or an inspection status transition. See
+`docs/inspection_semantic_validation_contract.md` for the contract and
+`docs/inspection_semantic_validation_engine.md` for policy loading, artifact
+reads, integrity and native-format checks, deterministic execution, and current
+registration-evidence limitations.
 
 ## Run tests
 
@@ -97,6 +98,12 @@ Run the focused inspection semantic-validation contract tests:
 
 ```powershell
 python -m pytest .\backend\tests\test_inspection_validation_contract.py -q
+```
+
+Run the focused read-only semantic-validation engine tests:
+
+```powershell
+python -m pytest .\backend\tests\test_inspection_semantic_validation_engine.py -q
 ```
 
 Run the complete backend foundation test suite:
