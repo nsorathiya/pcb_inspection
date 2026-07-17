@@ -1,0 +1,86 @@
+{
+  "contract_version": "pcb-aoi-dataset/1.0",
+  "sample_id": "synthetic_sample_000001",
+  "board_id": "SYNTH-BOARD-0001",
+  "panel_id": "SYNTH-PANEL-0001",
+  "component_ref": "U1",
+  "recipe_id": "SYNTH-RECIPE-A",
+  "recipe_version": "1.0",
+  "ground_truth": {
+    "label": "OK",
+    "defect_type": null,
+    "taxonomy_version": "pcb-aoi-defects/1.0",
+    "label_source": "synthetic_contract_example",
+    "review_status": "approved",
+    "reviewed_by": "synthetic_reviewer",
+    "reviewed_at": "2026-07-17T10:20:00+05:30",
+    "review_notes": "SYNTHETIC EXAMPLE ONLY. No production ground truth is asserted."
+  },
+  "production": {
+    "lot_id": "SYNTH-LOT-001",
+    "batch_id": "SYNTH-BATCH-001",
+    "capture_session_id": "SYNTH-SESSION-001",
+    "production_date": "2026-07-17",
+    "station_id": "SYNTH-STATION-01",
+    "machine_id": "SYNTH-MACHINE-01",
+    "sequential_group_id": "SYNTH-SEQUENCE-001"
+  },
+  "capture": {
+    "captured_at": "2026-07-17T09:45:00+05:30",
+    "camera_2d_id": "SYNTH-CAMERA-2D-01",
+    "sensor_3d_id": "SYNTH-SENSOR-3D-01",
+    "lighting_profile_id": "SYNTH-LIGHT-01",
+    "exposure": {
+      "exposure_time_us": 1000,
+      "gain_db": 0
+    }
+  },
+  "files": {
+    "rgb_file": "rgb.png",
+    "height_file": "height.tiff",
+    "validity_mask_file": "validity_mask.png",
+    "calibration_file": "calibration.json"
+  },
+  "rgb": {
+    "width": 2048,
+    "height": 1536,
+    "channels": 3,
+    "color_space": "RGB",
+    "bit_depth": 8
+  },
+  "height_3d": {
+    "representation": "height_map",
+    "width": 2048,
+    "height": 1536,
+    "storage_format": "tiff",
+    "storage_data_type": "uint16",
+    "physical_value_type": "height",
+    "z_unit": "mm",
+    "z_scale": 0.001,
+    "z_offset": 0,
+    "xy_unit": "mm",
+    "x_scale": 0.01,
+    "y_scale": 0.01,
+    "no_data_policy": "validity_mask"
+  },
+  "registration": {
+    "registration_status": "aligned",
+    "registration_method": "synthetic_pre_registered_pair",
+    "transform_reference": "calibration.json",
+    "calibration_version": "SYNTH-CALIBRATION-1.0",
+    "coordinate_system": "SYNTH-CAMERA-2D-PIXEL"
+  },
+  "integrity": {
+    "rgb_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "height_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "validity_mask_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "calibration_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "provenance": {
+    "source_system": "synthetic_contract_example",
+    "source_export_version": "synthetic-1.0",
+    "imported_at": "2026-07-17T10:30:00+05:30",
+    "is_synthetic": true,
+    "notes": "SYNTHETIC EXAMPLE ONLY. File names, hashes, dimensions, scaling, and calibration identifiers are placeholders, not measured values."
+  }
+}

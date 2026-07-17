@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aoi-for-pcb.local/contracts/dataset-manifest/1.0",
+  "title": "PCB AOI Dataset Manifest",
+  "description": "Dataset-level identity, expected contents, schema references, readiness, approval, and known limitations.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "dataset_manifest_version",
+    "dataset_id",
+    "dataset_version",
+    "created_at",
+    "source",
+    "sample_count",
+    "expected_class_counts",
+    "supported_board_ids",
+    "supported_recipe_ids",
+    "schema_references",
+    "samples_manifest_reference",
+    "split_manifest_reference",
+    "dataset_status",
+    "approval_status",
+    "known_limitations",
+    "is_synthetic"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "pcb-aoi-dataset/1.0"
+    },
+    "dataset_manifest_version": {
+      "const": "pcb-aoi-dataset-manifest/1.0"
+    },
+    "dataset_id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "dataset_version": {
+      "$ref": "#/$defs/identifier"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "organization",
+        "team"
+      ],
+      "properties": {
+        "organization": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "team": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      }
+    },
+    "sample_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "expected_class_counts": {
+      "type": "object",
+      "description": "Expected counts for the primary business label, not model-output class counts.",
+      "additionalProperties": false,
+      "required": [
+        "OK",
+        "NOK"
+      ],
+      "properties": {
+        "OK": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "NOK": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "supported_board_ids": {
+      "$ref": "#/$defs/unique_identifiers"
+    },
+    "supported_recipe_ids": {
+      "$ref": "#/$defs/unique_identifiers"
+    },
+    "schema_references": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sample_schema",
+        "split_manifest_schema",
+        "dataset_manifest_schema",
+        "defect_taxonomy"
+      ],
+      "properties": {
+        "sample_schema": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "split_manifest_schema": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "dataset_manifest_schema": {
+          "$ref": "#/$defs/relative_path"
+        },
+        "defect_taxonomy": {
+          "$ref": "#/$defs/relative_path"
+        }
+      }
+    },
+    "samples_manifest_reference": {
+      "$ref": "#/$defs/relative_path"
+    },
+    "split_manifest_reference": {
+      "$ref": "#/$defs/relative_path"
+    },
+    "dataset_status": {
+      "enum": [
+        "draft",
+        "technical_validation",
+        "training_ready",
+        "production_candidate",
+        "retired"
+      ]
+    },
+    "approval_status": {
+      "enum": [
+        "not_reviewed",
+        "in_review",
+        "approved",
+        "rejected"
+      ]
+    },
+    "known_limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000
+      },
+      "uniqueItems": true
+    },
+    "is_synthetic": {
+      "type": "boolean"
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "relative_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*\\.\\.)[A-Za-z0-9][A-Za-z0-9._/-]*$"
+    },
+    "unique_identifiers": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/identifier"
+      }
+    }
+  }
+}

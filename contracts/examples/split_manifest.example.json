@@ -1,0 +1,22 @@
+{
+  "contract_version": "pcb-aoi-dataset/1.0",
+  "split_manifest_version": "pcb-aoi-split-manifest/1.0",
+  "dataset_id": "synthetic_paired_dataset_example",
+  "dataset_version": "0.0-synthetic",
+  "created_at": "2026-07-17T10:30:00+05:30",
+  "creation_method": "synthetic_example",
+  "grouping_key_type": "board_id",
+  "is_synthetic": true,
+  "assignments": [
+    {
+      "sample_id": "synthetic_sample_000001",
+      "split": "validation",
+      "grouping_key_value": "SYNTH-BOARD-0001"
+    },
+    {
+      "sample_id": "synthetic_sample_000002",
+      "split": "test",
+      "grouping_key_value": "SYNTH-BOARD-0002"
+    }
+  ]
+}

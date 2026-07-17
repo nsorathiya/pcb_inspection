@@ -1,0 +1,75 @@
+{
+  "contract_version": "pcb-aoi-dataset/1.0",
+  "sample_id": "synthetic_sample_000002",
+  "board_id": "SYNTH-BOARD-0002",
+  "inspection_region_id": "SYNTH-REGION-01",
+  "recipe_id": "SYNTH-RECIPE-A",
+  "recipe_version": "1.0",
+  "ground_truth": {
+    "label": "NOK",
+    "defect_type": "misalignment",
+    "taxonomy_version": "pcb-aoi-defects/1.0",
+    "label_source": "synthetic_contract_example",
+    "review_status": "approved",
+    "reviewed_by": "synthetic_reviewer",
+    "reviewed_at": "2026-07-17T10:22:00+05:30",
+    "review_notes": "SYNTHETIC EXAMPLE ONLY. The defect assignment is illustrative."
+  },
+  "production": {
+    "lot_id": "SYNTH-LOT-002",
+    "capture_session_id": "SYNTH-SESSION-002",
+    "production_date": "2026-07-17",
+    "station_id": "SYNTH-STATION-01"
+  },
+  "capture": {
+    "captured_at": "2026-07-17T09:50:00+05:30",
+    "camera_2d_id": "SYNTH-CAMERA-2D-01",
+    "sensor_3d_id": "SYNTH-SENSOR-3D-01"
+  },
+  "files": {
+    "rgb_file": "rgb.png",
+    "height_file": "height.tiff",
+    "calibration_file": "calibration.json"
+  },
+  "rgb": {
+    "width": 2048,
+    "height": 1536,
+    "channels": 3,
+    "color_space": "RGB",
+    "bit_depth": 8
+  },
+  "height_3d": {
+    "representation": "depth_map",
+    "width": 2048,
+    "height": 1536,
+    "storage_format": "tiff",
+    "storage_data_type": "float32",
+    "physical_value_type": "depth",
+    "z_unit": "mm",
+    "z_scale": 1,
+    "z_offset": 0,
+    "xy_unit": "mm",
+    "x_scale": 0.01,
+    "y_scale": 0.01,
+    "invalid_value": -9999,
+    "no_data_policy": "sentinel_value"
+  },
+  "registration": {
+    "registration_status": "requires_transform",
+    "registration_method": "synthetic_calibration_transform",
+    "transform_reference": "calibration.json",
+    "calibration_version": "SYNTH-CALIBRATION-1.0",
+    "coordinate_system": "SYNTH-SENSOR-3D"
+  },
+  "integrity": {
+    "rgb_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "height_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "calibration_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "provenance": {
+    "source_system": "synthetic_contract_example",
+    "imported_at": "2026-07-17T10:30:00+05:30",
+    "is_synthetic": true,
+    "notes": "SYNTHETIC EXAMPLE ONLY. File names, hashes, dimensions, scaling, and calibration identifiers are placeholders, not measured values."
+  }
+}

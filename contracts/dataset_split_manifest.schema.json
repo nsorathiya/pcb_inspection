@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aoi-for-pcb.local/contracts/dataset-split-manifest/1.0",
+  "title": "PCB AOI Dataset Split Manifest",
+  "description": "Authoritative grouped assignment of paired samples to exactly one dataset split.",
+  "$comment": "JSON Schema validates each record. The x-semantic_rules invariants require cross-record validation before training or evaluation.",
+  "x-semantic_rules": [
+    {
+      "id": "unique_sample_assignment",
+      "rule": "Each sample_id occurs exactly once in assignments."
+    },
+    {
+      "id": "group_partition_exclusivity",
+      "rule": "One grouping_key_value cannot occur in more than one of train, validation, test, or holdout."
+    }
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "split_manifest_version",
+    "dataset_id",
+    "dataset_version",
+    "created_at",
+    "creation_method",
+    "grouping_key_type",
+    "is_synthetic",
+    "assignments"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "pcb-aoi-dataset/1.0"
+    },
+    "split_manifest_version": {
+      "const": "pcb-aoi-split-manifest/1.0"
+    },
+    "dataset_id": {
+      "$ref": "#/$defs/identifier"
+    },
+    "dataset_version": {
+      "$ref": "#/$defs/identifier"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "creation_method": {
+      "enum": [
+        "manual_review",
+        "deterministic_grouped",
+        "imported_reviewed",
+        "synthetic_example"
+      ]
+    },
+    "grouping_key_type": {
+      "enum": [
+        "board_id",
+        "panel_id",
+        "lot_id",
+        "batch_id",
+        "capture_session_id",
+        "production_date_station_recipe",
+        "sequential_group_id"
+      ]
+    },
+    "approved_by": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "is_synthetic": {
+      "type": "boolean"
+    },
+    "assignments": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/assignment"
+      }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "assignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sample_id",
+        "split",
+        "grouping_key_value"
+      ],
+      "properties": {
+        "sample_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "split": {
+          "enum": [
+            "train",
+            "validation",
+            "test",
+            "holdout",
+            "excluded"
+          ]
+        },
+        "grouping_key_value": {
+          "$ref": "#/$defs/identifier"
+        },
+        "exclusion_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "split": {
+                "const": "excluded"
+              }
+            },
+            "required": [
+              "split"
+            ]
+          },
+          "then": {
+            "required": [
+              "exclusion_reason"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "exclusion_reason"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

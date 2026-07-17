@@ -1,0 +1,38 @@
+{
+  "contract_version": "pcb-aoi-dataset/1.0",
+  "dataset_manifest_version": "pcb-aoi-dataset-manifest/1.0",
+  "dataset_id": "synthetic_paired_dataset_example",
+  "dataset_version": "0.0-synthetic",
+  "created_at": "2026-07-17T10:30:00+05:30",
+  "source": {
+    "organization": "SYNTHETIC-EXAMPLE-ORGANIZATION",
+    "team": "SYNTHETIC-EXAMPLE-VISION-TEAM"
+  },
+  "sample_count": 2,
+  "expected_class_counts": {
+    "OK": 1,
+    "NOK": 1
+  },
+  "supported_board_ids": [
+    "SYNTH-BOARD-0001",
+    "SYNTH-BOARD-0002"
+  ],
+  "supported_recipe_ids": [
+    "SYNTH-RECIPE-A"
+  ],
+  "schema_references": {
+    "sample_schema": "schemas/pcb_aoi_sample.schema.json",
+    "split_manifest_schema": "schemas/dataset_split_manifest.schema.json",
+    "dataset_manifest_schema": "schemas/dataset_manifest.schema.json",
+    "defect_taxonomy": "schemas/defect_taxonomy.json"
+  },
+  "samples_manifest_reference": "manifests/samples.jsonl",
+  "split_manifest_reference": "manifests/split_manifest.json",
+  "dataset_status": "draft",
+  "approval_status": "not_reviewed",
+  "known_limitations": [
+    "SYNTHETIC EXAMPLE ONLY; it contains no image or height-map files.",
+    "All identifiers, counts, hashes, dimensions, scaling, and calibration references are illustrative placeholders."
+  ],
+  "is_synthetic": true
+}

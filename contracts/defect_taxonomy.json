@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aoi-for-pcb.local/contracts/defect-taxonomy/1.0",
+  "title": "PCB AOI Defect Taxonomy",
+  "description": "Controlled defect types supported by repository evidence. OK is represented by a null defect_type and is not a defect taxonomy entry.",
+  "taxonomy_version": "pcb-aoi-defects/1.0",
+  "$defs": {
+    "supported_defect_type": {
+      "type": "string",
+      "enum": [
+        "dispense_error",
+        "misalignment",
+        "missing_part"
+      ]
+    }
+  }
+}
