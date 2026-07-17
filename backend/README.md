@@ -1,8 +1,10 @@
-# Backend Foundation and Paired Intake
+# Backend Foundation, Paired Intake, and Technical Validation
 
-The application provides a model-independent health endpoint and paired RGB plus
-height/depth intake with immutable raw storage. It does not decode images,
-preprocess data, run inference, or import the existing PyTorch prototype.
+The application provides a model-independent health endpoint, paired RGB plus
+height/depth intake with immutable raw storage, and explicit-policy technical
+validation/result APIs. Technical validation reads native metadata but does not
+preprocess data, run inference, classify a PCB, or import the existing PyTorch
+prototype.
 
 Run all commands below in Windows PowerShell from the repository root.
 
@@ -49,9 +51,13 @@ validation, or classification. See `docs/inspection_details_api.md` for its
 response, error, ordering, and request-ID contracts.
 
 The paired RGB/height semantic-validation domain has versioned result, finding,
-and policy contracts plus a reusable read-only engine. Completed typed results
-have both append/read-only standalone persistence and an atomic lifecycle
-coordinator, but neither is wired to an API. See
+and policy contracts plus a reusable read-only engine. The backend exposes
+`POST /api/v1/inspections/{inspection_id}/validate` for explicit-policy
+technical execution and `GET /api/v1/inspections/{inspection_id}/validation`
+for the latest persisted result. Neither endpoint preprocesses data, runs AI
+inference, or classifies the PCB. Exact POST retries are system-idempotent and
+revalidation is unsupported. See `docs/inspection_validation_api.md` for the
+request, response, error, request-ID, status, and concurrency contracts. See
 `docs/inspection_semantic_validation_contract.md` for the contract and
 `docs/inspection_semantic_validation_engine.md` for policy loading, artifact
 reads, integrity and native-format checks, deterministic execution, and current
@@ -122,6 +128,12 @@ Run the focused atomic validation-lifecycle tests:
 
 ```powershell
 python -m pytest .\backend\tests\test_inspection_validation_lifecycle.py -q
+```
+
+Run the focused validation execution/result API tests:
+
+```powershell
+python -m pytest .\backend\tests\test_inspection_validation_api.py -q
 ```
 
 Run the complete backend foundation test suite:

@@ -7,9 +7,13 @@ from typing import Annotated, AsyncIterator
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from app.api.errors import ApiError, ApiErrorResponse
+from app.api.validation_responses import (
+    InspectionValidationResponse,
+    map_validation_response,
+)
 from app.db.models import ArtifactType, InspectionStatus
 from app.services.artifact_storage import (
     ArtifactConflictError,
@@ -24,6 +28,16 @@ from app.services.inspection_intake import (
     InspectionIntakeCoordinator,
     InspectionIntakeFailure,
     IntakeArtifactSource,
+)
+from app.services.inspection_validation.orchestrator import (
+    InspectionValidationOrchestrator,
+    InvalidValidationPolicySelectionError,
+    ValidationExecutionConflictError,
+    ValidationExecutionConsistencyError,
+    ValidationInspectionNotFoundError,
+    ValidationPolicyNotFoundError,
+    ValidationPolicyVersionUnsupportedError,
+    ValidationResultNotFoundError,
 )
 
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -145,6 +159,13 @@ class InspectionDetailResponse(BaseModel):
     artifacts: list[InspectionArtifactDetailResponse]
 
 
+class InspectionValidationRequest(BaseModel):
+    policy_id: str = Field(max_length=128)
+    policy_version: str = Field(max_length=64)
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class _PairedUploads:
     def __init__(self, rgb_image: UploadFile, height_map: UploadFile) -> None:
         self.rgb_image = rgb_image
@@ -254,6 +275,144 @@ def _as_utc(value: datetime | None) -> datetime | None:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value.astimezone(timezone.utc)
+
+
+def _map_validation_error(error: Exception) -> ApiError:
+    if isinstance(error, InvalidValidationPolicySelectionError):
+        return ApiError(
+            400,
+            "INVALID_VALIDATION_POLICY_SELECTION",
+            "Validation policy ID or version is invalid.",
+        )
+    if isinstance(error, ValidationPolicyNotFoundError):
+        return ApiError(
+            404,
+            "VALIDATION_POLICY_NOT_FOUND",
+            "The selected validation policy was not found.",
+        )
+    if isinstance(error, ValidationPolicyVersionUnsupportedError):
+        return ApiError(
+            404,
+            "VALIDATION_POLICY_VERSION_UNSUPPORTED",
+            "The selected validation policy version is unsupported.",
+        )
+    if isinstance(error, ValidationInspectionNotFoundError):
+        return ApiError(404, "INSPECTION_NOT_FOUND", "Inspection was not found.")
+    if isinstance(error, ValidationResultNotFoundError):
+        return ApiError(
+            404,
+            "INSPECTION_VALIDATION_NOT_FOUND",
+            "No validation result exists for this inspection.",
+        )
+    if isinstance(error, ValidationExecutionConsistencyError):
+        return ApiError(
+            409,
+            "VALIDATION_LIFECYCLE_CONFLICT",
+            "Persisted validation evidence conflicts with inspection state.",
+        )
+    if isinstance(error, ValidationExecutionConflictError):
+        return ApiError(
+            409,
+            "INSPECTION_NOT_ELIGIBLE_FOR_VALIDATION",
+            "The inspection is not eligible for a new validation. Revalidation is unsupported.",
+        )
+    return ApiError(
+        500,
+        "VALIDATION_ORCHESTRATION_FAILED",
+        "Inspection validation could not be completed reliably.",
+    )
+
+
+@router.post(
+    "/inspections/{inspection_id}/validate",
+    response_model=InspectionValidationResponse,
+    responses={
+        400: {"model": ApiErrorResponse},
+        404: {"model": ApiErrorResponse},
+        409: {"model": ApiErrorResponse},
+        422: {"model": ApiErrorResponse},
+        500: {"model": ApiErrorResponse},
+    },
+    summary="Execute technical validation for one received inspection",
+    description=(
+        "Performs technical semantic validation of the registered RGB and native "
+        "height pair under an explicitly selected policy. It does not perform PCB "
+        "defect classification and does not run AI inference. VALIDATION_PASSED "
+        "means technically ready for future preprocessing only, never PCB PASS. "
+        "Revalidation is not supported. Exact retries are system-idempotent and "
+        "return the already committed lifecycle result."
+    ),
+)
+async def validate_inspection(
+    inspection_id: str,
+    selection: InspectionValidationRequest,
+    request: Request,
+) -> InspectionValidationResponse:
+    canonical_id = _canonical_inspection_id(inspection_id)
+    orchestrator: InspectionValidationOrchestrator = (
+        request.app.state.inspection_validation
+    )
+    try:
+        execution = await orchestrator.execute_validation(
+            canonical_id,
+            selection.policy_id,
+            selection.policy_version,
+            actor_id=None,
+            request_id=request.state.request_id,
+        )
+    except Exception as exc:
+        mapped = _map_validation_error(exc)
+        if mapped.status_code == 500:
+            request.app.state.logger.exception(
+                "Validation orchestration failed inspection_id=%s",
+                canonical_id,
+            )
+        raise mapped from exc
+    return map_validation_response(
+        execution,
+        request_id=request.state.request_id,
+    )
+
+
+@router.get(
+    "/inspections/{inspection_id}/validation",
+    response_model=InspectionValidationResponse,
+    responses={
+        400: {"model": ApiErrorResponse},
+        404: {"model": ApiErrorResponse},
+        409: {"model": ApiErrorResponse},
+        500: {"model": ApiErrorResponse},
+    },
+    summary="Retrieve the latest persisted technical validation result",
+    description=(
+        "Returns the latest persisted technical validation result and ordered "
+        "findings. It does not rerun validation, verify current file availability, "
+        "or read artifact bytes. It does not run AI inference and does not "
+        "classify the PCB."
+    ),
+)
+async def get_inspection_validation(
+    inspection_id: str,
+    request: Request,
+) -> InspectionValidationResponse:
+    canonical_id = _canonical_inspection_id(inspection_id)
+    orchestrator: InspectionValidationOrchestrator = (
+        request.app.state.inspection_validation
+    )
+    try:
+        execution = await orchestrator.get_latest_validation(canonical_id)
+    except Exception as exc:
+        mapped = _map_validation_error(exc)
+        if mapped.status_code == 500:
+            request.app.state.logger.exception(
+                "Validation result read failed inspection_id=%s",
+                canonical_id,
+            )
+        raise mapped from exc
+    return map_validation_response(
+        execution,
+        request_id=request.state.request_id,
+    )
 
 
 @router.get(

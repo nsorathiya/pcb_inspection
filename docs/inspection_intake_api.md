@@ -121,6 +121,12 @@ Persisted intake and artifact metadata can later be retrieved with
 the distinction between the original intake request ID and the current GET
 request ID, is documented in `docs/inspection_details_api.md`.
 
+A `RECEIVED` inspection can be technically validated with
+`POST /api/v1/inspections/{inspection_id}/validate` using the explicit
+development policy. Validation is a separate lifecycle operation: intake does
+not run it, and technical readiness never means PCB PASS. See
+`docs/inspection_validation_api.md`.
+
 ## Size and integrity enforcement
 
 The existing storage limits apply while each upload stream is written:

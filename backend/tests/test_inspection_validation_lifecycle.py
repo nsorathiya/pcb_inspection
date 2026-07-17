@@ -701,4 +701,6 @@ def test_coordinator_has_no_engine_route_model_or_filesystem_side_effects(tmp_pa
 
     asyncio.run(scenario())
     application = create_app(Settings(_env_file=None, runtime_root=tmp_path / "app-runtime"))
-    assert not any("validation" in route for route in application.openapi()["paths"])
+    paths = application.openapi()["paths"]
+    assert "/api/v1/inspections/{inspection_id}/validate" in paths
+    assert "/api/v1/inspections/{inspection_id}/validation" in paths

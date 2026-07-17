@@ -109,9 +109,11 @@ transaction when status and audit must be coordinated. See
 `docs/inspection_validation_lifecycle.md` for allowed transitions, adoption of
 an existing standalone result, concurrency protection, and rollback behavior.
 
-No API or validation-execution wiring exists. Callers that only need immutable
-evidence may use standalone persistence; future application/API code that must
-affect inspection lifecycle should use the atomic coordinator.
+The validation execution/result API now uses the atomic coordinator through
+`InspectionValidationOrchestrator`; see `docs/inspection_validation_api.md`.
+Callers that only need immutable evidence may still use standalone persistence,
+and the orchestrator can adopt that evidence while an inspection remains
+`RECEIVED` without rerunning the engine.
 
 ## Tests
 

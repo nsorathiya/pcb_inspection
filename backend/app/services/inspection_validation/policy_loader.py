@@ -14,6 +14,8 @@ from app.services.inspection_validation.interfaces import (
 REPOSITORY_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_SCHEMA_PATH = REPOSITORY_ROOT / "contracts" / "inspection_validation_policy.schema.json"
 DEFAULT_DEVELOPMENT_POLICY_PATH = REPOSITORY_ROOT / "contracts" / "examples" / "inspection_validation_policy.development.json"
+DEVELOPMENT_POLICY_ID = "development-native-rgb-height"
+DEVELOPMENT_POLICY_VERSION = "1.0"
 
 
 def _resolve(schema: Mapping[str, Any], rule: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -113,8 +115,14 @@ class ValidationPolicyLoader:
     def __init__(self, schema_path: Path = DEFAULT_SCHEMA_PATH, *, registry: Mapping[tuple[str, str], Path] | None = None) -> None:
         self._schema = json.loads(schema_path.read_text(encoding="utf-8"))
         self._registry = dict(registry or {
-            ("development-native-rgb-height", "1.0"): DEFAULT_DEVELOPMENT_POLICY_PATH,
+            (DEVELOPMENT_POLICY_ID, DEVELOPMENT_POLICY_VERSION): DEFAULT_DEVELOPMENT_POLICY_PATH,
         })
+
+    def supports_policy_id(self, policy_id: str) -> bool:
+        return any(key[0] == policy_id for key in self._registry)
+
+    def supports(self, policy_id: str, policy_version: str) -> bool:
+        return (policy_id, policy_version) in self._registry
 
     def load(self, policy_id: str, policy_version: str) -> InspectionValidationPolicy:
         path = self._registry.get((policy_id, policy_version))

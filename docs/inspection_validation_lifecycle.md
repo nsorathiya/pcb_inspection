@@ -9,9 +9,12 @@ Date: 2026-07-17
 key. It does not execute semantic validation, read artifact files, inspect image
 content, preprocess data, run inference, or classify a PCB.
 
-The coordinator is not wired to an HTTP route or application startup. A future
-API workflow may execute the read-only engine, generate the key, and pass the
-completed result to this service only after those contracts are reviewed.
+The coordinator is wired through `InspectionValidationOrchestrator` to
+`POST /api/v1/inspections/{inspection_id}/validate`. Application assembly
+constructs reusable services and validates the registered development policy;
+neither import nor startup executes an inspection validation. The orchestrator
+performs the key lookup before engine execution and passes completed typed
+results to this coordinator.
 
 ## Atomic database effects
 
@@ -107,12 +110,15 @@ Public lifecycle errors include:
 Other transaction failures are converted to the safe base
 `ValidationCommitError` after rollback.
 
-## API deferral
+## API integration
 
-There is deliberately no route for this service. API orchestration must later
-define policy selection, read-only engine execution, validation-key generation,
-request error mapping, and authorization separately. Importing or starting the
-FastAPI application does not run validation or instantiate a lifecycle attempt.
+The validation API is documented in `docs/inspection_validation_api.md`.
+POST explicitly selects the registered development policy, replays/adopts
+existing immutable evidence before reading image bytes, and invokes this
+service for all lifecycle mutations. GET reads the latest persisted result and
+ordered findings without executing validation or writing the database.
+Authentication remains absent; actor ID is null and request ID comes from the
+existing correlation middleware.
 
 ## Tests
 

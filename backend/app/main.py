@@ -18,9 +18,31 @@ from app.services.artifact_storage import (
     ArtifactStorageService,
 )
 from app.services.inspection_intake import InspectionIntakeCoordinator
+from app.services.inspection_validation import (
+    ContractValidationPolicyEvaluator,
+    DatabaseValidationArtifactRetriever,
+    FindingFactory,
+    InspectionValidationService,
+    ManagedArtifactPathResolver,
+    PurposeSpecificNativeFormatInspector,
+    StreamingFilesystemIntegrityInspector,
+    ValidationCommitService,
+    ValidationPolicyLoader,
+)
+from app.services.inspection_validation.orchestrator import (
+    InspectionValidationOrchestrator,
+)
+from app.services.inspection_validation.policy_loader import (
+    DEVELOPMENT_POLICY_ID,
+    DEVELOPMENT_POLICY_VERSION,
+)
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    *,
+    validation_policy_loader: ValidationPolicyLoader | None = None,
+) -> FastAPI:
     """Create the model-independent FastAPI application."""
     application_settings = settings or get_settings()
     logger = configure_logging(application_settings)
@@ -53,6 +75,35 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     inspection_intake = InspectionIntakeCoordinator(
         repositories,
         artifact_registration,
+    )
+    policy_loader = validation_policy_loader or ValidationPolicyLoader()
+    # Validate the one explicitly registered application-owned development
+    # policy during assembly. This reads no inspection artifacts and runs no
+    # validation lifecycle.
+    policy_loader.load(DEVELOPMENT_POLICY_ID, DEVELOPMENT_POLICY_VERSION)
+    findings = FindingFactory()
+    validation_engine = InspectionValidationService(
+        DatabaseValidationArtifactRetriever(
+            repositories.inspections,
+            repositories.artifacts,
+        ),
+        StreamingFilesystemIntegrityInspector(
+            ManagedArtifactPathResolver(runtime_paths)
+        ),
+        PurposeSpecificNativeFormatInspector(findings),
+        ContractValidationPolicyEvaluator(findings),
+        findings,
+        policy_loader=policy_loader,
+    )
+    validation_commit = ValidationCommitService(
+        database.session_factory,
+        validation_repository=repositories.validations,
+    )
+    inspection_validation = InspectionValidationOrchestrator(
+        repositories,
+        policy_loader,
+        validation_engine,
+        validation_commit,
     )
 
     @asynccontextmanager
@@ -101,6 +152,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.artifact_storage = artifact_storage
     application.state.artifact_registration = artifact_registration
     application.state.inspection_intake = inspection_intake
+    application.state.inspection_validation = inspection_validation
     application.add_exception_handler(ApiError, api_error_handler)
     application.add_exception_handler(
         RequestValidationError,
