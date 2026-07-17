@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
+from hashlib import sha256
 from typing import Any
 
 from app.services.inspection_validation.interfaces import (
@@ -14,7 +15,7 @@ from app.services.inspection_validation.interfaces import (
 def _timestamp(value: datetime) -> str:
     if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError("validation timestamps must include timezone information")
-    return value.isoformat().replace("+00:00", "Z")
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def _artifact(value: ArtifactTechnicalSummary) -> dict[str, Any]:
@@ -78,4 +79,18 @@ def result_to_dict(value: InspectionValidationResult) -> dict[str, Any]:
 
 
 def result_json(value: InspectionValidationResult) -> str:
-    return json.dumps(result_to_dict(value), sort_keys=True, separators=(",", ":"))
+    return canonical_result_bytes(value).decode("utf-8")
+
+
+def canonical_result_bytes(value: InspectionValidationResult) -> bytes:
+    return json.dumps(
+        result_to_dict(value),
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+
+
+def canonical_result_sha256(value: InspectionValidationResult) -> str:
+    return sha256(canonical_result_bytes(value)).hexdigest()

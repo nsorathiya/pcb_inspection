@@ -49,12 +49,15 @@ validation, or classification. See `docs/inspection_details_api.md` for its
 response, error, ordering, and request-ID contracts.
 
 The paired RGB/height semantic-validation domain has versioned result, finding,
-and policy contracts plus a reusable read-only engine. It is not wired to an
-API, result persistence, or an inspection status transition. See
+and policy contracts plus a reusable read-only engine. Completed typed results
+now have an append/read-only persistence foundation, but validation is not
+wired to an API or inspection status transition. See
 `docs/inspection_semantic_validation_contract.md` for the contract and
 `docs/inspection_semantic_validation_engine.md` for policy loading, artifact
 reads, integrity and native-format checks, deterministic execution, and current
-registration-evidence limitations.
+registration-evidence limitations. See
+`docs/inspection_validation_persistence.md` for schema version 2, migration,
+canonical hashes, validation keys, transactions, and idempotent replay.
 
 ## Run tests
 
@@ -104,6 +107,12 @@ Run the focused read-only semantic-validation engine tests:
 
 ```powershell
 python -m pytest .\backend\tests\test_inspection_semantic_validation_engine.py -q
+```
+
+Run the focused validation-result persistence and schema-migration tests:
+
+```powershell
+python -m pytest .\backend\tests\test_inspection_validation_persistence.py -q
 ```
 
 Run the complete backend foundation test suite:
@@ -192,9 +201,10 @@ If any required directory cannot be created, application startup logs an error
 and fails. The public health response does not include the local runtime path.
 
 The SQLite file is `runtime/database/pcb_aoi.sqlite3` by default. Startup
-enables foreign keys, WAL mode, and the configured busy timeout, creates schema
-version 1 idempotently, and proves the database can answer a query before the
-health endpoint is available. WAL improves reader/writer coexistence but SQLite
+enables foreign keys, WAL mode, and the configured busy timeout, applies the
+ordered schema migrations to version 2 idempotently, and proves the database can
+answer a query before the health endpoint is available. WAL improves
+reader/writer coexistence but SQLite
 still permits only one writer at a time.
 
 Database rows store metadata and safe relative artifact references; they do not
@@ -208,8 +218,7 @@ limitations.
 
 During live backup, the main database,
 `-wal`, and `-shm` files must be handled consistently. See
-`docs/database_foundation.md` for table/status meanings, repository scope, and
-the deferred migration strategy.
+`docs/database_foundation.md` for table/status meanings and migration scope.
 
 ## Request IDs
 

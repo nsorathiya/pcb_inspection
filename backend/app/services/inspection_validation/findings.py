@@ -71,6 +71,12 @@ class FindingFactory:
             details=safe_details,
         )
 
+    def definition(self, code: str) -> FindingDefinition:
+        return self._definitions[code]
+
+    def is_known(self, code: str) -> bool:
+        return code in self._definitions
+
     def sort(self, findings: Sequence[ValidationFinding]) -> tuple[ValidationFinding, ...]:
         return tuple(sorted(findings, key=lambda item: (
             self._definitions[item.code].order,

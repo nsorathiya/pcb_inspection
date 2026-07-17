@@ -32,16 +32,34 @@ from app.services.inspection_validation.interfaces import (
     ValidationArtifactRetriever,
     ValidationFinding,
     ValidationOutcome,
+    ValidationPersistenceResult,
     ValidationPolicyEvaluator,
     ValidationResultPersistence,
     ValidationSummary,
 )
-from app.services.inspection_validation.models import result_json, result_to_dict
+from app.services.inspection_validation.models import (
+    canonical_result_bytes,
+    canonical_result_sha256,
+    result_json,
+    result_to_dict,
+)
+from app.services.inspection_validation.persistence import (
+    InspectionValidationRepository,
+    PersistedInspectionValidation,
+    PersistedValidationFinding,
+    ValidationPersistenceConflictError,
+    ValidationPersistenceError,
+    ValidationPersistenceIntegrityError,
+)
 from app.services.inspection_validation.policy_evaluator import (
     ContractValidationPolicyEvaluator,
 )
 from app.services.inspection_validation.policy_loader import ValidationPolicyLoader
 from app.services.inspection_validation.service import InspectionValidationService
+from app.services.inspection_validation.validation_key import (
+    ValidationKeyArtifact,
+    generate_validation_key,
+)
 
 __all__ = [
     "ArtifactIntegrityInspection",
@@ -57,11 +75,14 @@ __all__ = [
     "InspectionValidationResult",
     "InspectionValidationStatusTransition",
     "InspectionValidationService",
+    "InspectionValidationRepository",
     "FindingFactory",
     "ManagedArtifactPathResolver",
     "NativeFormatInspector",
     "NativeFormatInspection",
     "PolicyLoadError",
+    "PersistedInspectionValidation",
+    "PersistedValidationFinding",
     "PurposeSpecificNativeFormatInspector",
     "ReadabilityStatus",
     "RetrievedInspectionArtifacts",
@@ -70,10 +91,18 @@ __all__ = [
     "ValidationArtifactRetriever",
     "ValidationFinding",
     "ValidationOutcome",
+    "ValidationPersistenceConflictError",
+    "ValidationPersistenceError",
+    "ValidationPersistenceIntegrityError",
+    "ValidationPersistenceResult",
     "ValidationPolicyEvaluator",
     "ValidationResultPersistence",
     "ValidationSummary",
     "ValidationPolicyLoader",
+    "ValidationKeyArtifact",
+    "canonical_result_bytes",
+    "canonical_result_sha256",
+    "generate_validation_key",
     "result_json",
     "result_to_dict",
 ]

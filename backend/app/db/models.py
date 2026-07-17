@@ -5,6 +5,7 @@ from enum import Enum as PythonEnum
 
 from sqlalchemy import (
     CheckConstraint,
+    Boolean,
     DateTime,
     Enum,
     Float,
@@ -16,7 +17,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-SCHEMA_VERSION = 1
+from app.db.validation_types import FindingCategory, FindingSeverity, ValidationOutcome
+
+SCHEMA_VERSION = 2
 
 
 def utc_now() -> datetime:
@@ -138,6 +141,11 @@ class Inspection(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    validations: Mapped[list["InspectionValidation"]] = relationship(
+        back_populates="inspection",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 
 class InspectionArtifact(Base):
@@ -186,6 +194,165 @@ class InspectionArtifact(Base):
     )
 
     inspection: Mapped[Inspection] = relationship(back_populates="artifacts")
+
+
+class InspectionValidation(Base):
+    __tablename__ = "inspection_validations"
+    __table_args__ = (
+        UniqueConstraint(
+            "inspection_id",
+            "validation_key",
+            name="uq_inspection_validation_key",
+        ),
+        CheckConstraint(
+            "length(id) = 36 AND lower(id) = id "
+            "AND length(replace(id, '-', '')) = 32 "
+            "AND substr(id, 9, 1) = '-' AND substr(id, 14, 1) = '-' "
+            "AND substr(id, 19, 1) = '-' AND substr(id, 24, 1) = '-' "
+            "AND id NOT GLOB '*[^0-9a-f-]*'",
+            name="ck_inspection_validation_uuid",
+        ),
+        CheckConstraint(
+            "length(validation_key) = 64 "
+            "AND validation_key NOT GLOB '*[^0-9a-f]*'",
+            name="ck_inspection_validation_key_sha256",
+        ),
+        CheckConstraint(
+            "length(result_sha256) = 64 "
+            "AND result_sha256 NOT GLOB '*[^0-9a-f]*'",
+            name="ck_inspection_validation_result_sha256",
+        ),
+        CheckConstraint(
+            "completed_at >= started_at",
+            name="ck_inspection_validation_timestamp_order",
+        ),
+        CheckConstraint(
+            "json_valid(rgb_summary_json) AND json_type(rgb_summary_json) = 'object'",
+            name="ck_inspection_validation_rgb_json",
+        ),
+        CheckConstraint(
+            "json_valid(height_summary_json) AND json_type(height_summary_json) = 'object'",
+            name="ck_inspection_validation_height_json",
+        ),
+        CheckConstraint(
+            "json_valid(summary_json) AND json_type(summary_json) = 'object'",
+            name="ck_inspection_validation_summary_json",
+        ),
+        CheckConstraint(
+            "json_valid(result_json) AND json_type(result_json) = 'object'",
+            name="ck_inspection_validation_result_json",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    inspection_id: Mapped[str] = mapped_column(
+        ForeignKey("inspections.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    contract_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    policy_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    policy_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    validator_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    validation_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    outcome: Mapped[ValidationOutcome] = mapped_column(
+        Enum(
+            ValidationOutcome,
+            native_enum=False,
+            create_constraint=True,
+            validate_strings=True,
+            name="validation_outcome",
+        ),
+        nullable=False,
+    )
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    rgb_summary_json: Mapped[str] = mapped_column(Text, nullable=False)
+    height_summary_json: Mapped[str] = mapped_column(Text, nullable=False)
+    summary_json: Mapped[str] = mapped_column(Text, nullable=False)
+    result_json: Mapped[str] = mapped_column(Text, nullable=False)
+    result_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now, index=True
+    )
+
+    inspection: Mapped[Inspection] = relationship(back_populates="validations")
+    findings: Mapped[list["InspectionValidationFinding"]] = relationship(
+        back_populates="validation",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+
+class InspectionValidationFinding(Base):
+    __tablename__ = "inspection_validation_findings"
+    __table_args__ = (
+        UniqueConstraint(
+            "validation_id",
+            "ordinal",
+            name="uq_inspection_validation_finding_ordinal",
+        ),
+        CheckConstraint("ordinal >= 0", name="ck_validation_finding_ordinal"),
+        CheckConstraint(
+            "length(id) = 36 AND lower(id) = id "
+            "AND length(replace(id, '-', '')) = 32 "
+            "AND substr(id, 9, 1) = '-' AND substr(id, 14, 1) = '-' "
+            "AND substr(id, 19, 1) = '-' AND substr(id, 24, 1) = '-' "
+            "AND id NOT GLOB '*[^0-9a-f-]*'",
+            name="ck_validation_finding_uuid",
+        ),
+        CheckConstraint(
+            "json_valid(details_json) AND json_type(details_json) = 'object'",
+            name="ck_validation_finding_details_json",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    validation_id: Mapped[str] = mapped_column(
+        ForeignKey("inspection_validations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    code: Mapped[str] = mapped_column(String(128), nullable=False)
+    severity: Mapped[FindingSeverity] = mapped_column(
+        Enum(
+            FindingSeverity,
+            native_enum=False,
+            create_constraint=True,
+            validate_strings=True,
+            name="validation_finding_severity",
+        ),
+        nullable=False,
+    )
+    category: Mapped[FindingCategory] = mapped_column(
+        Enum(
+            FindingCategory,
+            native_enum=False,
+            create_constraint=True,
+            validate_strings=True,
+            name="validation_finding_category",
+        ),
+        nullable=False,
+    )
+    message: Mapped[str] = mapped_column(String(512), nullable=False)
+    artifact_type: Mapped[ArtifactType | None] = mapped_column(
+        Enum(
+            ArtifactType,
+            native_enum=False,
+            create_constraint=True,
+            validate_strings=True,
+            name="validation_finding_artifact_type",
+        )
+    )
+    field: Mapped[str | None] = mapped_column(String(128))
+    blocking: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    details_json: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=utc_now
+    )
+
+    validation: Mapped[InspectionValidation] = relationship(back_populates="findings")
 
 
 class Recipe(Base):

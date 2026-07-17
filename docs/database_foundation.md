@@ -5,7 +5,8 @@ Date: 2026-07-17
 ## Scope
 
 The foundation stores inspection metadata, artifact references, recipe/model
-registrations, and append-only audit events. `POST /api/v1/inspections` uses
+registrations, append-only audit events, and immutable completed semantic-
+validation results. `POST /api/v1/inspections` uses
 this layer for paired intake, and `GET /api/v1/inspections/{inspection_id}`
 reads one inspection plus its registered artifact metadata. No collection GET,
 image processing, inference, or model registration side effect exists. In
@@ -35,9 +36,9 @@ Supported settings:
 | `PCB_AOI_SQLITE_BUSY_TIMEOUT_MS` | `5000` | Integer from 1 through 60000. |
 | `PCB_AOI_DATABASE_ECHO` | `false` | Enables SQLAlchemy SQL logging for local diagnostics. |
 
-The database directory and schema are created idempotently during FastAPI
-lifespan startup. Importing the application or database modules does not create
-directories or a database file.
+The database directory and schema are initialized idempotently through explicit
+numbered migrations during FastAPI lifespan startup. Importing the application
+or database modules does not create directories or a database file.
 
 ## Connection behavior
 
@@ -108,16 +109,31 @@ and timestamp. The repository exposes append and read operations only. Update
 or delete methods and APIs are intentionally absent; audit events are
 append-only by repository convention.
 
+### `inspection_validations` and `inspection_validation_findings`
+
+Schema version 2 stores completed typed semantic-validation results and their
+zero-based, deterministically ordered findings. Results are unique by
+`(inspection_id, validation_key)`, and findings are unique by
+`(validation_id, ordinal)`. Foreign keys, validation enums, hashes, timestamps,
+and JSON object shapes are constrained. The repository is append/read only and
+does not change inspection status, artifact metadata, or audit events. See
+`docs/inspection_validation_persistence.md` for canonical hashing, idempotency,
+transaction, and retrieval behavior.
+
 ### `schema_version`
 
-Contains one row identifying schema version `1`. Alembic is intentionally
-deferred while there is one local initial schema and no deployed upgrade path.
-Startup rejects an unknown version instead of silently changing it.
+Contains one authoritative row identifying schema version `2`. Startup applies
+stable `001_initial` and `002_validation_results` migrations in numeric order,
+validates the required tables for the recorded version, and rejects invalid or
+future versions. A version 1 database is upgraded without rewriting existing
+rows; new databases pass through both deterministic migrations. The version is
+advanced only in the migration transaction after its upgrade operation.
 
-Before the first incompatible schema change, add Alembic (or an equivalently
-reviewed ordered migration mechanism), create a migration from version 1,
-exercise upgrades against a database copy, and update the version only after a
-successful transaction. `create_all` is initialization, not an upgrade engine.
+Alembic remains deferred. Adopt it when multiple deployed histories, branching
+migrations, formal downgrade policy, or complex table/data transformations make
+the small ordered runner insufficient. Exercise every upgrade against a
+database backup before deployment; unversioned `create_all` is not used as the
+schema-evolution mechanism.
 
 ## Backup and recovery note
 
@@ -140,6 +156,7 @@ From the repository root in Windows PowerShell:
 
 ```powershell
 python -m pytest .\backend\tests\test_database.py -q
+python -m pytest .\backend\tests\test_inspection_validation_persistence.py -q
 python -m pytest .\backend\tests\test_health.py .\backend\tests\test_runtime_paths.py -q
 python -m pytest .\backend\tests -q
 ```

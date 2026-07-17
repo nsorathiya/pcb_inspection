@@ -13,30 +13,7 @@ from pathlib import Path
 from typing import Any, Mapping, Protocol, Sequence
 
 from app.db.models import ArtifactType
-
-
-class ValidationOutcome(str, Enum):
-    VALIDATION_PASSED = "VALIDATION_PASSED"
-    VALIDATION_FAILED = "VALIDATION_FAILED"
-    VALIDATION_ERROR = "VALIDATION_ERROR"
-
-
-class FindingSeverity(str, Enum):
-    INFO = "INFO"
-    WARNING = "WARNING"
-    ERROR = "ERROR"
-
-
-class FindingCategory(str, Enum):
-    PAIR = "PAIR"
-    FILE_INTEGRITY = "FILE_INTEGRITY"
-    FORMAT = "FORMAT"
-    IMAGE_PROPERTIES = "IMAGE_PROPERTIES"
-    HEIGHT_PROPERTIES = "HEIGHT_PROPERTIES"
-    REGISTRATION_EVIDENCE = "REGISTRATION_EVIDENCE"
-    CALIBRATION_EVIDENCE = "CALIBRATION_EVIDENCE"
-    POLICY = "POLICY"
-    INTERNAL = "INTERNAL"
+from app.db.validation_types import FindingCategory, FindingSeverity, ValidationOutcome
 
 
 class ReadabilityStatus(str, Enum):
@@ -168,6 +145,17 @@ class InspectionValidationResult:
 
 
 @dataclass(frozen=True)
+class ValidationPersistenceResult:
+    validation_id: str
+    inspection_id: str
+    validation_key: str
+    result_sha256: str
+    outcome: ValidationOutcome
+    created_at: datetime
+    idempotent_existing: bool
+
+
+@dataclass(frozen=True)
 class RetrievedInspectionArtifacts:
     inspection_id: str
     artifacts: tuple[StoredArtifactReference, ...]
@@ -217,8 +205,10 @@ class ValidationPolicyEvaluator(Protocol):
 class ValidationResultPersistence(Protocol):
     async def save_validation_result(
         self,
+        inspection_id: str,
         result: InspectionValidationResult,
-    ) -> None: ...
+        validation_key: str,
+    ) -> ValidationPersistenceResult: ...
 
 
 class InspectionValidationStatusTransition(Protocol):

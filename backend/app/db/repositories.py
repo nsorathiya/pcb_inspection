@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import PurePosixPath
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping
 from uuid import UUID, uuid4
 
 from sqlalchemy import case, select
@@ -24,6 +24,9 @@ from app.db.models import (
     Recipe,
     RecipeStatus,
 )
+
+if TYPE_CHECKING:
+    from app.services.inspection_validation.persistence import InspectionValidationRepository
 
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 FINAL_INSPECTION_STATUSES = {
@@ -441,16 +444,22 @@ class Repositories:
     recipes: RecipeRepository
     models: ModelVersionRepository
     audit_events: AuditEventRepository
+    validations: "InspectionValidationRepository"
 
     @classmethod
     def from_session_factory(
         cls,
         session_factory: async_sessionmaker[AsyncSession],
     ) -> "Repositories":
+        from app.services.inspection_validation.persistence import (
+            InspectionValidationRepository,
+        )
+
         return cls(
             inspections=InspectionRepository(session_factory),
             artifacts=InspectionArtifactRepository(session_factory),
             recipes=RecipeRepository(session_factory),
             models=ModelVersionRepository(session_factory),
             audit_events=AuditEventRepository(session_factory),
+            validations=InspectionValidationRepository(session_factory),
         )

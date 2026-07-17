@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import AsyncIterator
 
 from fastapi import Request
-from sqlalchemy import event, insert, select, text
+from sqlalchemy import event, text
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -15,7 +14,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from app.db.models import Base, SCHEMA_VERSION, SchemaVersion
+from app.db.migrations import MigrationRunner
 
 
 class Database:
@@ -62,25 +61,8 @@ class Database:
                 cursor.close()
 
     async def initialize(self) -> None:
-        """Create the initial schema idempotently and verify its version/queryability."""
-        async with self.engine.begin() as connection:
-            await connection.run_sync(Base.metadata.create_all)
-            current = await connection.scalar(
-                select(SchemaVersion.version).where(SchemaVersion.id == 1)
-            )
-            if current is None:
-                await connection.execute(
-                    insert(SchemaVersion).values(
-                        id=1,
-                        version=SCHEMA_VERSION,
-                        applied_at=datetime.now(timezone.utc),
-                    )
-                )
-            elif current != SCHEMA_VERSION:
-                raise RuntimeError(
-                    f"Unsupported database schema version {current}; "
-                    f"expected {SCHEMA_VERSION}"
-                )
+        """Apply ordered schema migrations and verify database queryability."""
+        await MigrationRunner(self.engine).run()
         await self.check_health()
 
     async def check_health(self) -> None:
