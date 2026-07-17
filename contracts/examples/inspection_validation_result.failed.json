@@ -1,0 +1,63 @@
+{
+  "contract_version": "pcb-aoi-inspection-validation/1.0",
+  "validation_id": "33333333-3333-4333-8333-333333333333",
+  "inspection_id": "44444444-4444-4444-8444-444444444444",
+  "validation_policy_id": "development-native-rgb-height",
+  "validation_policy_version": "1.0",
+  "outcome": "VALIDATION_FAILED",
+  "started_at": "2026-07-17T12:01:00+00:00",
+  "completed_at": "2026-07-17T12:01:00.050+00:00",
+  "validator_version": "1.0.0",
+  "rgb_artifact": {
+    "artifact_type": "RGB_RAW",
+    "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "byte_size": 2457600,
+    "declared_media_type": "image/png",
+    "detected_format": "PNG",
+    "width": 1920,
+    "height": 1080,
+    "channels": 3,
+    "bit_depth": 8,
+    "storage_data_type": "uint8",
+    "readability_status": "READABLE"
+  },
+  "height_artifact": {
+    "artifact_type": "HEIGHT_RAW",
+    "sha256": null,
+    "byte_size": null,
+    "declared_media_type": null,
+    "detected_format": null,
+    "width": null,
+    "height": null,
+    "channels": null,
+    "bit_depth": null,
+    "storage_data_type": null,
+    "readability_status": "MISSING"
+  },
+  "findings": [
+    {
+      "code": "HEIGHT_RAW_MISSING",
+      "severity": "ERROR",
+      "category": "PAIR",
+      "message": "The required HEIGHT_RAW artifact is missing.",
+      "artifact_type": "HEIGHT_RAW",
+      "blocking": true
+    },
+    {
+      "code": "INCOMPLETE_RAW_PAIR",
+      "severity": "ERROR",
+      "category": "PAIR",
+      "message": "Exactly one RGB_RAW and one HEIGHT_RAW artifact are required.",
+      "blocking": true
+    }
+  ],
+  "summary": {
+    "finding_count": 2,
+    "info_count": 0,
+    "warning_count": 0,
+    "error_count": 2,
+    "blocking_count": 2,
+    "technically_ready": false,
+    "synthetic_example": true
+  }
+}

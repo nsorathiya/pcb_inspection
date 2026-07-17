@@ -1,0 +1,55 @@
+{
+  "contract_version": "pcb-aoi-inspection-validation/1.0",
+  "validation_id": "55555555-5555-4555-8555-555555555555",
+  "inspection_id": "66666666-6666-4666-8666-666666666666",
+  "validation_policy_id": "development-native-rgb-height",
+  "validation_policy_version": "1.0",
+  "outcome": "VALIDATION_ERROR",
+  "started_at": "2026-07-17T12:02:00Z",
+  "completed_at": "2026-07-17T12:02:00.010Z",
+  "validator_version": "1.0.0",
+  "rgb_artifact": {
+    "artifact_type": "RGB_RAW",
+    "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "byte_size": 2457600,
+    "declared_media_type": "image/png",
+    "detected_format": null,
+    "width": null,
+    "height": null,
+    "channels": null,
+    "bit_depth": null,
+    "storage_data_type": null,
+    "readability_status": "UNINSPECTED"
+  },
+  "height_artifact": {
+    "artifact_type": "HEIGHT_RAW",
+    "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "byte_size": 4147200,
+    "declared_media_type": "image/tiff",
+    "detected_format": null,
+    "width": null,
+    "height": null,
+    "channels": null,
+    "bit_depth": null,
+    "storage_data_type": null,
+    "readability_status": "UNINSPECTED"
+  },
+  "findings": [
+    {
+      "code": "VALIDATOR_INTERNAL_ERROR",
+      "severity": "ERROR",
+      "category": "INTERNAL",
+      "message": "The validator could not complete reliably.",
+      "blocking": true
+    }
+  ],
+  "summary": {
+    "finding_count": 1,
+    "info_count": 0,
+    "warning_count": 0,
+    "error_count": 1,
+    "blocking_count": 1,
+    "technically_ready": false,
+    "synthetic_example": true
+  }
+}

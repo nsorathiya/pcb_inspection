@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aoi-for-pcb.local/contracts/inspection-validation-findings/1.0",
+  "title": "PCB AOI Inspection Validation Finding Catalogue",
+  "description": "Authoritative technical input-validation findings. These codes never describe PCB quality or solder defects.",
+  "catalog_version": "pcb-aoi-inspection-validation-findings/1.0",
+  "validation_contract_version": "pcb-aoi-inspection-validation/1.0",
+  "$defs": {
+    "severity": {
+      "enum": ["INFO", "WARNING", "ERROR"]
+    },
+    "category": {
+      "enum": [
+        "PAIR",
+        "FILE_INTEGRITY",
+        "FORMAT",
+        "IMAGE_PROPERTIES",
+        "HEIGHT_PROPERTIES",
+        "REGISTRATION_EVIDENCE",
+        "CALIBRATION_EVIDENCE",
+        "POLICY",
+        "INTERNAL"
+      ]
+    },
+    "finding_code": {
+      "type": "string",
+      "enum": [
+        "RGB_RAW_MISSING",
+        "HEIGHT_RAW_MISSING",
+        "DUPLICATE_RGB_RAW",
+        "DUPLICATE_HEIGHT_RAW",
+        "INCOMPLETE_RAW_PAIR",
+        "VALIDITY_MASK_MISSING",
+        "ARTIFACT_FILE_MISSING",
+        "ARTIFACT_SIZE_MISMATCH",
+        "ARTIFACT_SHA256_MISMATCH",
+        "ARTIFACT_PATH_UNSAFE",
+        "ARTIFACT_NOT_REGULAR_FILE",
+        "ARTIFACT_SYMLINK_REJECTED",
+        "RGB_FORMAT_UNSUPPORTED",
+        "HEIGHT_FORMAT_UNSUPPORTED",
+        "EXTENSION_CONTENT_MISMATCH",
+        "MEDIA_TYPE_CONTENT_MISMATCH",
+        "FILE_UNREADABLE",
+        "RGB_DIMENSIONS_INVALID",
+        "RGB_CHANNELS_UNSUPPORTED",
+        "RGB_BIT_DEPTH_UNSUPPORTED",
+        "RGB_COLOR_MODE_UNSUPPORTED",
+        "HEIGHT_DIMENSIONS_INVALID",
+        "HEIGHT_NOT_SINGLE_CHANNEL",
+        "HEIGHT_STORAGE_TYPE_UNSUPPORTED",
+        "HEIGHT_BIT_DEPTH_TOO_LOW",
+        "HEIGHT_COLORIZED_PREVIEW_REJECTED",
+        "HEIGHT_NAN_POLICY_INCOMPATIBLE",
+        "HEIGHT_INVALID_VALUE_POLICY_MISSING",
+        "DIMENSION_RELATIONSHIP_UNSUPPORTED",
+        "REGISTRATION_EVIDENCE_MISSING",
+        "CALIBRATION_EVIDENCE_MISSING",
+        "POLICY_NOT_FOUND",
+        "POLICY_VERSION_UNSUPPORTED",
+        "VALIDATOR_INTERNAL_ERROR"
+      ]
+    },
+    "safe_detail_value": {
+      "oneOf": [
+        {"type": ["string", "number", "boolean", "null"]},
+        {
+          "type": "array",
+          "maxItems": 32,
+          "items": {"type": ["string", "number", "boolean", "null"]}
+        }
+      ]
+    },
+    "safe_details": {
+      "type": "object",
+      "maxProperties": 32,
+      "propertyNames": {
+        "allOf": [
+          {"pattern": "^[a-z][a-z0-9_]{0,63}$"},
+          {
+            "not": {
+              "enum": [
+                "path",
+                "absolute_path",
+                "relative_path",
+                "filename",
+                "source_filename"
+              ]
+            }
+          }
+        ]
+      },
+      "additionalProperties": {"$ref": "#/$defs/safe_detail_value"}
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "category", "message", "blocking"],
+      "properties": {
+        "code": {"$ref": "#/$defs/finding_code"},
+        "severity": {"$ref": "#/$defs/severity"},
+        "category": {"$ref": "#/$defs/category"},
+        "message": {"type": "string", "minLength": 1, "maxLength": 512},
+        "artifact_type": {
+          "enum": ["RGB_RAW", "HEIGHT_RAW", "VALIDITY_MASK", "CALIBRATION"]
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "blocking": {"type": "boolean"},
+        "details": {"$ref": "#/$defs/safe_details"}
+      }
+    }
+  },
+  "findings": [
+    {"order": 10, "code": "RGB_RAW_MISSING", "default_severity": "ERROR", "category": "PAIR", "default_blocking": true, "description": "No RGB_RAW artifact is registered."},
+    {"order": 20, "code": "HEIGHT_RAW_MISSING", "default_severity": "ERROR", "category": "PAIR", "default_blocking": true, "description": "No HEIGHT_RAW artifact is registered."},
+    {"order": 30, "code": "DUPLICATE_RGB_RAW", "default_severity": "ERROR", "category": "PAIR", "default_blocking": true, "description": "More than one RGB_RAW artifact is registered."},
+    {"order": 40, "code": "DUPLICATE_HEIGHT_RAW", "default_severity": "ERROR", "category": "PAIR", "default_blocking": true, "description": "More than one HEIGHT_RAW artifact is registered."},
+    {"order": 50, "code": "INCOMPLETE_RAW_PAIR", "default_severity": "ERROR", "category": "PAIR", "default_blocking": true, "description": "Exactly one RGB_RAW and one HEIGHT_RAW artifact are not available together."},
+    {"order": 60, "code": "VALIDITY_MASK_MISSING", "default_severity": "ERROR", "category": "PAIR", "default_blocking": true, "description": "The selected policy requires a validity mask, but none is available."},
+    {"order": 70, "code": "ARTIFACT_FILE_MISSING", "default_severity": "ERROR", "category": "FILE_INTEGRITY", "default_blocking": true, "description": "Registered artifact bytes are missing from managed storage."},
+    {"order": 80, "code": "ARTIFACT_SIZE_MISMATCH", "default_severity": "ERROR", "category": "FILE_INTEGRITY", "default_blocking": true, "description": "Stored byte size differs from registered metadata."},
+    {"order": 90, "code": "ARTIFACT_SHA256_MISMATCH", "default_severity": "ERROR", "category": "FILE_INTEGRITY", "default_blocking": true, "description": "Stored bytes differ from the registered SHA-256."},
+    {"order": 100, "code": "ARTIFACT_PATH_UNSAFE", "default_severity": "ERROR", "category": "FILE_INTEGRITY", "default_blocking": true, "description": "The internal artifact reference cannot be resolved safely below managed storage."},
+    {"order": 110, "code": "ARTIFACT_NOT_REGULAR_FILE", "default_severity": "ERROR", "category": "FILE_INTEGRITY", "default_blocking": true, "description": "The artifact reference is not a regular file."},
+    {"order": 120, "code": "ARTIFACT_SYMLINK_REJECTED", "default_severity": "ERROR", "category": "FILE_INTEGRITY", "default_blocking": true, "description": "A symbolic link or reparse point was encountered."},
+    {"order": 130, "code": "RGB_FORMAT_UNSUPPORTED", "default_severity": "ERROR", "category": "FORMAT", "default_blocking": true, "description": "Detected RGB content is not allowed by the policy."},
+    {"order": 140, "code": "HEIGHT_FORMAT_UNSUPPORTED", "default_severity": "ERROR", "category": "FORMAT", "default_blocking": true, "description": "Detected native height content is not allowed by the policy."},
+    {"order": 150, "code": "EXTENSION_CONTENT_MISMATCH", "default_severity": "ERROR", "category": "FORMAT", "default_blocking": true, "description": "Filename extension and detected content format disagree."},
+    {"order": 160, "code": "MEDIA_TYPE_CONTENT_MISMATCH", "default_severity": "WARNING", "category": "FORMAT", "default_blocking": false, "description": "Declared media type and detected content format disagree."},
+    {"order": 170, "code": "FILE_UNREADABLE", "default_severity": "ERROR", "category": "FORMAT", "default_blocking": true, "description": "The file cannot be inspected reliably."},
+    {"order": 180, "code": "RGB_DIMENSIONS_INVALID", "default_severity": "ERROR", "category": "IMAGE_PROPERTIES", "default_blocking": true, "description": "RGB dimensions are outside policy bounds."},
+    {"order": 190, "code": "RGB_CHANNELS_UNSUPPORTED", "default_severity": "ERROR", "category": "IMAGE_PROPERTIES", "default_blocking": true, "description": "RGB channel count is not allowed by the policy."},
+    {"order": 200, "code": "RGB_BIT_DEPTH_UNSUPPORTED", "default_severity": "ERROR", "category": "IMAGE_PROPERTIES", "default_blocking": true, "description": "RGB bit depth is not allowed by the policy."},
+    {"order": 210, "code": "RGB_COLOR_MODE_UNSUPPORTED", "default_severity": "ERROR", "category": "IMAGE_PROPERTIES", "default_blocking": true, "description": "RGB color mode is not allowed by the policy."},
+    {"order": 220, "code": "HEIGHT_DIMENSIONS_INVALID", "default_severity": "ERROR", "category": "HEIGHT_PROPERTIES", "default_blocking": true, "description": "Height dimensions are outside policy bounds."},
+    {"order": 230, "code": "HEIGHT_NOT_SINGLE_CHANNEL", "default_severity": "ERROR", "category": "HEIGHT_PROPERTIES", "default_blocking": true, "description": "Height data is not a single-channel scalar raster."},
+    {"order": 240, "code": "HEIGHT_STORAGE_TYPE_UNSUPPORTED", "default_severity": "ERROR", "category": "HEIGHT_PROPERTIES", "default_blocking": true, "description": "Height scalar storage type is not allowed by the policy."},
+    {"order": 250, "code": "HEIGHT_BIT_DEPTH_TOO_LOW", "default_severity": "ERROR", "category": "HEIGHT_PROPERTIES", "default_blocking": true, "description": "Height bit depth is below the policy minimum."},
+    {"order": 260, "code": "HEIGHT_COLORIZED_PREVIEW_REJECTED", "default_severity": "ERROR", "category": "HEIGHT_PROPERTIES", "default_blocking": true, "description": "A screenshot, heatmap, or colorized preview was supplied as native height data."},
+    {"order": 270, "code": "HEIGHT_NAN_POLICY_INCOMPATIBLE", "default_severity": "ERROR", "category": "HEIGHT_PROPERTIES", "default_blocking": true, "description": "NaN handling is incompatible with the detected scalar storage type."},
+    {"order": 280, "code": "HEIGHT_INVALID_VALUE_POLICY_MISSING", "default_severity": "ERROR", "category": "HEIGHT_PROPERTIES", "default_blocking": true, "description": "Required invalid/no-data handling evidence is absent."},
+    {"order": 290, "code": "DIMENSION_RELATIONSHIP_UNSUPPORTED", "default_severity": "ERROR", "category": "PAIR", "default_blocking": true, "description": "RGB/height dimensions do not satisfy the selected relationship rule."},
+    {"order": 300, "code": "REGISTRATION_EVIDENCE_MISSING", "default_severity": "WARNING", "category": "REGISTRATION_EVIDENCE", "default_blocking": false, "description": "Registration evidence required for later spatial processing is absent."},
+    {"order": 310, "code": "CALIBRATION_EVIDENCE_MISSING", "default_severity": "WARNING", "category": "CALIBRATION_EVIDENCE", "default_blocking": false, "description": "Calibration evidence required by the policy is absent."},
+    {"order": 320, "code": "POLICY_NOT_FOUND", "default_severity": "ERROR", "category": "POLICY", "default_blocking": true, "description": "The selected validation policy cannot be found."},
+    {"order": 330, "code": "POLICY_VERSION_UNSUPPORTED", "default_severity": "ERROR", "category": "POLICY", "default_blocking": true, "description": "The selected validation policy version is unsupported."},
+    {"order": 340, "code": "VALIDATOR_INTERNAL_ERROR", "default_severity": "ERROR", "category": "INTERNAL", "default_blocking": true, "description": "The validator could not complete reliably because of an unexpected internal error."}
+  ]
+}
