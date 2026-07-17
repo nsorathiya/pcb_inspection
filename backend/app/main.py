@@ -1,8 +1,11 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 
+from app.api.errors import ApiError, api_error_handler, request_validation_error_handler
 from app.api.health import router as health_router
+from app.api.inspections import router as inspections_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.core.request_context import RequestIdMiddleware
@@ -14,6 +17,7 @@ from app.services.artifact_storage import (
     ArtifactSizeLimits,
     ArtifactStorageService,
 )
+from app.services.inspection_intake import InspectionIntakeCoordinator
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -45,6 +49,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     artifact_registration = ArtifactRegistrationService(
         artifact_storage,
         repositories.artifacts,
+    )
+    inspection_intake = InspectionIntakeCoordinator(
+        repositories,
+        artifact_registration,
     )
 
     @asynccontextmanager
@@ -92,9 +100,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.state.repositories = repositories
     application.state.artifact_storage = artifact_storage
     application.state.artifact_registration = artifact_registration
+    application.state.inspection_intake = inspection_intake
+    application.add_exception_handler(ApiError, api_error_handler)
+    application.add_exception_handler(
+        RequestValidationError,
+        request_validation_error_handler,
+    )
     application.add_middleware(RequestIdMiddleware)
     application.include_router(
         health_router,
+        prefix=application_settings.api_prefix,
+    )
+    application.include_router(
+        inspections_router,
         prefix=application_settings.api_prefix,
     )
     return application

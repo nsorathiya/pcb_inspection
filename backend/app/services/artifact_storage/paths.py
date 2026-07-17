@@ -13,6 +13,7 @@ from app.services.artifact_storage.exceptions import (
     ArtifactPathRedirectError,
     InvalidArtifactInputError,
     UnsupportedArtifactExtensionError,
+    UnsupportedArtifactMediaTypeError,
     UnsupportedArtifactTypeError,
 )
 
@@ -26,10 +27,28 @@ class _ArtifactRoute:
 
 
 _RASTER_EXTENSIONS = frozenset({".bin", ".bmp", ".jpeg", ".jpg", ".png", ".tif", ".tiff"})
-_HEIGHT_EXTENSIONS = frozenset({".bin", ".exr", ".h5", ".hdf5", ".npy", ".tif", ".tiff"})
+_HEIGHT_EXTENSIONS = frozenset({".bin", ".exr", ".h5", ".hdf5", ".npy", ".png", ".tif", ".tiff"})
 _MASK_EXTENSIONS = frozenset({".bin", ".npy", ".png", ".tif", ".tiff"})
 _CALIBRATION_EXTENSIONS = frozenset({".bin", ".json", ".txt", ".yaml", ".yml"})
 _REPORT_EXTENSIONS = frozenset({".bin", ".csv", ".json", ".pdf", ".txt"})
+
+_INTAKE_EXTENSIONS: dict[ArtifactType, frozenset[str]] = {
+    ArtifactType.RGB_RAW: frozenset(
+        {".bmp", ".jpeg", ".jpg", ".png", ".tif", ".tiff"}
+    ),
+    ArtifactType.HEIGHT_RAW: frozenset({".npy", ".png", ".tif", ".tiff"}),
+}
+_INTAKE_MEDIA_TYPES: dict[str, frozenset[str]] = {
+    ".bmp": frozenset({"application/octet-stream", "image/bmp", "image/x-ms-bmp"}),
+    ".jpeg": frozenset({"application/octet-stream", "image/jpeg"}),
+    ".jpg": frozenset({"application/octet-stream", "image/jpeg"}),
+    ".npy": frozenset(
+        {"application/octet-stream", "application/x-npy", "application/x-numpy"}
+    ),
+    ".png": frozenset({"application/octet-stream", "image/png"}),
+    ".tif": frozenset({"application/octet-stream", "image/tiff"}),
+    ".tiff": frozenset({"application/octet-stream", "image/tiff"}),
+}
 
 _ARTIFACT_ROUTES: dict[ArtifactType, _ArtifactRoute] = {
     ArtifactType.RGB_RAW: _ArtifactRoute(
@@ -96,6 +115,40 @@ def _approved_extension(
     if extension not in route.allowed_extensions:
         raise UnsupportedArtifactExtensionError(
             f"extension {extension!r} is not allowed for {artifact_type.value}"
+        )
+    return extension
+
+
+def validate_intake_file(
+    artifact_type: ArtifactType,
+    original_filename: str | None,
+    media_type: str | None,
+) -> str:
+    """Validate the conservative filename/media-type gate used by intake."""
+    try:
+        canonical_type = ArtifactType(artifact_type)
+        allowed_extensions = _INTAKE_EXTENSIONS[canonical_type]
+    except (KeyError, TypeError, ValueError) as exc:
+        raise UnsupportedArtifactTypeError(
+            "artifact type is not accepted by paired intake"
+        ) from exc
+    if not original_filename:
+        raise UnsupportedArtifactExtensionError(
+            f"a filename extension is required for {canonical_type.value}"
+        )
+
+    informational_name = original_filename.replace("\\", "/").rsplit("/", 1)[-1]
+    extension = PurePosixPath(informational_name).suffix.lower()
+    if extension not in allowed_extensions:
+        raise UnsupportedArtifactExtensionError(
+            f"extension {extension or '<none>'!r} is not accepted for "
+            f"{canonical_type.value} intake"
+        )
+
+    normalized_media_type = (media_type or "application/octet-stream").lower()
+    if normalized_media_type not in _INTAKE_MEDIA_TYPES[extension]:
+        raise UnsupportedArtifactMediaTypeError(
+            f"media type is not accepted for {canonical_type.value} {extension} intake"
         )
     return extension
 

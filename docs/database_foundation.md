@@ -5,9 +5,10 @@ Date: 2026-07-17
 ## Scope
 
 The foundation stores inspection metadata, artifact references, recipe/model
-registrations, and append-only audit events. It adds no HTTP CRUD endpoint,
-upload behavior, image processing, inference, or model registration side
-effect. In particular, the legacy `best_model.pth` is not registered.
+registrations, and append-only audit events. `POST /api/v1/inspections` now uses
+this layer for paired intake, but no GET inspection endpoint, image processing,
+inference, or model registration side effect exists. In particular, the legacy
+`best_model.pth` is not registered.
 
 Database metadata does not replace immutable raw file storage. Artifact rows
 contain relative references and integrity metadata only. The separately

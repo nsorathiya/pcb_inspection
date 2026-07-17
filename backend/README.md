@@ -1,6 +1,8 @@
-# Backend Foundation
+# Backend Foundation and Paired Intake
 
-The foundation application provides a model-independent health endpoint. It does not import or load the existing PyTorch prototype.
+The application provides a model-independent health endpoint and paired RGB plus
+height/depth intake with immutable raw storage. It does not decode images,
+preprocess data, run inference, or import the existing PyTorch prototype.
 
 Run all commands below in Windows PowerShell from the repository root.
 
@@ -36,6 +38,10 @@ Verify the endpoint from another PowerShell window:
 Invoke-RestMethod http://127.0.0.1:8000/api/v1/health
 ```
 
+The multipart intake endpoint is `POST /api/v1/inspections`. See
+`docs/inspection_intake_api.md` for fields, a PowerShell example, response and
+error contracts, and the precise meaning of `RECEIVED`.
+
 ## Run tests
 
 Run the focused logging, startup, health, and request-ID tests:
@@ -60,6 +66,12 @@ Run the focused immutable artifact-storage tests:
 
 ```powershell
 python -m pytest .\backend\tests\test_artifact_storage.py -q
+```
+
+Run the focused paired inspection-intake API tests:
+
+```powershell
+python -m pytest .\backend\tests\test_inspection_intake.py -q
 ```
 
 Run the complete backend foundation test suite:
@@ -157,9 +169,10 @@ Database rows store metadata and safe relative artifact references; they do not
 replace immutable artifact bytes. The storage service calculates SHA-256 and
 size while streaming, enforces per-category limits, and atomically finalizes
 internally generated filenames without overwriting different content. It does
-not inspect image semantics or expose an upload endpoint. See
-`docs/artifact_storage.md` for the layout, extension policy, rollback behavior,
-and Windows filesystem limitations.
+not inspect image semantics. The paired intake endpoint uses this service but
+does not decode or validate image pixels. See `docs/artifact_storage.md` for
+the layout, extension policy, rollback behavior, and Windows filesystem
+limitations.
 
 During live backup, the main database,
 `-wal`, and `-shm` files must be handled consistently. See

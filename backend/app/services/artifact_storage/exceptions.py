@@ -14,6 +14,10 @@ class UnsupportedArtifactExtensionError(InvalidArtifactInputError):
     """The source filename suffix is not approved for this artifact type."""
 
 
+class UnsupportedArtifactMediaTypeError(InvalidArtifactInputError):
+    """The upload media type is not approved for its filename extension."""
+
+
 class ArtifactPathError(ArtifactStorageError):
     """A managed path is unsafe or outside its expected storage category."""
 

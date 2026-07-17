@@ -6,9 +6,10 @@ Date: 2026-07-17
 
 This foundation stores exact artifact bytes below the configured runtime root
 and can coordinate a successful write with an `inspection_artifacts` database
-row. It does not add HTTP or multipart handling, create inspections, validate
-image semantics, preprocess images, generate previews, run inference, load a
-model, or implement retention cleanup.
+row. The separate paired intake API now supplies upload streams to this service;
+the core storage package remains independent of FastAPI `UploadFile` and
+multipart parsing. It does not validate image semantics, preprocess images,
+generate previews, run inference, load a model, or implement retention cleanup.
 
 Raw artifact storage proves byte integrity only. Paired RGB/height semantics,
 native bit depth, dimensions, registration, calibration meaning, and dataset

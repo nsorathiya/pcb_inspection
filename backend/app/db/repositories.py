@@ -4,7 +4,7 @@ import json
 import math
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import PurePosixPath
 from typing import Any, Mapping
 from uuid import UUID, uuid4
@@ -228,6 +228,27 @@ class InspectionRepository:
             result = await session.scalars(statement)
             return list(result)
 
+    async def mark_intake_failed(
+        self,
+        inspection_id: str,
+        *,
+        error_code: str,
+        error_message: str,
+    ) -> Inspection:
+        """Apply only the RECEIVED-to-ERROR transition used by intake compensation."""
+        async with self._sessions() as session, session.begin():
+            record = await session.get(Inspection, inspection_id)
+            if record is None:
+                raise ValueError("inspection does not exist")
+            if record.status is not InspectionStatus.RECEIVED:
+                raise ValueError("only a RECEIVED inspection can fail during intake")
+            record.status = InspectionStatus.ERROR
+            record.error_code = error_code
+            record.error_message = error_message
+            record.completed_at = datetime.now(timezone.utc)
+            await session.flush()
+        return record
+
 
 class InspectionArtifactRepository:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
@@ -267,6 +288,46 @@ class InspectionArtifactRepository:
         )
         async with self._sessions() as session:
             return await session.scalar(statement)
+
+    async def list_for_inspection(
+        self,
+        inspection_id: str,
+    ) -> list[InspectionArtifact]:
+        statement = (
+            select(InspectionArtifact)
+            .where(InspectionArtifact.inspection_id == inspection_id)
+            .order_by(InspectionArtifact.artifact_type.asc())
+        )
+        async with self._sessions() as session:
+            result = await session.scalars(statement)
+            return list(result)
+
+    async def _delete_for_intake_compensation(
+        self,
+        *,
+        artifact_id: str,
+        inspection_id: str,
+        artifact_type: ArtifactType,
+        relative_path: str,
+        sha256: str,
+        byte_size: int,
+    ) -> bool:
+        """Delete only an exact artifact row owned by a failed current intake."""
+        async with self._sessions() as session, session.begin():
+            record = await session.get(InspectionArtifact, artifact_id)
+            if record is None:
+                return False
+            if (
+                record.inspection_id != inspection_id
+                or record.artifact_type is not ArtifactType(artifact_type)
+                or record.relative_path != relative_path
+                or record.sha256 != sha256
+                or record.byte_size != byte_size
+            ):
+                return False
+            await session.delete(record)
+            await session.flush()
+        return True
 
 
 class RecipeRepository:

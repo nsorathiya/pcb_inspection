@@ -10,6 +10,7 @@ from app.services.artifact_storage.exceptions import (
     ArtifactStorageError,
     InvalidArtifactInputError,
     UnsupportedArtifactExtensionError,
+    UnsupportedArtifactMediaTypeError,
     UnsupportedArtifactTypeError,
 )
 from app.services.artifact_storage.models import (
@@ -17,7 +18,7 @@ from app.services.artifact_storage.models import (
     ArtifactSizeLimits,
     ArtifactStorageResult,
 )
-from app.services.artifact_storage.paths import ArtifactPathPolicy
+from app.services.artifact_storage.paths import ArtifactPathPolicy, validate_intake_file
 from app.services.artifact_storage.service import (
     ArtifactRegistrationService,
     ArtifactStorageService,
@@ -41,5 +42,7 @@ __all__ = [
     "ArtifactStorageService",
     "InvalidArtifactInputError",
     "UnsupportedArtifactExtensionError",
+    "UnsupportedArtifactMediaTypeError",
     "UnsupportedArtifactTypeError",
+    "validate_intake_file",
 ]

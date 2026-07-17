@@ -235,6 +235,40 @@ def test_final_inspection_requires_completed_at() -> None:
         )
 
 
+def test_intake_failure_transition_is_narrow_and_records_error_time(tmp_path) -> None:
+    async def scenario() -> None:
+        database, repositories, _ = await _initialized_database(tmp_path / "runtime")
+        inspection_id = str(uuid4())
+        try:
+            await repositories.inspections.create(
+                InspectionCreate(
+                    id=inspection_id,
+                    status=InspectionStatus.RECEIVED,
+                    board_id="BOARD-1",
+                    recipe_id="RECIPE-1",
+                    recipe_version="1.0",
+                )
+            )
+            failed = await repositories.inspections.mark_intake_failed(
+                inspection_id,
+                error_code="INSPECTION_INTAKE_FAILED",
+                error_message="Paired artifact intake did not complete.",
+            )
+            assert failed.status is InspectionStatus.ERROR
+            assert failed.completed_at is not None
+            assert failed.error_code == "INSPECTION_INTAKE_FAILED"
+            with pytest.raises(ValueError, match="only a RECEIVED"):
+                await repositories.inspections.mark_intake_failed(
+                    inspection_id,
+                    error_code="SECOND_FAILURE",
+                    error_message="must not transition twice",
+                )
+        finally:
+            await database.dispose()
+
+    asyncio.run(scenario())
+
+
 @pytest.mark.parametrize(
     "relative_path",
     ["C:/absolute/rgb.png", "/absolute/rgb.png", "../escape.png", "raw/../escape.png"],

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import tempfile
 from dataclasses import dataclass
@@ -32,6 +33,13 @@ from app.services.artifact_storage.paths import ArtifactPathPolicy, _ArtifactPat
 class _StorageOperation:
     result: ArtifactStorageResult
     created_by_operation: bool
+
+
+@dataclass(frozen=True)
+class _RegistrationOperation:
+    record: InspectionArtifact
+    storage_operation: _StorageOperation
+    record_created_by_operation: bool
 
 
 class ArtifactStorageService:
@@ -222,8 +230,18 @@ class ArtifactRegistrationService:
         self._artifacts = artifacts
 
     async def store_and_register(self, artifact: ArtifactInput) -> InspectionArtifact:
-        operation = self._storage._store_operation(artifact)
-        result = operation.result
+        operation = await self._store_and_register_operation(artifact)
+        return operation.record
+
+    async def _store_and_register_operation(
+        self,
+        artifact: ArtifactInput,
+    ) -> _RegistrationOperation:
+        storage_operation = await asyncio.to_thread(
+            self._storage._store_operation,
+            artifact,
+        )
+        result = storage_operation.result
         try:
             existing = await self._artifacts.get_by_location(
                 artifact.inspection_id,
@@ -239,9 +257,13 @@ class ArtifactRegistrationService:
                     raise ArtifactConflictError(
                         "registered artifact metadata conflicts with stored content"
                     )
-                return existing
+                return _RegistrationOperation(
+                    record=existing,
+                    storage_operation=storage_operation,
+                    record_created_by_operation=False,
+                )
 
-            return await self._artifacts.create(
+            created = await self._artifacts.create(
                 InspectionArtifactCreate(
                     inspection_id=artifact.inspection_id,
                     artifact_type=result.artifact_type,
@@ -250,6 +272,11 @@ class ArtifactRegistrationService:
                     byte_size=result.byte_size,
                     media_type=result.media_type,
                 )
+            )
+            return _RegistrationOperation(
+                record=created,
+                storage_operation=storage_operation,
+                record_created_by_operation=True,
             )
         except Exception as exc:
             registered = await self._artifacts.get_by_location(
@@ -263,9 +290,36 @@ class ArtifactRegistrationService:
                 and registered.media_type == result.media_type
             )
             if not registered_matches:
-                self._storage._rollback_created(operation)
+                await asyncio.to_thread(
+                    self._storage._rollback_created,
+                    storage_operation,
+                )
             if isinstance(exc, ArtifactConflictError):
                 raise
             raise ArtifactRegistrationError(
                 "artifact database registration failed; new storage was rolled back"
             ) from exc
+
+    async def _compensate_operation(
+        self,
+        operation: _RegistrationOperation,
+    ) -> bool:
+        """Remove only a row and file created by this registration operation."""
+        if not operation.record_created_by_operation:
+            return False
+        record = operation.record
+        deleted = await self._artifacts._delete_for_intake_compensation(
+            artifact_id=record.id,
+            inspection_id=record.inspection_id,
+            artifact_type=record.artifact_type,
+            relative_path=record.relative_path,
+            sha256=record.sha256,
+            byte_size=record.byte_size,
+        )
+        if not deleted:
+            return False
+        await asyncio.to_thread(
+            self._storage._rollback_created,
+            operation.storage_operation,
+        )
+        return True
