@@ -62,7 +62,7 @@ request, response, error, request-ID, status, and concurrency contracts. See
 `docs/inspection_semantic_validation_engine.md` for policy loading, artifact
 reads, integrity and native-format checks, deterministic execution, and current
 registration-evidence limitations. See
-`docs/inspection_validation_persistence.md` for schema version 2, migration,
+`docs/inspection_validation_persistence.md` for validation migration,
 canonical hashes, validation keys, transactions, and idempotent replay.
 See `docs/inspection_validation_lifecycle.md` for the guarded `RECEIVED`
 transitions, lifecycle audit, standalone-result adoption, concurrency, and
@@ -86,6 +86,14 @@ come from the authoritative defect taxonomy, and confidence is always null.
 This engine performs no image-content analysis, reads no source artifacts, is
 not wired into FastAPI, and makes no production or model-accuracy claim. See
 `docs/mock_inference_engine.md`.
+
+Schema version 3 adds a separate processing persistence and guarded lifecycle
+foundation. It atomically adopts already-completed typed preprocessing and
+mock-inference results, preserving ordered findings and canonical hashes while
+moving READY to PROCESSING and PROCESSING to PASS, FAIL, UNCERTAIN, or technical
+ERROR. It does not execute either service and is not exposed by an HTTP route.
+Stored mock outcomes are development workflow values, not production PCB
+decisions. See `docs/inspection_processing_lifecycle.md`.
 
 ## Run tests
 
@@ -175,6 +183,13 @@ python -m pytest `
   .\backend\tests\test_deterministic_mock_inference.py -q
 ```
 
+Run the focused schema-v3 processing persistence, lifecycle, rollback, and
+concurrency tests:
+
+```powershell
+python -m pytest .\backend\tests\test_inspection_processing_lifecycle.py -q
+```
+
 Run the complete backend foundation test suite:
 
 ```powershell
@@ -262,7 +277,7 @@ and fails. The public health response does not include the local runtime path.
 
 The SQLite file is `runtime/database/pcb_aoi.sqlite3` by default. Startup
 enables foreign keys, WAL mode, and the configured busy timeout, applies the
-ordered schema migrations to version 2 idempotently, and proves the database can
+ordered schema migrations to version 3 idempotently, and proves the database can
 answer a query before the health endpoint is available. WAL improves
 reader/writer coexistence but SQLite
 still permits only one writer at a time.

@@ -125,7 +125,7 @@ async def _inspection(repositories, inspection_id, status=InspectionStatus.RECEI
     ))
 
 
-def test_new_database_initializes_at_schema_two_with_required_tables_and_pragmas(tmp_path):
+def test_new_database_initializes_at_current_schema_with_required_tables_and_pragmas(tmp_path):
     async def scenario():
         database, _, _ = await _database(tmp_path / "runtime")
         try:
@@ -135,7 +135,7 @@ def test_new_database_initializes_at_schema_two_with_required_tables_and_pragmas
                 foreign_keys = await connection.scalar(text("PRAGMA foreign_keys"))
                 journal = await connection.scalar(text("PRAGMA journal_mode"))
                 timeout = await connection.scalar(text("PRAGMA busy_timeout"))
-            assert version == SCHEMA_VERSION == 2
+            assert version == SCHEMA_VERSION == 3
             assert {"inspection_validations", "inspection_validation_findings"} <= tables
             assert foreign_keys == 1 and str(journal).lower() == "wal" and timeout == 4321
         finally:
@@ -176,14 +176,14 @@ def test_existing_version_one_database_migrates_and_preserves_all_existing_entit
             async with database.session() as session:
                 version = await session.scalar(text("SELECT version FROM schema_version WHERE id=1"))
                 counts = [await session.scalar(select(func.count()).select_from(model)) for model in (Recipe, ModelVersion, AuditEvent)]
-            assert version == 2
+            assert version == 3
             assert (await repositories.inspections.get(inspection_id)).id == inspection_id
             assert (await repositories.artifacts.get(artifact.id)).sha256 == "a" * 64
             assert counts == [1, 1, 1]
             assert (await repositories.audit_events.get(event_record.id)).id == event_record.id
             await database.initialize()
             async with database.session() as session:
-                assert await session.scalar(text("SELECT version FROM schema_version WHERE id=1")) == 2
+                assert await session.scalar(text("SELECT version FROM schema_version WHERE id=1")) == 3
         finally:
             await database.dispose()
     asyncio.run(scenario())
@@ -217,7 +217,7 @@ def test_failed_migration_does_not_report_version_two(tmp_path):
         failing = Migration(2, "002_validation_results_failure_test", DEFAULT_MIGRATIONS[1].required_table_names, fail_after_ddl)
         runner = MigrationRunner(database.engine, (DEFAULT_MIGRATIONS[0], failing))
         with pytest.raises(RuntimeError, match="simulated migration failure"):
-            await runner.run()
+            await runner.run(target_version=2)
         async with database.engine.connect() as connection:
             version = await connection.scalar(text("SELECT version FROM schema_version WHERE id=1"))
         assert version == 1

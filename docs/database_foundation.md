@@ -127,13 +127,25 @@ See `docs/inspection_validation_lifecycle.md` for transition fields,
 idempotency, concurrency, and rollback semantics. Standalone persistence remains
 append/read only and lifecycle-neutral.
 
+### Processing runs and completed result evidence
+
+Schema version 3 adds `inspection_processing_runs`, immutable preprocessing and
+inference result tables, and their ordered finding tables. The guarded service
+atomically transitions READY to PROCESSING and then PROCESSING to a mock final
+state or technical ERROR. It accepts already-completed typed results and never
+runs preprocessing or inference. See
+`docs/inspection_processing_lifecycle.md` for processing keys, canonical
+hashes, constraints, idempotency, concurrency, audits, and rollback behavior.
+
 ### `schema_version`
 
-Contains one authoritative row identifying schema version `2`. Startup applies
-stable `001_initial` and `002_validation_results` migrations in numeric order,
+Contains one authoritative row identifying schema version `3`. Startup applies
+stable `001_initial`, `002_validation_results`, and `003_processing_results`
+migrations in numeric order,
 validates the required tables for the recorded version, and rejects invalid or
-future versions. A version 1 database is upgraded without rewriting existing
-rows; new databases pass through both deterministic migrations. The version is
+future versions. Version 1 databases migrate through versions 2 and 3, while
+version 2 databases migrate to version 3 without rewriting existing rows. New
+databases pass through all deterministic migrations. The version is
 advanced only in the migration transaction after its upgrade operation.
 
 Alembic remains deferred. Adopt it when multiple deployed histories, branching
@@ -165,6 +177,7 @@ From the repository root in Windows PowerShell:
 python -m pytest .\backend\tests\test_database.py -q
 python -m pytest .\backend\tests\test_inspection_validation_persistence.py -q
 python -m pytest .\backend\tests\test_inspection_validation_lifecycle.py -q
+python -m pytest .\backend\tests\test_inspection_processing_lifecycle.py -q
 python -m pytest .\backend\tests\test_health.py .\backend\tests\test_runtime_paths.py -q
 python -m pytest .\backend\tests -q
 ```

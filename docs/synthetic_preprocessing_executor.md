@@ -155,11 +155,14 @@ public boundary.
 
 ## Unsupported integration and replacement points
 
-There is no database persistence, migration, HTTP endpoint, application-state
-wiring, status transition, audit event, inference call, model load,
-classification, report, preview, or frontend integration. The executor does
-not rerun semantic validation; it consumes the explicitly supplied validated
-identity and prerequisite outcome.
+The executor itself has no database, HTTP endpoint, application-state wiring,
+status transition, audit event, inference call, model load, classification,
+report, preview, or frontend integration. Schema version 3 provides a separate
+result-only persistence/lifecycle coordinator for an already completed typed
+result; it never calls this executor or reads internal buffers. See
+`docs/inspection_processing_lifecycle.md`. The executor does not rerun semantic
+validation; it consumes the explicitly supplied validated identity and
+prerequisite outcome.
 
 Real-data integration must replace or extend the policy registry, trusted
 source reader, RGB decoder/processor, height decoder/processor, registration

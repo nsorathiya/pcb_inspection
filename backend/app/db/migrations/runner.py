@@ -7,7 +7,11 @@ from typing import Awaitable, Callable, Sequence
 from sqlalchemy import inspect, select, update
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
-from app.db.migrations import migration_001_initial, migration_002_validation_results
+from app.db.migrations import (
+    migration_001_initial,
+    migration_002_validation_results,
+    migration_003_processing_results,
+)
 from app.db.models import SCHEMA_VERSION, SchemaVersion
 
 
@@ -31,6 +35,12 @@ DEFAULT_MIGRATIONS = (
         migration_002_validation_results.IDENTIFIER,
         migration_002_validation_results.REQUIRED_TABLE_NAMES,
         migration_002_validation_results.upgrade,
+    ),
+    Migration(
+        migration_003_processing_results.VERSION,
+        migration_003_processing_results.IDENTIFIER,
+        migration_003_processing_results.REQUIRED_TABLE_NAMES,
+        migration_003_processing_results.upgrade,
     ),
 )
 

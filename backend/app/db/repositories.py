@@ -445,6 +445,7 @@ class Repositories:
     models: ModelVersionRepository
     audit_events: AuditEventRepository
     validations: "InspectionValidationRepository"
+    processing: "InspectionProcessingRepository"
 
     @classmethod
     def from_session_factory(
@@ -454,6 +455,9 @@ class Repositories:
         from app.services.inspection_validation.persistence import (
             InspectionValidationRepository,
         )
+        from app.services.inspection_processing.persistence import (
+            InspectionProcessingRepository,
+        )
 
         return cls(
             inspections=InspectionRepository(session_factory),
@@ -462,4 +466,5 @@ class Repositories:
             models=ModelVersionRepository(session_factory),
             audit_events=AuditEventRepository(session_factory),
             validations=InspectionValidationRepository(session_factory),
+            processing=InspectionProcessingRepository(session_factory),
         )

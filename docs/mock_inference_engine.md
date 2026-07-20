@@ -207,11 +207,12 @@ preprocessing buffers must remain inside trusted execution code.
 
 ## Unsupported integration and real-data replacement points
 
-There is no database table, migration, persistence, HTTP endpoint, FastAPI
-startup wiring, inspection status transition, audit event, report, preview,
-model file, model registry, framework runtime, training, or frontend
-integration. The mock result must not be promoted or relabelled as a
-production inspection decision.
+The engine itself still has no database, HTTP, FastAPI startup, report,
+preview, model-file, training, or frontend integration. Schema version 3 now
+provides a separate result-only persistence/lifecycle coordinator for an
+already completed typed mock result; it never invokes this engine or reads its
+input buffers. See `docs/inspection_processing_lifecycle.md`. A persisted mock
+result must not be promoted or relabelled as a production inspection decision.
 
 Real-data work must separately define model input compatibility, model and
 taxonomy version evidence, output semantics, thresholds, calibration,
