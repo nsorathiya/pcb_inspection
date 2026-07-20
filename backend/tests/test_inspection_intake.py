@@ -11,7 +11,7 @@ from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from app.core.config import Settings
 from app.core.request_context import REQUEST_ID_HEADER
-from app.db.models import ArtifactType, InspectionStatus
+from app.db.models import SCHEMA_VERSION, ArtifactType, InspectionStatus
 from app.main import create_app
 
 RGB_BYTES = b"rgb-exact-bytes"
@@ -39,6 +39,16 @@ def _data(**overrides):
         "lot_id": " LOT_1 ",
         "operator_id": " operator-1 ",
         "station_id": " station-1 ",
+    }
+    values.update(overrides)
+    return values
+
+
+def _required_data(**overrides):
+    values = {
+        "board_id": " PCB_A ",
+        "recipe_id": " RECIPE_A ",
+        "recipe_version": " 1.0 ",
     }
     values.update(overrides)
     return values
@@ -124,6 +134,8 @@ def test_successful_pair_returns_201_and_persists_exact_pair(tmp_path) -> None:
         inspection = inspections[0]
         assert inspection.id == inspection_id
         assert inspection.status is InspectionStatus.RECEIVED
+        assert inspection.lot_id == "LOT_1"
+        assert inspection.operator_id == "operator-1"
         assert inspection.model_id is None
         assert inspection.model_version is None
         assert inspection.confidence is None
@@ -188,6 +200,110 @@ def test_matching_expected_hashes_and_sizes_succeed(tmp_path) -> None:
     assert response.json()["status"] == "RECEIVED"
 
 
+def test_all_optional_metadata_can_be_omitted_and_absence_is_consistent(
+    tmp_path,
+) -> None:
+    application = create_app(_settings(tmp_path / "runtime"))
+    with TestClient(application) as client:
+        response = _post(client, data=_required_data())
+        assert response.status_code == 201, response.json()
+        payload = response.json()
+        inspection_id = payload["inspection_id"]
+        detail = client.get(f"/api/v1/inspections/{inspection_id}")
+        history = client.get("/api/v1/inspections")
+
+    assert payload["lot_id"] is None
+    inspection = _inspections(application)[0]
+    assert inspection.status is InspectionStatus.RECEIVED
+    assert inspection.lot_id is None
+    assert inspection.operator_id is None
+    assert len(_artifacts(application, inspection_id)) == 2
+    event = _audit_events(application, inspection_id)[0]
+    assert event.actor_id is None
+    assert json.loads(event.details_json)["station_id"] is None
+    assert detail.status_code == 200
+    assert detail.json()["lot_id"] is None
+    assert history.status_code == 200
+    history_item = history.json()["items"][0]
+    assert history_item["inspection_id"] == inspection_id
+    assert history_item["lot_id"] is None
+    assert history_item["operator_id"] is None
+
+
+@pytest.mark.parametrize("empty_value", ["", "   "])
+def test_empty_browser_optional_values_normalize_to_null(tmp_path, empty_value) -> None:
+    case_name = "empty" if not empty_value else "spaces"
+    application = create_app(_settings(tmp_path / case_name))
+    optional_fields = {
+        "lot_id": empty_value,
+        "operator_id": empty_value,
+        "station_id": empty_value,
+        "rgb_sha256": empty_value,
+        "height_sha256": empty_value,
+        "rgb_byte_size": empty_value,
+        "height_byte_size": empty_value,
+    }
+    with TestClient(application) as client:
+        response = _post(
+            client,
+            data=_required_data(**optional_fields),
+        )
+
+    assert response.status_code == 201, response.json()
+    assert response.json()["lot_id"] is None
+    inspection = _inspections(application)[0]
+    assert inspection.lot_id is None
+    assert inspection.operator_id is None
+    event = _audit_events(application, inspection.id)[0]
+    assert event.actor_id is None
+    assert json.loads(event.details_json)["station_id"] is None
+    assert all(
+        placeholder not in response.text
+        for placeholder in ('"N/A"', '"unknown"', '"-"', '"null"')
+    )
+
+
+def test_literal_null_identifier_is_preserved_as_text(tmp_path) -> None:
+    application = create_app(_settings(tmp_path / "runtime"))
+    with TestClient(application) as client:
+        response = _post(client, data=_required_data(lot_id="null"))
+
+    assert response.status_code == 201, response.json()
+    assert response.json()["lot_id"] == "null"
+    assert _inspections(application)[0].lot_id == "null"
+
+
+@pytest.mark.parametrize(
+    "omitted_field",
+    [
+        "lot_id",
+        "operator_id",
+        "station_id",
+        "rgb_sha256",
+        "height_sha256",
+        "rgb_byte_size",
+        "height_byte_size",
+    ],
+)
+def test_each_optional_field_can_be_omitted_independently(
+    tmp_path,
+    omitted_field,
+) -> None:
+    application = create_app(_settings(tmp_path / omitted_field))
+    data = _data(
+        rgb_sha256=hashlib.sha256(RGB_BYTES).hexdigest(),
+        height_sha256=hashlib.sha256(HEIGHT_BYTES).hexdigest(),
+        rgb_byte_size=str(len(RGB_BYTES)),
+        height_byte_size=str(len(HEIGHT_BYTES)),
+    )
+    data.pop(omitted_field)
+    with TestClient(application) as client:
+        response = _post(client, data=data)
+
+    assert response.status_code == 201, response.json()
+    assert response.json()["status"] == "RECEIVED"
+
+
 @pytest.mark.parametrize("missing_field", ["rgb_image", "height_map"])
 def test_missing_pair_file_returns_structured_422_before_inspection(
     tmp_path,
@@ -203,6 +319,25 @@ def test_missing_pair_file_returns_structured_422_before_inspection(
         assert response.json()["code"] == "INCOMPLETE_OR_INVALID_MULTIPART_REQUEST"
         assert response.json()["request_id"] == response.headers[REQUEST_ID_HEADER]
         _assert_no_persisted_intake(application)
+
+
+@pytest.mark.parametrize(
+    "missing_field",
+    ["board_id", "recipe_id", "recipe_version"],
+)
+def test_missing_required_identifier_returns_structured_422(
+    tmp_path,
+    missing_field,
+) -> None:
+    application = create_app(_settings(tmp_path / missing_field))
+    data = _required_data()
+    data.pop(missing_field)
+    with TestClient(application) as client:
+        response = _post(client, data=data)
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "INCOMPLETE_OR_INVALID_MULTIPART_REQUEST"
+    _assert_no_persisted_intake(application)
 
 
 @pytest.mark.parametrize("field", ["board_id", "recipe_id", "recipe_version"])
@@ -225,6 +360,45 @@ def test_control_character_and_overlong_identifiers_are_rejected(tmp_path) -> No
             assert response.status_code == 400
             assert response.json()["code"] == "INVALID_INTAKE_METADATA"
             _assert_no_persisted_intake(application)
+
+
+@pytest.mark.parametrize("field", ["lot_id", "operator_id", "station_id"])
+@pytest.mark.parametrize("value", ["valid\x07value", "X" * 129])
+def test_invalid_nonempty_optional_identifiers_are_rejected(
+    tmp_path,
+    field,
+    value,
+) -> None:
+    application = create_app(_settings(tmp_path / f"{field}-{len(value)}"))
+    with TestClient(application) as client:
+        response = _post(client, data=_data(**{field: value}))
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "INVALID_INTAKE_METADATA"
+    _assert_no_persisted_intake(application)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("rgb_sha256", "0" * 64 + "\x07"),
+        ("height_sha256", "0" * 64 + "\x07"),
+        ("rgb_byte_size", "1\x07"),
+        ("height_byte_size", "1\x07"),
+    ],
+)
+def test_control_characters_in_optional_expectations_are_rejected(
+    tmp_path,
+    field,
+    value,
+) -> None:
+    application = create_app(_settings(tmp_path / field))
+    with TestClient(application) as client:
+        response = _post(client, data=_data(**{field: value}))
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "INVALID_INTAKE_METADATA"
+    _assert_no_persisted_intake(application)
 
 
 @pytest.mark.parametrize("field", ["rgb_sha256", "height_sha256"])
@@ -489,9 +663,31 @@ def test_openapi_documents_multipart_pair_and_intake_only_semantics(tmp_path) ->
     component_name = request_schema["$ref"].rsplit("/", 1)[-1]
     component = schema["components"]["schemas"][component_name]
 
-    assert {"rgb_image", "height_map", "board_id", "recipe_id", "recipe_version"} <= set(
-        component["required"]
+    required_fields = {
+        "rgb_image",
+        "height_map",
+        "board_id",
+        "recipe_id",
+        "recipe_version",
+    }
+    optional_fields = {
+        "lot_id",
+        "operator_id",
+        "station_id",
+        "rgb_sha256",
+        "height_sha256",
+        "rgb_byte_size",
+        "height_byte_size",
+    }
+    assert set(component["required"]) == required_fields
+    assert optional_fields <= set(component["properties"])
+    assert optional_fields.isdisjoint(component["required"])
+    assert all(
+        {variant.get("type") for variant in component["properties"][field]["anyOf"]}
+        == {"string", "null"}
+        for field in optional_fields
     )
+    assert SCHEMA_VERSION == 3
     assert "not decoded" in operation["description"]
     assert "alignment is not proven" in operation["description"]
     assert "RECEIVED does not mean PASS" in operation["description"]

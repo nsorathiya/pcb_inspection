@@ -116,13 +116,31 @@ class _InspectionIntakeMetadata(BaseModel):
     def validate_optional_identifier(cls, value: object) -> str | None:
         return cls._validated_identifier(value, required=False)
 
-    @staticmethod
-    def _validated_identifier(value: object, *, required: bool) -> str | None:
+    @classmethod
+    def _normalized_form_text(
+        cls,
+        value: object,
+        *,
+        value_name: str,
+        coerce_to_text: bool = False,
+    ) -> str | None:
+        if value is None:
+            return None
         if not isinstance(value, str):
-            raise ValueError("identifier must be text")
+            if not coerce_to_text:
+                raise ValueError(f"{value_name} must be text")
+            value = str(value)
         if any(unicodedata.category(character) == "Cc" for character in value):
-            raise ValueError("identifier must not contain control characters")
+            raise ValueError(f"{value_name} must not contain control characters")
         normalized = value.strip()
+        return normalized or None
+
+    @classmethod
+    def _validated_identifier(cls, value: object, *, required: bool) -> str | None:
+        normalized = cls._normalized_form_text(
+            value,
+            value_name="identifier",
+        )
         if not normalized:
             if required:
                 raise ValueError("required identifier must not be empty")
@@ -134,20 +152,28 @@ class _InspectionIntakeMetadata(BaseModel):
     @field_validator("rgb_sha256", "height_sha256", mode="before")
     @classmethod
     def validate_expected_hash(cls, value: object) -> str | None:
-        if value is None or value == "":
+        normalized = cls._normalized_form_text(
+            value,
+            value_name="expected hash",
+        )
+        if normalized is None:
             return None
-        if not isinstance(value, str) or not SHA256_PATTERN.fullmatch(value.strip()):
+        if not SHA256_PATTERN.fullmatch(normalized):
             raise ValueError("expected hash must be lowercase SHA-256")
-        return value.strip()
+        return normalized
 
     @field_validator("rgb_byte_size", "height_byte_size", mode="before")
     @classmethod
     def validate_expected_size(cls, value: object) -> int | None:
-        if value is None or value == "":
-            return None
         if isinstance(value, bool):
             raise ValueError("expected size must be a non-negative integer")
-        text = str(value).strip()
+        text = cls._normalized_form_text(
+            value,
+            value_name="expected size",
+            coerce_to_text=True,
+        )
+        if text is None:
+            return None
         if not text.isdecimal():
             raise ValueError("expected size must be a non-negative integer")
         return int(text)

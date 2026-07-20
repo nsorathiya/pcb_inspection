@@ -74,6 +74,11 @@ synthetic, mock, and nonproduction. History never returns findings, confidence,
 artifact paths, filenames, raw result JSON, fixture locations, buffers, model
 paths, or historical audit request IDs.
 
+`lot_id` and `operator_id` reflect their nullable inspection columns and are
+returned as `null` when omitted or empty at intake. `station_id` remains
+successful-intake audit metadata only and is neither returned nor searchable in
+history.
+
 ## Ordering and pagination
 
 Rows use immutable newest-first ordering:

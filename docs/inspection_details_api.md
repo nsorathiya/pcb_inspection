@@ -108,6 +108,11 @@ board acceptability, or a PASS result.
 The response deliberately excludes relative and absolute paths, filenames,
 binary content, internal artifact database IDs, operator/audit details, model
 identity or artifact paths, confidence, and inferred classification.
+`lot_id` is the persisted nullable intake value and is returned as `null` when
+the client omitted it or submitted an empty browser-form value. `operator_id`
+is persisted but remains outside this established details response. The
+audit-only `station_id` has no schema-version 3 inspection column and is not
+returned.
 
 ## Error responses
 

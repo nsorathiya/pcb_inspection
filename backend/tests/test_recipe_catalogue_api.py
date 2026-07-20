@@ -460,9 +460,6 @@ def test_returned_identity_is_accepted_unchanged_by_inspection_intake(tmp_path) 
                 "board_id": "BOARD-1",
                 "recipe_id": selected["recipe_id"],
                 "recipe_version": selected["recipe_version"],
-                "lot_id": "LOT-1",
-                "operator_id": "operator-1",
-                "station_id": "station-1",
             },
             files={
                 "rgb_image": ("board.png", b"rgb-bytes", "image/png"),
@@ -476,6 +473,7 @@ def test_returned_identity_is_accepted_unchanged_by_inspection_intake(tmp_path) 
 
     assert catalogue.status_code == 200
     assert intake.status_code == 201, intake.json()
+    assert intake.json()["lot_id"] is None
     assert intake.json()["recipe_id"] == selected["recipe_id"] == "RECIPE_EXACT_17"
     assert intake.json()["recipe_version"] == selected["recipe_version"] == (
         "2026.07"

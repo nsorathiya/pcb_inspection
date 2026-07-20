@@ -44,6 +44,16 @@ The multipart intake endpoint is `POST /api/v1/inspections`. See
 `docs/inspection_intake_api.md` for fields, a PowerShell example, response and
 error contracts, and the precise meaning of `RECEIVED`.
 
+The required multipart fields are `board_id`, `recipe_id`, `recipe_version`,
+`rgb_image`, and `height_map`. Existing `lot_id`, `operator_id`, `station_id`,
+expected SHA-256, and expected byte-size fields are optional: omission, an
+explicit empty browser-form string, or whitespace-only input without control
+characters normalizes to null. Lot and operator have nullable inspection
+columns; station is successful-intake audit metadata only; supplied integrity
+expectations are validation inputs while calculated artifact hashes and sizes
+are persisted. No placeholder string is required. Details expose nullable lot,
+and history exposes nullable lot and operator; neither exposes station.
+
 The read-only recipe catalogue is `GET /api/v1/recipes`. It returns safe
 persisted recipe identity, name, status, and timestamp fields for future intake
 selection using one bounded projected SELECT. Multiple versions remain separate;
@@ -165,7 +175,9 @@ python -m pytest .\backend\tests\test_artifact_storage.py -q
 Run the focused paired inspection-intake API tests:
 
 ```powershell
-python -m pytest .\backend\tests\test_inspection_intake.py -q
+.\.venv\Scripts\python.exe -m pytest `
+  .\backend\tests\test_inspection_intake.py `
+  .\backend\tests\test_recipe_catalogue_api.py -q
 ```
 
 Run the focused read-only inspection-details API tests:

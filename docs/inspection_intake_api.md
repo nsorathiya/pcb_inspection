@@ -1,6 +1,6 @@
 # Paired 2D/3D Inspection-Intake API
 
-Date: 2026-07-17
+Date: 2026-07-20
 
 ## Scope and meaning of RECEIVED
 
@@ -46,21 +46,29 @@ status. Catalogue listing therefore does not prove model compatibility,
 calibration validity, production approval, or suitability for the board. See
 `docs/recipe_catalogue_api.md`.
 
-Optional text fields:
+Optional text fields and their current handling:
 
-- `lot_id`
-- `operator_id`
-- `station_id`
-- `rgb_sha256`
-- `height_sha256`
-- `rgb_byte_size`
-- `height_byte_size`
+| Field | Handling after normalization |
+| --- | --- |
+| `lot_id` | Persisted in the nullable inspection column and returned by intake, details, and history. |
+| `operator_id` | Persisted in the nullable inspection column, used as the intake audit actor, and returned by history. It is not part of the intake or details response body. |
+| `station_id` | Included in the successful intake audit details only. Schema version 3 has no station column, so it is not returned or searchable in history. |
+| `rgb_sha256`, `height_sha256` | Optional integrity expectations checked against the exact uploaded bytes. The supplied values are not separately persisted; calculated artifact hashes are persisted. |
+| `rgb_byte_size`, `height_byte_size` | Optional integrity expectations checked against the exact uploaded bytes. The supplied values are not separately persisted; calculated artifact sizes are persisted. |
+
+Every optional field may be omitted. An explicit empty string, as commonly sent
+by browser `FormData`, and a whitespace-only value containing no control
+characters normalize to absent/null. The server does not require or create
+placeholder values such as `N/A`, `unknown`, `-`, or `null`; the literal text
+`null` remains text and is not interpreted as a null value.
 
 Identifiers are trimmed, limited to 128 characters, and reject control
 characters. Expected hashes must be 64 lowercase hexadecimal characters.
-Expected sizes must be non-negative decimal integers. Known multipart fields
-must occur at most once. The server generates the inspection UUID; clients
-cannot provide one.
+Expected sizes must be non-negative decimal integers. Nonempty invalid optional
+values return the existing safe metadata error. Control characters remain
+invalid even in otherwise whitespace-only input. Known multipart fields must
+occur at most once. The server generates the inspection UUID; clients cannot
+provide one.
 
 The original filenames are informational. They never provide an inspection
 directory or stored filename stem. Filename extension and media-type checks are
@@ -68,10 +76,25 @@ a conservative intake gate only; they do not prove the bytes use the declared
 format. `station_id` is retained as safe intake-audit metadata because the
 current inspection schema has no station column.
 
-## PowerShell example
+## PowerShell examples
+
+Only required fields:
 
 ```powershell
 $uri = "http://127.0.0.1:8000/api/v1/inspections"
+$form = @{
+  board_id = "PCB_A"
+  recipe_id = "PCB_A"
+  recipe_version = "1.0"
+  rgb_image = Get-Item "C:\intake\rgb.png"
+  height_map = Get-Item "C:\intake\height.npy"
+}
+Invoke-RestMethod -Method Post -Uri $uri -Form $form
+```
+
+With optional operational metadata:
+
+```powershell
 $form = @{
   board_id = "PCB_A"
   recipe_id = "PCB_A"
@@ -85,9 +108,9 @@ $form = @{
 Invoke-RestMethod -Method Post -Uri $uri -Form $form
 ```
 
-PowerShell 7 or later supports `Invoke-RestMethod -Form`. Hash and size fields
-may be added when the caller has authoritative values for the exact uploaded
-bytes.
+PowerShell 7 or later supports `Invoke-RestMethod -Form`. Optional hash and size
+expectations may be added when the caller has authoritative values for the exact
+uploaded bytes.
 
 ## Success response
 
@@ -123,6 +146,7 @@ HTTP status: `201 Created`
 The response intentionally omits storage paths, model metadata, confidence,
 classification, preview URLs, and internal artifact row IDs. The existing
 `X-Request-ID` response header is returned and matches `request_id`.
+When `lot_id` is omitted or empty, the response returns `"lot_id": null`.
 
 Persisted intake and artifact metadata can later be retrieved with
 `GET /api/v1/inspections/{inspection_id}`. That read-only contract, including
@@ -172,7 +196,7 @@ Status mapping:
 
 | Status | Examples |
 | ---: | --- |
-| 400 | Empty/malformed identifier, hash or size; duplicate field; unsupported extension or media type; expected integrity mismatch |
+| 400 | Empty required identifier; invalid nonempty identifier, hash, or size; duplicate field; unsupported extension or media type; expected integrity mismatch |
 | 409 | Immutable artifact conflict |
 | 413 | Configured RGB or height size limit exceeded |
 | 422 | Missing required form field or incomplete file pair |

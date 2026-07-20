@@ -153,9 +153,6 @@ $form = @{
   board_id = "PCB-A"
   recipe_id = $selected.recipe_id
   recipe_version = $selected.recipe_version
-  lot_id = "LOT-1"
-  operator_id = "operator-1"
-  station_id = "station-1"
   rgb_image = Get-Item "C:\intake\rgb.png"
   height_map = Get-Item "C:\intake\height.npy"
 }
@@ -164,6 +161,10 @@ Invoke-RestMethod `
   -Uri "http://127.0.0.1:8000/api/v1/inspections" `
   -Form $form
 ```
+
+The example intentionally omits all optional intake metadata. Catalogue
+identity selection remains valid without lot, operator, station, or integrity
+expectation form parts.
 
 Listing or selecting a recipe does not prove model compatibility, calibration,
 production approval, or PCB acceptance.
