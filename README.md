@@ -1,92 +1,81 @@
+# PCB AOI Development MVP
 
-# PCB Inspection System
+This repository contains a file-based PCB automated optical inspection (AOI)
+development workflow. The current supported application pairs an RGB image with
+a native height/depth file, persists inspection evidence, performs technical
+validation, and can run deterministic synthetic processing for trusted fixtures.
 
-This project is a full-stack AI-powered PCB defect detection system using a FastAPI backend and a Vite (React) frontend.
+> **Development warning:** synthetic `MOCK PASS`, `MOCK FAIL`, and
+> `MOCK UNCERTAIN` results are workflow-development values. They are not real AI
+> predictions and are not approved for production PCB disposition.
 
----
+The original single-image 2D prototype remains in `backend/main.py`,
+`backend/api.py`, and the unused legacy JavaScript frontend sources. It is not
+part of the supported operator workflow and has not been modified.
 
-## 🔧 Backend (FastAPI)
+## Supported application
 
-### ▶ Requirements
-- Python 3.8+
-- pip
-- virtualenv (recommended)
+- Backend: FastAPI application under `backend/app`
+- Operator UI: React, Vite, and strict TypeScript under `frontend`
+- Runtime: repository-local by default and excluded from source control
+- Database: SQLite schema version 3
+- Workflow: paired intake, technical validation, and optional synthetic
+  preprocessing/mock inference
 
-### 📍 Navigate to backend folder
-```bash
-cd pcb_inspection-main/pcb_inspection-main/backend
+The operator UI provides:
+
+- inspection history with backend cursor pagination and exact filters;
+- explicit recipe/version selection from the read-only catalogue;
+- paired RGB and height/depth file intake;
+- lifecycle-gated validation and synthetic processing actions;
+- persisted validation findings and synthetic processing evidence; and
+- structured error messages with request IDs.
+
+See [docs/operator_frontend.md](docs/operator_frontend.md) for the frontend
+contract and [backend/README.md](backend/README.md) for backend setup and API
+details.
+
+## Local development
+
+From the repository root, prepare and start the backend:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r .\backend\requirements-dev.txt
+python -m uvicorn app.main:app --app-dir .\backend --reload
 ```
 
-### 🧪 Create virtual environment
-```bash
-python -m venv venv
-venv\Scripts\activate    # Windows
-# OR
-source venv/bin/activate   # macOS/Linux
-```
+In another PowerShell window, install the locked frontend dependencies and run
+the Vite development server:
 
-### 📦 Install Python dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### ▶ Run FastAPI server
-```bash
-uvicorn main:app --reload
-```
-
-Backend will be running at:
-- API: http://127.0.0.1:8000
-- Swagger UI: http://127.0.0.1:8000/docs
-
----
-
-## 🌐 Frontend (Vite + React)
-
-### ▶ Requirements
-- Node.js (v16 or later recommended)
-- npm (comes with Node.js)
-
-### 📍 Navigate to frontend folder
-```bash
-cd ../frontend
-```
-
-### 📦 Install Node dependencies
-```bash
-npm install
-```
-
-### ▶ Run React Dev Server
-```bash
+```powershell
+Set-Location .\frontend
+npm ci
 npm run dev
 ```
 
-Frontend will be running at:
-- http://127.0.0.1:5173
+Open `http://127.0.0.1:5173`. The development server proxies same-origin
+`/api` requests to `http://127.0.0.1:8000`. For a separately hosted backend,
+set `VITE_API_BASE_URL` in `frontend/.env.local`; do not place secrets there.
 
----
+Synthetic processing is disabled by default. Enabling it is only appropriate
+for trusted, generator-owned development fixtures; see
+[docs/synthetic_processing_orchestrator.md](docs/synthetic_processing_orchestrator.md).
 
-## 🔄 Workflow
+## Verification
 
-1. Upload a PCB image via the frontend.
-2. The image is sent to the FastAPI `/predict` endpoint.
-3. The backend returns an annotated image with defect classification.
-4. The image is displayed or downloaded in the frontend.
+```powershell
+Set-Location .\frontend
+npm run lint
+npm run typecheck
+npm run test:run
+npm run build
 
----
-
-## 📁 Project Structure
-
+Set-Location ..
+python -m pytest .\backend\tests
 ```
-pcb_inspection-main/
-├── backend/        # FastAPI backend
-│   ├── main.py
-│   ├── predictor.py
-│   ├── ...
-├── frontend/       # React frontend
-│   ├── src/
-│   ├── index.html
-│   ├── ...
-└── README.md
-```
+
+The UI does not add authentication, recipe mutation, model management,
+reprocessing, continuous polling, reporting, image previews, real inference, or
+production approval.

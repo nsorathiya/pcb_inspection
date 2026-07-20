@@ -40,6 +40,10 @@ Verify the endpoint from another PowerShell window:
 Invoke-RestMethod http://127.0.0.1:8000/api/v1/health
 ```
 
+The React/Vite operator client consumes these existing endpoints without
+changing backend contracts. See `docs/operator_frontend.md` for its routes,
+local setup, request-ID behavior, tests, and development-only safety warning.
+
 The multipart intake endpoint is `POST /api/v1/inspections`. See
 `docs/inspection_intake_api.md` for fields, a PowerShell example, response and
 error contracts, and the precise meaning of `RECEIVED`.
