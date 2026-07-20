@@ -6,6 +6,7 @@ from fastapi.exceptions import RequestValidationError
 from app.api.errors import ApiError, api_error_handler, request_validation_error_handler
 from app.api.health import router as health_router
 from app.api.inspections import router as inspections_router
+from app.api.recipes import router as recipes_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.core.request_context import RequestIdMiddleware
@@ -43,6 +44,7 @@ from app.services.inspection_validation.policy_loader import (
     DEVELOPMENT_POLICY_ID,
     DEVELOPMENT_POLICY_VERSION,
 )
+from app.services.recipe_catalogue import RecipeCatalogueService
 
 
 def create_app(
@@ -140,6 +142,7 @@ def create_app(
         configured_processing_orchestrator,
     )
     inspection_history = InspectionHistoryService(database.session_factory)
+    recipe_catalogue = RecipeCatalogueService(database.session_factory)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -190,6 +193,7 @@ def create_app(
     application.state.inspection_validation = inspection_validation
     application.state.inspection_processing = inspection_processing
     application.state.inspection_history = inspection_history
+    application.state.recipe_catalogue = recipe_catalogue
     application.add_exception_handler(ApiError, api_error_handler)
     application.add_exception_handler(
         RequestValidationError,
@@ -202,6 +206,10 @@ def create_app(
     )
     application.include_router(
         inspections_router,
+        prefix=application_settings.api_prefix,
+    )
+    application.include_router(
+        recipes_router,
         prefix=application_settings.api_prefix,
     )
     return application

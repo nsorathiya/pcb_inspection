@@ -38,6 +38,14 @@ Required text fields:
 - `recipe_id`
 - `recipe_version`
 
+Persisted recipe identities and display names can be listed with the read-only,
+cursor-paginated `GET /api/v1/recipes` catalogue. Clients should submit the
+selected `recipe_id` and `recipe_version` unchanged. Intake continues to store
+the submitted identity without resolving the recipe table or checking recipe
+status. Catalogue listing therefore does not prove model compatibility,
+calibration validity, production approval, or suitability for the board. See
+`docs/recipe_catalogue_api.md`.
+
 Optional text fields:
 
 - `lot_id`

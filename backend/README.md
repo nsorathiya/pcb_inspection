@@ -44,6 +44,14 @@ The multipart intake endpoint is `POST /api/v1/inspections`. See
 `docs/inspection_intake_api.md` for fields, a PowerShell example, response and
 error contracts, and the precise meaning of `RECEIVED`.
 
+The read-only recipe catalogue is `GET /api/v1/recipes`. It returns safe
+persisted recipe identity, name, status, and timestamp fields for future intake
+selection using one bounded projected SELECT. Multiple versions remain separate;
+the route exposes no configuration JSON, paths, model data, mutation, audit
+write, workflow execution, total count, or production-approval claim. See
+`docs/recipe_catalogue_api.md` for schema limitations, cursor/filter behavior,
+intake identity compatibility, errors, and request IDs.
+
 The read-only details endpoint is
 `GET /api/v1/inspections/{inspection_id}`. It returns persisted lifecycle and
 artifact integrity metadata without storage paths, artifact bytes, semantic
@@ -117,6 +125,12 @@ Mock decisions remain synthetic, confidence-free, and nonproduction. See
 `docs/synthetic_processing_orchestrator.md`.
 
 ## Run tests
+
+Run the focused read-only recipe-catalogue tests:
+
+```powershell
+python -m pytest .\backend\tests\test_recipe_catalogue_api.py -q
+```
 
 Run the focused read-only inspection-history tests:
 
