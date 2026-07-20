@@ -10,8 +10,9 @@ UUID. It is a read-only metadata endpoint. It does not read or return artifact
 bytes, expose storage locations, decode or semantically validate images, align
 RGB and height data, run inference, or classify the board.
 
-There is no `GET /api/v1/inspections` collection endpoint, filtering, or
-pagination in this phase.
+The separate `GET /api/v1/inspections` collection route provides compact,
+cursor-paginated history without artifact details. See
+`docs/inspection_history_api.md`.
 
 ## PowerShell example
 

@@ -50,6 +50,15 @@ artifact integrity metadata without storage paths, artifact bytes, semantic
 validation, or classification. See `docs/inspection_details_api.md` for its
 response, error, ordering, and request-ID contracts.
 
+The read-only history endpoint is `GET /api/v1/inspections`. It returns a safe,
+newest-first cursor page with compact latest validation and processing summaries
+using three bounded database queries for a nonempty page. Exact filters include
+status, intake metadata, UTC creation range, validation outcome, processing
+status, mock decision, authoritative defect type, and child-presence flags. It
+does not return confidence or paths, read files, rerun workflows, write audit
+events, or calculate a total count. See `docs/inspection_history_api.md` for the
+response, cursor/filter binding, concurrency, error, and request-ID contracts.
+
 The paired RGB/height semantic-validation domain has versioned result, finding,
 and policy contracts plus a reusable read-only engine. The backend exposes
 `POST /api/v1/inspections/{inspection_id}/validate` for explicit-policy
@@ -108,6 +117,12 @@ Mock decisions remain synthetic, confidence-free, and nonproduction. See
 `docs/synthetic_processing_orchestrator.md`.
 
 ## Run tests
+
+Run the focused read-only inspection-history tests:
+
+```powershell
+python -m pytest .\backend\tests\test_inspection_history_api.py -q
+```
 
 Run the focused logging, startup, health, and request-ID tests:
 

@@ -376,7 +376,7 @@ def test_every_persisted_status_is_reported_without_inference(
     assert "classification" not in response.json()
 
 
-def test_openapi_documents_detail_get_without_collection_get(tmp_path) -> None:
+def test_openapi_documents_detail_and_collection_get(tmp_path) -> None:
     application = create_app(_settings(tmp_path / "runtime"))
     with TestClient(application) as client:
         schema = client.get("/openapi.json").json()
@@ -386,4 +386,4 @@ def test_openapi_documents_detail_get_without_collection_get(tmp_path) -> None:
         "application/json"
     ]["schema"]
     assert success_schema["$ref"].endswith("/InspectionDetailResponse")
-    assert set(schema["paths"]["/api/v1/inspections"]) == {"post"}
+    assert set(schema["paths"]["/api/v1/inspections"]) == {"post", "get"}

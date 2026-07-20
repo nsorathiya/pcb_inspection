@@ -18,6 +18,7 @@ from app.services.artifact_storage import (
     ArtifactStorageService,
 )
 from app.services.inspection_intake import InspectionIntakeCoordinator
+from app.services.inspection_history import InspectionHistoryService
 from app.services.inspection_processing import (
     InspectionProcessingApiService,
     InspectionProcessingOrchestrator,
@@ -138,6 +139,7 @@ def create_app(
         processing_result_mapper,
         configured_processing_orchestrator,
     )
+    inspection_history = InspectionHistoryService(database.session_factory)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -187,6 +189,7 @@ def create_app(
     application.state.inspection_intake = inspection_intake
     application.state.inspection_validation = inspection_validation
     application.state.inspection_processing = inspection_processing
+    application.state.inspection_history = inspection_history
     application.add_exception_handler(ApiError, api_error_handler)
     application.add_exception_handler(
         RequestValidationError,

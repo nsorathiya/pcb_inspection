@@ -43,6 +43,10 @@ async def request_validation_error_handler(
         "multipart/form-data"
     )
     is_processing = request.url.path.endswith("/process")
+    is_history_query = (
+        request.method == "GET"
+        and request.url.path.rstrip("/").endswith("/inspections")
+    )
     payload = ApiErrorResponse(
         code=(
             "INCOMPLETE_OR_INVALID_MULTIPART_REQUEST"
@@ -50,7 +54,11 @@ async def request_validation_error_handler(
             else (
                 "INVALID_PROCESSING_REQUEST"
                 if is_processing
-                else "INVALID_VALIDATION_REQUEST"
+                else (
+                    "INVALID_INSPECTION_HISTORY_QUERY"
+                    if is_history_query
+                    else "INVALID_VALIDATION_REQUEST"
+                )
             )
         ),
         message=(
@@ -59,7 +67,11 @@ async def request_validation_error_handler(
             else (
                 "The processing request body is missing or invalid."
                 if is_processing
-                else "The validation request body is missing or invalid."
+                else (
+                    "Inspection history query parameters are invalid."
+                    if is_history_query
+                    else "The validation request body is missing or invalid."
+                )
             )
         ),
         request_id=_request_id(request),

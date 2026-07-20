@@ -6,10 +6,11 @@ from datetime import datetime, timezone
 from typing import Annotated, AsyncIterator
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile, status
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from app.api.errors import ApiError, ApiErrorResponse
+from app.api.history_responses import InspectionHistoryResponse, map_history_response
 from app.api.validation_responses import (
     InspectionValidationResponse,
     map_validation_response,
@@ -64,6 +65,16 @@ from app.services.inspection_processing import (
     SyntheticProcessingNotConfiguredError,
     SyntheticProvenanceMismatchError,
     SyntheticProvenanceUnavailableError,
+)
+from app.services.inspection_history import (
+    HistoryConsistencyError,
+    HistoryCursorError,
+    HistoryCursorFilterMismatchError,
+    HistoryCursorVersionError,
+    HistoryFilterError,
+    HistoryFilterInput,
+    HistoryRetrievalError,
+    InspectionHistoryService,
 )
 
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -508,6 +519,115 @@ def _map_processing_error(error: Exception) -> ApiError:
         "PROCESSING_ORCHESTRATION_FAILED",
         "Inspection processing could not be completed reliably.",
     )
+
+
+@router.get(
+    "/inspections",
+    response_model=InspectionHistoryResponse,
+    responses={
+        400: {"model": ApiErrorResponse},
+        422: {"model": ApiErrorResponse},
+        500: {"model": ApiErrorResponse},
+    },
+    summary="List persisted inspection history",
+    description=(
+        "Returns a newest-first, cursor-paginated projection of existing database "
+        "records. Filters use exact matching and are combined with AND. The route "
+        "does not read inspection artifacts, rerun validation, execute preprocessing "
+        "or mock inference, write audit events, or otherwise mutate state. Mock "
+        "decisions are development workflow evidence and are not production PCB "
+        "dispositions. The cursor is bound to all filters except limit."
+        " Detailed findings remain available from the inspection-specific "
+        "validation and processing GET routes."
+    ),
+)
+async def list_inspection_history(
+    request: Request,
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
+    cursor: str | None = None,
+    inspection_status: Annotated[str | None, Query(alias="status")] = None,
+    board_id: str | None = None,
+    recipe_id: str | None = None,
+    recipe_version: str | None = None,
+    lot_id: str | None = None,
+    operator_id: str | None = None,
+    created_from: datetime | None = None,
+    created_to: datetime | None = None,
+    validation_outcome: str | None = None,
+    processing_status: str | None = None,
+    mock_decision: str | None = None,
+    defect_type: str | None = None,
+    has_validation: bool | None = None,
+    has_processing: bool | None = None,
+) -> InspectionHistoryResponse:
+    service: InspectionHistoryService = request.app.state.inspection_history
+    try:
+        result = await service.list_history(
+            limit=limit,
+            cursor=cursor,
+            filters=HistoryFilterInput(
+                status=inspection_status,
+                board_id=board_id,
+                recipe_id=recipe_id,
+                recipe_version=recipe_version,
+                lot_id=lot_id,
+                operator_id=operator_id,
+                created_from=created_from,
+                created_to=created_to,
+                validation_outcome=validation_outcome,
+                processing_status=processing_status,
+                mock_decision=mock_decision,
+                defect_type=defect_type,
+                has_validation=has_validation,
+                has_processing=has_processing,
+            ),
+        )
+    except HistoryCursorFilterMismatchError as exc:
+        raise ApiError(
+            400,
+            "HISTORY_CURSOR_FILTER_MISMATCH",
+            "The history cursor does not match the current filters.",
+        ) from exc
+    except HistoryCursorVersionError as exc:
+        raise ApiError(
+            400,
+            "UNSUPPORTED_HISTORY_CURSOR_VERSION",
+            "The history cursor version is unsupported.",
+        ) from exc
+    except HistoryCursorError as exc:
+        raise ApiError(
+            400,
+            "INVALID_HISTORY_CURSOR",
+            "The history cursor is invalid.",
+        ) from exc
+    except HistoryFilterError as exc:
+        raise ApiError(
+            400,
+            "INVALID_HISTORY_FILTER",
+            "One or more inspection history filters are invalid.",
+        ) from exc
+    except HistoryConsistencyError as exc:
+        request.app.state.logger.exception("Inspection history data is inconsistent")
+        raise ApiError(
+            500,
+            "INSPECTION_HISTORY_INCONSISTENT",
+            "Inspection history could not be represented safely.",
+        ) from exc
+    except HistoryRetrievalError as exc:
+        request.app.state.logger.exception("Inspection history read failed")
+        raise ApiError(
+            500,
+            "INSPECTION_HISTORY_READ_FAILED",
+            "Inspection history could not be retrieved.",
+        ) from exc
+    except Exception as exc:
+        request.app.state.logger.exception("Unexpected inspection history read failure")
+        raise ApiError(
+            500,
+            "INSPECTION_HISTORY_READ_FAILED",
+            "Inspection history could not be retrieved.",
+        ) from exc
+    return map_history_response(result, request_id=request.state.request_id)
 
 
 @router.post(

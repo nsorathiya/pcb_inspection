@@ -12,6 +12,12 @@ The client selects policy identifiers and versions but cannot supply a fixture
 root, scenario, path, buffer, implementation, engine, decision, or defect type.
 GET reads persisted database evidence only.
 
+The separate read-only `GET /api/v1/inspections` history route includes a
+compact latest-processing summary and explicit synthetic/mock/nonproduction
+flags. It omits findings and never executes preprocessing or inference; use the
+inspection-specific processing GET for detailed persisted evidence. See
+`docs/inspection_history_api.md`.
+
 ## Configuration
 
 POST is disabled by default. Set both application-owned variables before

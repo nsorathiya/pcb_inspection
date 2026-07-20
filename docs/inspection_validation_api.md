@@ -14,6 +14,11 @@ quality. `VALIDATION_PASSED` means only that the registered raw pair is
 technically ready for a future preprocessing stage under the selected policy.
 It never means PCB PASS.
 
+The read-only `GET /api/v1/inspections` history route includes only the latest
+persisted validation identity, outcome, policy, timestamp, and count summary.
+It omits findings and never reruns validation; use the inspection-specific GET
+route above for detailed persisted findings. See `docs/inspection_history_api.md`.
+
 ## Explicit development policy
 
 POST requires this JSON body:

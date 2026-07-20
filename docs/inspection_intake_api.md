@@ -121,6 +121,11 @@ Persisted intake and artifact metadata can later be retrieved with
 the distinction between the original intake request ID and the current GET
 request ID, is documented in `docs/inspection_details_api.md`.
 
+Persisted inspections can also be browsed newest-first through the read-only,
+cursor-paginated `GET /api/v1/inspections` history route. It does not reopen
+uploads or rerun intake, validation, or processing. See
+`docs/inspection_history_api.md`.
+
 A `RECEIVED` inspection can be technically validated with
 `POST /api/v1/inspections/{inspection_id}/validate` using the explicit
 development policy. Validation is a separate lifecycle operation: intake does
