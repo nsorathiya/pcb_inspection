@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aoi-for-pcb.local/contracts/inspection-inference-policy/1.0",
+  "title": "PCB AOI Inspection Inference Policy",
+  "description": "Development-only policy for deterministic mock inference. It defines software-flow decisions, not model predictions or PCB quality evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "policy_id", "policy_version", "name", "description", "development_only", "production_approved", "prerequisites", "engine", "safety"],
+  "properties": {
+    "contract_version": {"const": "pcb-aoi-inspection-inference-policy/1.0"},
+    "policy_id": {"$ref": "#/$defs/identifier"},
+    "policy_version": {"$ref": "#/$defs/version"},
+    "name": {"type": "string", "minLength": 1, "maxLength": 128},
+    "description": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "development_only": {"const": true},
+    "production_approved": {"const": false},
+    "prerequisites": {"$ref": "#/$defs/prerequisites"},
+    "engine": {"$ref": "#/$defs/engine"},
+    "safety": {"$ref": "#/$defs/safety"}
+  },
+  "$defs": {
+    "identifier": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"},
+    "layout_list": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["HW", "HWC", "CHW", "NCHW"]}},
+    "data_type_list": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["uint8", "uint16", "float32", "float64"]}},
+    "bucket_list": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "integer", "minimum": 0}},
+    "prerequisites": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required_preprocessing_outcome", "require_synthetic_input", "require_mock_preprocessing", "accepted_rgb_layouts", "accepted_height_layouts", "accepted_rgb_data_types", "accepted_height_data_types", "require_matching_spatial_dimensions"],
+      "properties": {
+        "required_preprocessing_outcome": {"const": "PREPROCESSING_SUCCEEDED"},
+        "require_synthetic_input": {"const": true},
+        "require_mock_preprocessing": {"const": true},
+        "accepted_rgb_layouts": {"$ref": "#/$defs/layout_list"},
+        "accepted_height_layouts": {"$ref": "#/$defs/layout_list"},
+        "accepted_rgb_data_types": {"$ref": "#/$defs/data_type_list"},
+        "accepted_height_data_types": {"$ref": "#/$defs/data_type_list"},
+        "require_matching_spatial_dimensions": {"type": "boolean"}
+      }
+    },
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engine_type", "decision_strategy", "decision_bucket_count", "pass_buckets", "fail_buckets", "uncertain_buckets", "defect_selection_strategy", "confidence_mode"],
+      "properties": {
+        "engine_type": {"const": "MOCK"},
+        "decision_strategy": {"const": "DETERMINISTIC_HASH_BUCKET"},
+        "decision_bucket_count": {"type": "integer", "minimum": 3, "maximum": 4096},
+        "pass_buckets": {"$ref": "#/$defs/bucket_list"},
+        "fail_buckets": {"$ref": "#/$defs/bucket_list"},
+        "uncertain_buckets": {"$ref": "#/$defs/bucket_list"},
+        "defect_selection_strategy": {"const": "DETERMINISTIC_TAXONOMY_BUCKET"},
+        "confidence_mode": {"const": "NONE"}
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allow_mock_engine", "allow_real_input", "allow_model_accuracy_claim", "allow_production_decision"],
+      "properties": {
+        "allow_mock_engine": {"const": true},
+        "allow_real_input": {"const": false},
+        "allow_model_accuracy_claim": {"const": false},
+        "allow_production_decision": {"const": false}
+      }
+    }
+  }
+}

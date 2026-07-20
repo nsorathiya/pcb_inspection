@@ -1,0 +1,75 @@
+{
+  "contract_version": "pcb-aoi-inspection-inference/1.0",
+  "inference_id": "66666666-6666-4666-8666-666666666666",
+  "inspection_id": "22222222-2222-4222-8222-222222222222",
+  "validation_id": "33333333-3333-4333-8333-333333333333",
+  "preprocessing_id": "6c6a80ab-c5d5-5eed-ab47-156f5aa30c92",
+  "policy_id": "synthetic-deterministic-mock-inference",
+  "policy_version": "1.0",
+  "engine_id": "synthetic-deterministic-mock-engine",
+  "engine_version": "1.0.0",
+  "engine_type": "MOCK",
+  "execution_outcome": "INFERENCE_SUCCEEDED",
+  "started_at": "2026-07-20T10:00:00Z",
+  "completed_at": "2026-07-20T10:00:00Z",
+  "synthetic_input": true,
+  "mock_preprocessing": true,
+  "mock_inference": true,
+  "production_approved": false,
+  "rgb_input": {
+    "buffer_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "shape": [3, 12, 16],
+    "layout": "CHW",
+    "data_type": "float32",
+    "channel_count": 3,
+    "width": 16,
+    "height": 12,
+    "byte_size": 2304,
+    "source_artifact_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "height_input": {
+    "buffer_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "shape": [1, 12, 16],
+    "layout": "CHW",
+    "data_type": "float32",
+    "channel_count": 1,
+    "width": 16,
+    "height": 12,
+    "byte_size": 768,
+    "source_artifact_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "decision": "UNCERTAIN",
+  "defect_type": null,
+  "confidence": null,
+  "decision_basis": "DETERMINISTIC_HASH_BUCKET",
+  "decision_digest": "f06f8f8bea3bc392504122156e5d9bc6550e5c0bb508bde64868069950dae1a3",
+  "findings": [
+    {
+      "code": "MOCK_INFERENCE_USED",
+      "severity": "WARNING",
+      "category": "DECISION",
+      "message": "Development-only mock inference was used; no model analyzed the inputs.",
+      "blocking": false
+    },
+    {
+      "code": "MOCK_DECISION_GENERATED",
+      "severity": "INFO",
+      "category": "DECISION",
+      "message": "A deterministic mock workflow decision was generated.",
+      "blocking": false
+    },
+    {
+      "code": "CONFIDENCE_UNAVAILABLE",
+      "severity": "WARNING",
+      "category": "DECISION",
+      "message": "Confidence is unavailable for deterministic mock inference.",
+      "blocking": false
+    }
+  ],
+  "summary": {
+    "total_findings": 3,
+    "blocking_findings": 0,
+    "warnings": 2,
+    "errors": 0
+  }
+}

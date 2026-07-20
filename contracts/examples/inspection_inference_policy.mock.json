@@ -1,0 +1,35 @@
+{
+  "contract_version": "pcb-aoi-inspection-inference-policy/1.0",
+  "policy_id": "synthetic-deterministic-mock-inference",
+  "policy_version": "1.0",
+  "name": "Synthetic deterministic mock inference",
+  "description": "Development-only hash-bucket workflow decisions over validated synthetic preprocessing buffers; no model or defect analysis is performed.",
+  "development_only": true,
+  "production_approved": false,
+  "prerequisites": {
+    "required_preprocessing_outcome": "PREPROCESSING_SUCCEEDED",
+    "require_synthetic_input": true,
+    "require_mock_preprocessing": true,
+    "accepted_rgb_layouts": ["CHW"],
+    "accepted_height_layouts": ["CHW"],
+    "accepted_rgb_data_types": ["float32"],
+    "accepted_height_data_types": ["float32"],
+    "require_matching_spatial_dimensions": true
+  },
+  "engine": {
+    "engine_type": "MOCK",
+    "decision_strategy": "DETERMINISTIC_HASH_BUCKET",
+    "decision_bucket_count": 12,
+    "pass_buckets": [0, 1, 2, 3],
+    "fail_buckets": [4, 5, 6, 7],
+    "uncertain_buckets": [8, 9, 10, 11],
+    "defect_selection_strategy": "DETERMINISTIC_TAXONOMY_BUCKET",
+    "confidence_mode": "NONE"
+  },
+  "safety": {
+    "allow_mock_engine": true,
+    "allow_real_input": false,
+    "allow_model_accuracy_claim": false,
+    "allow_production_decision": false
+  }
+}

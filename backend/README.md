@@ -78,6 +78,15 @@ persist results, change status, run inference, or support real input. See
 `docs/inspection_preprocessing_contract.md` and
 `docs/synthetic_preprocessing_executor.md`.
 
+The following replaceable boundary is a versioned, deterministic mock
+inference engine for those separate in-memory buffers. It validates the actual
+buffer bytes and descriptors, then uses a documented SHA-256 bucket solely to
+select mock `PASS`, `FAIL`, or `UNCERTAIN` workflow values. Mock `FAIL` labels
+come from the authoritative defect taxonomy, and confidence is always null.
+This engine performs no image-content analysis, reads no source artifacts, is
+not wired into FastAPI, and makes no production or model-accuracy claim. See
+`docs/mock_inference_engine.md`.
+
 ## Run tests
 
 Run the focused logging, startup, health, and request-ID tests:
@@ -156,6 +165,14 @@ Run the focused deterministic synthetic preprocessing executor tests:
 
 ```powershell
 python -m pytest .\backend\tests\test_synthetic_preprocessing_executor.py -q
+```
+
+Run the focused mock inference contract and deterministic engine tests:
+
+```powershell
+python -m pytest `
+  .\backend\tests\test_inspection_inference_contract.py `
+  .\backend\tests\test_deterministic_mock_inference.py -q
 ```
 
 Run the complete backend foundation test suite:

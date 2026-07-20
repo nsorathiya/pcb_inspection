@@ -1,0 +1,41 @@
+{
+  "contract_version": "pcb-aoi-inspection-inference/1.0",
+  "inference_id": "77777777-7777-4777-8777-777777777777",
+  "inspection_id": "22222222-2222-4222-8222-222222222222",
+  "validation_id": "33333333-3333-4333-8333-333333333333",
+  "preprocessing_id": "44444444-4444-4444-8444-444444444444",
+  "policy_id": "synthetic-deterministic-mock-inference",
+  "policy_version": "1.0",
+  "engine_id": "synthetic-deterministic-mock-engine",
+  "engine_version": "1.0.0",
+  "engine_type": "MOCK",
+  "execution_outcome": "INFERENCE_ERROR",
+  "started_at": "2026-07-20T10:00:00Z",
+  "completed_at": "2026-07-20T10:00:00Z",
+  "synthetic_input": true,
+  "mock_preprocessing": true,
+  "mock_inference": true,
+  "production_approved": false,
+  "rgb_input": null,
+  "height_input": null,
+  "decision": null,
+  "defect_type": null,
+  "confidence": null,
+  "decision_basis": null,
+  "decision_digest": null,
+  "findings": [
+    {
+      "code": "INFERENCE_INTERNAL_ERROR",
+      "severity": "ERROR",
+      "category": "INTERNAL",
+      "message": "Inference could not complete because of an internal error.",
+      "blocking": true
+    }
+  ],
+  "summary": {
+    "total_findings": 1,
+    "blocking_findings": 1,
+    "warnings": 0,
+    "errors": 1
+  }
+}

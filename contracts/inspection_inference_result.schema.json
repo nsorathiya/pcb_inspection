@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aoi-for-pcb.local/contracts/inspection-inference-result/1.0",
+  "title": "PCB AOI Inspection Inference Result",
+  "description": "Path-free development result for deterministic mock workflow decisions. It contains no real model prediction, probability, confidence, or accuracy evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "inference_id", "inspection_id", "validation_id", "preprocessing_id", "policy_id", "policy_version", "engine_id", "engine_version", "engine_type", "execution_outcome", "started_at", "completed_at", "synthetic_input", "mock_preprocessing", "mock_inference", "production_approved", "rgb_input", "height_input", "decision", "defect_type", "confidence", "decision_basis", "decision_digest", "findings", "summary"],
+  "properties": {
+    "contract_version": {"const": "pcb-aoi-inspection-inference/1.0"},
+    "inference_id": {"$ref": "#/$defs/canonical_uuid"},
+    "inspection_id": {"$ref": "#/$defs/canonical_uuid"},
+    "validation_id": {"$ref": "#/$defs/canonical_uuid"},
+    "preprocessing_id": {"$ref": "#/$defs/canonical_uuid"},
+    "policy_id": {"$ref": "#/$defs/identifier"},
+    "policy_version": {"$ref": "#/$defs/version"},
+    "engine_id": {"$ref": "#/$defs/identifier"},
+    "engine_version": {"$ref": "#/$defs/version"},
+    "engine_type": {"const": "MOCK"},
+    "execution_outcome": {"enum": ["INFERENCE_SUCCEEDED", "INFERENCE_FAILED", "INFERENCE_ERROR"]},
+    "started_at": {"$ref": "#/$defs/timezone_timestamp"},
+    "completed_at": {"$ref": "#/$defs/timezone_timestamp"},
+    "synthetic_input": {"type": "boolean"},
+    "mock_preprocessing": {"type": "boolean"},
+    "mock_inference": {"const": true},
+    "production_approved": {"const": false},
+    "rgb_input": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/rgb_input_identity"}]},
+    "height_input": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/height_input_identity"}]},
+    "decision": {"type": ["string", "null"], "enum": ["PASS", "FAIL", "UNCERTAIN", null]},
+    "defect_type": {"oneOf": [{"type": "null"}, {"$ref": "https://aoi-for-pcb.local/contracts/defect-taxonomy/1.0#/$defs/supported_defect_type"}]},
+    "confidence": {"type": "null"},
+    "decision_basis": {"type": ["string", "null"], "enum": ["DETERMINISTIC_HASH_BUCKET", null]},
+    "decision_digest": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]},
+    "findings": {"type": "array", "items": {"$ref": "https://aoi-for-pcb.local/contracts/inspection-inference-findings/1.0#/$defs/finding"}},
+    "summary": {"$ref": "#/$defs/summary"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"execution_outcome": {"const": "INFERENCE_SUCCEEDED"}}, "required": ["execution_outcome"]},
+      "then": {
+        "properties": {
+          "rgb_input": {"$ref": "#/$defs/rgb_input_identity"},
+          "height_input": {"$ref": "#/$defs/height_input_identity"},
+          "decision": {"enum": ["PASS", "FAIL", "UNCERTAIN"]},
+          "decision_basis": {"const": "DETERMINISTIC_HASH_BUCKET"},
+          "decision_digest": {"$ref": "#/$defs/sha256"},
+          "findings": {"not": {"contains": {"properties": {"blocking": {"const": true}}, "required": ["blocking"]}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"execution_outcome": {"enum": ["INFERENCE_FAILED", "INFERENCE_ERROR"]}}, "required": ["execution_outcome"]},
+      "then": {
+        "properties": {
+          "decision": {"const": null},
+          "defect_type": {"const": null},
+          "confidence": {"const": null},
+          "decision_basis": {"const": null},
+          "decision_digest": {"const": null}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"execution_outcome": {"const": "INFERENCE_FAILED"}}, "required": ["execution_outcome"]},
+      "then": {"properties": {"findings": {"contains": {"properties": {"blocking": {"const": true}}, "required": ["blocking"]}}}}
+    },
+    {
+      "if": {"properties": {"execution_outcome": {"const": "INFERENCE_ERROR"}}, "required": ["execution_outcome"]},
+      "then": {"properties": {"findings": {"contains": {"properties": {"code": {"const": "INFERENCE_INTERNAL_ERROR"}, "blocking": {"const": true}}, "required": ["code", "blocking"]}}}}
+    },
+    {
+      "if": {"properties": {"decision": {"const": "PASS"}}, "required": ["decision"]},
+      "then": {"properties": {"defect_type": {"const": null}}}
+    },
+    {
+      "if": {"properties": {"decision": {"const": "FAIL"}}, "required": ["decision"]},
+      "then": {"properties": {"defect_type": {"$ref": "https://aoi-for-pcb.local/contracts/defect-taxonomy/1.0#/$defs/supported_defect_type"}}}
+    },
+    {
+      "if": {"properties": {"decision": {"const": "UNCERTAIN"}}, "required": ["decision"]},
+      "then": {"properties": {"defect_type": {"const": null}, "confidence": {"const": null}}}
+    }
+  ],
+  "$defs": {
+    "canonical_uuid": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+    "timezone_timestamp": {"type": "string", "format": "date-time", "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"},
+    "identifier": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "version": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "input_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["buffer_sha256", "shape", "layout", "data_type", "channel_count", "width", "height", "byte_size", "source_artifact_sha256"],
+      "properties": {
+        "buffer_sha256": {"$ref": "#/$defs/sha256"},
+        "shape": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "integer", "minimum": 1}},
+        "layout": {"enum": ["HW", "HWC", "CHW", "NCHW"]},
+        "data_type": {"enum": ["uint8", "uint16", "float32", "float64"]},
+        "channel_count": {"type": "integer", "minimum": 1},
+        "width": {"type": "integer", "minimum": 1},
+        "height": {"type": "integer", "minimum": 1},
+        "byte_size": {"type": "integer", "minimum": 1},
+        "source_artifact_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "rgb_input_identity": {
+      "allOf": [
+        {"$ref": "#/$defs/input_identity"},
+        {"properties": {"shape": {"prefixItems": [{"const": 3}]}, "channel_count": {"const": 3}}}
+      ]
+    },
+    "height_input_identity": {
+      "allOf": [
+        {"$ref": "#/$defs/input_identity"},
+        {"properties": {"shape": {"prefixItems": [{"const": 1}]}, "channel_count": {"const": 1}}}
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_findings", "blocking_findings", "warnings", "errors"],
+      "properties": {
+        "total_findings": {"type": "integer", "minimum": 0},
+        "blocking_findings": {"type": "integer", "minimum": 0},
+        "warnings": {"type": "integer", "minimum": 0},
+        "errors": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

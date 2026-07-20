@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aoi-for-pcb.local/contracts/inspection-inference-findings/1.0",
+  "title": "PCB AOI Inspection Inference Finding Catalogue",
+  "description": "Authoritative findings for development-only deterministic mock inference. They contain no model accuracy or production quality claims.",
+  "catalog_version": "pcb-aoi-inspection-inference-findings/1.0",
+  "inference_contract_version": "pcb-aoi-inspection-inference/1.0",
+  "$defs": {
+    "severity": {"enum": ["INFO", "WARNING", "ERROR"]},
+    "category": {"enum": ["PREREQUISITE", "POLICY", "RGB_INPUT", "HEIGHT_INPUT", "PAIR", "DECISION", "INTERNAL"]},
+    "branch": {"enum": ["RGB", "HEIGHT", "PAIR"]},
+    "finding_code": {
+      "type": "string",
+      "enum": [
+        "PREPROCESSING_RESULT_REQUIRED", "PREPROCESSING_NOT_SUCCEEDED", "SYNTHETIC_INPUT_REQUIRED", "MOCK_PREPROCESSING_REQUIRED",
+        "INFERENCE_POLICY_NOT_FOUND", "INFERENCE_POLICY_VERSION_UNSUPPORTED", "INFERENCE_POLICY_INVALID", "MOCK_ENGINE_NOT_ALLOWED", "REAL_INPUT_NOT_ALLOWED",
+        "RGB_BUFFER_REQUIRED", "RGB_BUFFER_DESCRIPTOR_INVALID", "RGB_BUFFER_HASH_MISMATCH", "RGB_BUFFER_LENGTH_MISMATCH", "RGB_BUFFER_LAYOUT_UNSUPPORTED", "RGB_BUFFER_DATA_TYPE_UNSUPPORTED", "RGB_BUFFER_SHAPE_INVALID",
+        "HEIGHT_BUFFER_REQUIRED", "HEIGHT_BUFFER_DESCRIPTOR_INVALID", "HEIGHT_BUFFER_HASH_MISMATCH", "HEIGHT_BUFFER_LENGTH_MISMATCH", "HEIGHT_BUFFER_LAYOUT_UNSUPPORTED", "HEIGHT_BUFFER_DATA_TYPE_UNSUPPORTED", "HEIGHT_BUFFER_SHAPE_INVALID",
+        "INPUT_DIMENSION_RELATIONSHIP_INVALID",
+        "MOCK_INFERENCE_USED", "MOCK_DECISION_GENERATED", "MOCK_FAIL_DEFECT_ASSIGNED", "CONFIDENCE_UNAVAILABLE",
+        "INFERENCE_INTERNAL_ERROR"
+      ]
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "category", "message", "blocking"],
+      "properties": {
+        "code": {"$ref": "#/$defs/finding_code"},
+        "severity": {"$ref": "#/$defs/severity"},
+        "category": {"$ref": "#/$defs/category"},
+        "message": {"type": "string", "minLength": 1, "maxLength": 512},
+        "blocking": {"type": "boolean"},
+        "branch": {"$ref": "#/$defs/branch"},
+        "field": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,127}$"},
+        "details": {"type": "object", "additionalProperties": {"type": ["string", "number", "integer", "boolean", "null"]}}
+      }
+    }
+  },
+  "findings": [
+    {"order": 10, "code": "PREPROCESSING_RESULT_REQUIRED", "severity": "ERROR", "category": "PREREQUISITE", "message": "A completed preprocessing result is required.", "default_blocking": true},
+    {"order": 20, "code": "PREPROCESSING_NOT_SUCCEEDED", "severity": "ERROR", "category": "PREREQUISITE", "message": "Preprocessing did not complete successfully.", "default_blocking": true},
+    {"order": 30, "code": "SYNTHETIC_INPUT_REQUIRED", "severity": "ERROR", "category": "PREREQUISITE", "message": "The mock inference engine requires explicitly synthetic input.", "default_blocking": true},
+    {"order": 40, "code": "MOCK_PREPROCESSING_REQUIRED", "severity": "ERROR", "category": "PREREQUISITE", "message": "The mock inference engine requires mock preprocessing output.", "default_blocking": true},
+    {"order": 100, "code": "INFERENCE_POLICY_NOT_FOUND", "severity": "ERROR", "category": "POLICY", "message": "The inference policy was not found.", "default_blocking": true},
+    {"order": 110, "code": "INFERENCE_POLICY_VERSION_UNSUPPORTED", "severity": "ERROR", "category": "POLICY", "message": "The inference policy version is unsupported.", "default_blocking": true},
+    {"order": 120, "code": "INFERENCE_POLICY_INVALID", "severity": "ERROR", "category": "POLICY", "message": "The inference policy is invalid.", "default_blocking": true},
+    {"order": 130, "code": "MOCK_ENGINE_NOT_ALLOWED", "severity": "ERROR", "category": "POLICY", "message": "The selected policy does not permit the mock inference engine.", "default_blocking": true},
+    {"order": 140, "code": "REAL_INPUT_NOT_ALLOWED", "severity": "ERROR", "category": "POLICY", "message": "The selected mock policy does not permit real input.", "default_blocking": true},
+    {"order": 200, "code": "RGB_BUFFER_REQUIRED", "severity": "ERROR", "category": "RGB_INPUT", "message": "An RGB preprocessing buffer is required.", "default_blocking": true},
+    {"order": 210, "code": "RGB_BUFFER_DESCRIPTOR_INVALID", "severity": "ERROR", "category": "RGB_INPUT", "message": "The RGB buffer descriptor is invalid.", "default_blocking": true},
+    {"order": 220, "code": "RGB_BUFFER_HASH_MISMATCH", "severity": "ERROR", "category": "RGB_INPUT", "message": "The RGB buffer hash does not match its bytes.", "default_blocking": true},
+    {"order": 230, "code": "RGB_BUFFER_LENGTH_MISMATCH", "severity": "ERROR", "category": "RGB_INPUT", "message": "The RGB buffer length does not match its descriptor.", "default_blocking": true},
+    {"order": 240, "code": "RGB_BUFFER_LAYOUT_UNSUPPORTED", "severity": "ERROR", "category": "RGB_INPUT", "message": "The RGB buffer layout is unsupported by policy.", "default_blocking": true},
+    {"order": 250, "code": "RGB_BUFFER_DATA_TYPE_UNSUPPORTED", "severity": "ERROR", "category": "RGB_INPUT", "message": "The RGB buffer data type is unsupported by policy.", "default_blocking": true},
+    {"order": 260, "code": "RGB_BUFFER_SHAPE_INVALID", "severity": "ERROR", "category": "RGB_INPUT", "message": "The RGB buffer shape or channel dimensions are invalid.", "default_blocking": true},
+    {"order": 300, "code": "HEIGHT_BUFFER_REQUIRED", "severity": "ERROR", "category": "HEIGHT_INPUT", "message": "A height preprocessing buffer is required.", "default_blocking": true},
+    {"order": 310, "code": "HEIGHT_BUFFER_DESCRIPTOR_INVALID", "severity": "ERROR", "category": "HEIGHT_INPUT", "message": "The height buffer descriptor is invalid.", "default_blocking": true},
+    {"order": 320, "code": "HEIGHT_BUFFER_HASH_MISMATCH", "severity": "ERROR", "category": "HEIGHT_INPUT", "message": "The height buffer hash does not match its bytes.", "default_blocking": true},
+    {"order": 330, "code": "HEIGHT_BUFFER_LENGTH_MISMATCH", "severity": "ERROR", "category": "HEIGHT_INPUT", "message": "The height buffer length does not match its descriptor.", "default_blocking": true},
+    {"order": 340, "code": "HEIGHT_BUFFER_LAYOUT_UNSUPPORTED", "severity": "ERROR", "category": "HEIGHT_INPUT", "message": "The height buffer layout is unsupported by policy.", "default_blocking": true},
+    {"order": 350, "code": "HEIGHT_BUFFER_DATA_TYPE_UNSUPPORTED", "severity": "ERROR", "category": "HEIGHT_INPUT", "message": "The height buffer data type is unsupported by policy.", "default_blocking": true},
+    {"order": 360, "code": "HEIGHT_BUFFER_SHAPE_INVALID", "severity": "ERROR", "category": "HEIGHT_INPUT", "message": "The height buffer shape or channel dimensions are invalid.", "default_blocking": true},
+    {"order": 400, "code": "INPUT_DIMENSION_RELATIONSHIP_INVALID", "severity": "ERROR", "category": "PAIR", "message": "RGB and height spatial dimensions violate inference policy.", "default_blocking": true},
+    {"order": 500, "code": "MOCK_INFERENCE_USED", "severity": "WARNING", "category": "DECISION", "message": "Development-only mock inference was used; no model analyzed the inputs.", "default_blocking": false},
+    {"order": 510, "code": "MOCK_DECISION_GENERATED", "severity": "INFO", "category": "DECISION", "message": "A deterministic mock workflow decision was generated.", "default_blocking": false},
+    {"order": 520, "code": "MOCK_FAIL_DEFECT_ASSIGNED", "severity": "INFO", "category": "DECISION", "message": "A deterministic taxonomy label was assigned for mock FAIL workflow testing only.", "default_blocking": false},
+    {"order": 530, "code": "CONFIDENCE_UNAVAILABLE", "severity": "WARNING", "category": "DECISION", "message": "Confidence is unavailable for deterministic mock inference.", "default_blocking": false},
+    {"order": 600, "code": "INFERENCE_INTERNAL_ERROR", "severity": "ERROR", "category": "INTERNAL", "message": "Inference could not complete because of an internal error.", "default_blocking": true}
+  ]
+}
