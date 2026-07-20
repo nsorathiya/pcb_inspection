@@ -209,10 +209,13 @@ preprocessing buffers must remain inside trusted execution code.
 
 The engine itself still has no database, HTTP, FastAPI startup, report,
 preview, model-file, training, or frontend integration. Schema version 3 now
-provides a separate result-only persistence/lifecycle coordinator for an
-already completed typed mock result; it never invokes this engine or reads its
-input buffers. See `docs/inspection_processing_lifecycle.md`. A persisted mock
-result must not be promoted or relabelled as a production inspection decision.
+provides a separate persistence/lifecycle coordinator. The trusted internal
+synthetic processing orchestrator invokes this service once, and only after
+successful preprocessing for the winning new lifecycle; exact replay never
+reconstructs buffers or invokes inference. See
+`docs/synthetic_processing_orchestrator.md` and
+`docs/inspection_processing_lifecycle.md`. A persisted mock result must not be
+promoted or relabelled as a production inspection decision.
 
 Real-data work must separately define model input compatibility, model and
 taxonomy version evidence, output semantics, thresholds, calibration,

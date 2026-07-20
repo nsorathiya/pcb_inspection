@@ -95,6 +95,15 @@ ERROR. It does not execute either service and is not exposed by an HTTP route.
 Stored mock outcomes are development workflow values, not production PCB
 decisions. See `docs/inspection_processing_lifecycle.md`.
 
+A trusted internal synthetic processing orchestrator now coordinates exact
+policy loading, generator-owned fixture provenance, canonical-key replay, the
+guarded lifecycle, execution-time artifact integrity preflight, existing
+synthetic preprocessing, and existing deterministic mock inference. It is not
+wired into FastAPI or startup. Completed and technical-error retries reconstruct
+persisted evidence without rereading manifests or source files. Mock decisions
+remain synthetic, confidence-free, and nonproduction. See
+`docs/synthetic_processing_orchestrator.md`.
+
 ## Run tests
 
 Run the focused logging, startup, health, and request-ID tests:
@@ -188,6 +197,13 @@ concurrency tests:
 
 ```powershell
 python -m pytest .\backend\tests\test_inspection_processing_lifecycle.py -q
+```
+
+Run the focused trusted synthetic processing-orchestrator, provenance,
+idempotency, concurrency, failure, and fixture-integration tests:
+
+```powershell
+python -m pytest .\backend\tests\test_synthetic_processing_orchestrator.py -q
 ```
 
 Run the complete backend foundation test suite:

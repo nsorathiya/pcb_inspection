@@ -158,11 +158,13 @@ public boundary.
 The executor itself has no database, HTTP endpoint, application-state wiring,
 status transition, audit event, inference call, model load, classification,
 report, preview, or frontend integration. Schema version 3 provides a separate
-result-only persistence/lifecycle coordinator for an already completed typed
-result; it never calls this executor or reads internal buffers. See
-`docs/inspection_processing_lifecycle.md`. The executor does not rerun semantic
-validation; it consumes the explicitly supplied validated identity and
-prerequisite outcome.
+result persistence/lifecycle coordinator. The trusted internal synthetic
+processing orchestrator now constructs this executor's input from persisted
+validation evidence, a verified generated-fixture manifest, and safely resolved
+runtime artifacts; invokes it once for the winning new run; and retains its
+buffers in memory for mock inference. The executor itself remains unaware of
+those concerns. See `docs/synthetic_processing_orchestrator.md` and
+`docs/inspection_processing_lifecycle.md`. It does not rerun semantic validation.
 
 Real-data integration must replace or extend the policy registry, trusted
 source reader, RGB decoder/processor, height decoder/processor, registration

@@ -38,5 +38,35 @@ from app.services.inspection_processing.persistence import (
     ProcessingPersistenceError,
     ProcessingPersistenceIntegrityError,
 )
+from app.services.inspection_processing.execution_models import ProcessingExecutionResult
+from app.services.inspection_processing.exceptions import (
+    ProcessingArtifactPreflightError,
+    ProcessingExecutionArtifactPairError,
+    ProcessingExecutionConflictError,
+    ProcessingExecutionConsistencyError,
+    ProcessingExecutionError,
+    ProcessingExecutionInProgressError,
+    ProcessingExecutionInspectionNotFoundError,
+    ProcessingExecutionInspectionNotReadyError,
+    ProcessingExecutionOrchestrationError,
+    ProcessingExecutionPolicyError,
+    ProcessingExecutionRecoveryRequiredError,
+    ProcessingExecutionValidationMissingError,
+    ProcessingExecutionValidationNotPassedError,
+    SyntheticProvenanceError,
+    SyntheticProvenanceMismatchError,
+    SyntheticProvenanceUnavailableError,
+)
+from app.services.inspection_processing.input_builder import (
+    InspectionProcessingInputReader,
+    ProcessingArtifactPreflight,
+)
+from app.services.inspection_processing.orchestrator import (
+    InspectionProcessingOrchestrator,
+)
+from app.services.inspection_processing.provenance import (
+    SyntheticFixtureProvenanceVerifier,
+    VerifiedSyntheticScenario,
+)
 
 __all__ = [name for name in globals() if not name.startswith("_")]

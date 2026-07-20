@@ -97,15 +97,27 @@ back the entire transaction. Artifact records and files are not modified. Back
 up the SQLite database, WAL, and SHM consistently before applying migration 3
 in a deployed runtime.
 
-## Current integration boundary
+## Trusted internal execution integration
+
+`InspectionProcessingOrchestrator` now provides the separate trusted execution
+boundary that this lifecycle intentionally does not implement. It verifies an
+injected generator-owned synthetic manifest, performs exact-key replay before
+file reads, uses `begin_processing()` and `complete_processing()` as the only
+mutation paths, and invokes the existing synthetic preprocessing and mock
+inference services only for the winning new run. The lifecycle's transaction,
+status, audit, rollback, and idempotency rules are unchanged. See
+`docs/synthetic_processing_orchestrator.md`.
+
+## Current transport boundary
 
 No API route, startup execution hook, report, preview, model load, or frontend
-integration is added. A later task may connect trusted execution code to these
-services while preserving this typed, result-only boundary.
+integration is added. A later task may adapt a reviewed transport to the
+internal orchestrator while preserving this typed lifecycle boundary.
 
 ## PowerShell tests
 
 ```powershell
 python -m pytest .\backend\tests\test_inspection_processing_lifecycle.py -q
+python -m pytest .\backend\tests\test_synthetic_processing_orchestrator.py -q
 python -m pytest .\backend\tests -q
 ```
