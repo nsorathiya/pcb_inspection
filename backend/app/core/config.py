@@ -5,7 +5,7 @@ from pathlib import Path
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.core.runtime_paths import default_runtime_root, resolve_runtime_root
+from app.core.runtime_paths import REPOSITORY_ROOT, default_runtime_root, resolve_runtime_root
 
 
 class LogLevel(str, Enum):
@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     max_mask_bytes: int = Field(default=64 * 1024 * 1024, gt=0)
     max_calibration_bytes: int = Field(default=5 * 1024 * 1024, gt=0)
     max_generated_artifact_bytes: int = Field(default=50 * 1024 * 1024, gt=0)
+    enable_synthetic_processing_api: bool = False
+    synthetic_fixture_root: Path | None = None
 
     @field_validator("log_level", mode="before")
     @classmethod
@@ -52,6 +54,16 @@ class Settings(BaseSettings):
     @classmethod
     def normalize_runtime_root(cls, value: object) -> Path:
         return resolve_runtime_root(Path(value))
+
+    @field_validator("synthetic_fixture_root", mode="before")
+    @classmethod
+    def normalize_synthetic_fixture_root(cls, value: object) -> Path | None:
+        if value is None or value == "":
+            return None
+        path = Path(value).expanduser()
+        if not path.is_absolute():
+            path = REPOSITORY_ROOT / path
+        return path.resolve()
 
     @field_validator("database_filename", mode="before")
     @classmethod

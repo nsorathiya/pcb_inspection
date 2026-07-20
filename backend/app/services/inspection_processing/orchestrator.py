@@ -43,8 +43,11 @@ from app.services.inspection_processing.exceptions import (
     ProcessingExecutionConflictError,
     ProcessingExecutionConsistencyError,
     ProcessingExecutionInspectionNotReadyError,
+    ProcessingExecutionInProgressError,
     ProcessingExecutionOrchestrationError,
+    ProcessingExecutionOptionalEvidenceUnsupportedError,
     ProcessingExecutionPolicyError,
+    ProcessingExecutionReprocessingUnsupportedError,
     ProcessingExecutionRecoveryRequiredError,
 )
 from app.services.inspection_processing.execution_models import ProcessingExecutionResult
@@ -168,8 +171,17 @@ class InspectionProcessingOrchestrator:
             return await self._mapper.replay(existing, snapshot.inspection_status)
         if snapshot.inspection_status is not InspectionStatus.READY:
             if snapshot.inspection_status is InspectionStatus.PROCESSING:
-                raise ProcessingExecutionConflictError(
+                raise ProcessingExecutionInProgressError(
                     "another processing lifecycle is already in progress"
+                )
+            if snapshot.inspection_status in {
+                InspectionStatus.PASS,
+                InspectionStatus.FAIL,
+                InspectionStatus.UNCERTAIN,
+                InspectionStatus.ERROR,
+            }:
+                raise ProcessingExecutionReprocessingUnsupportedError(
+                    "inspection has a final status and reprocessing is unsupported"
                 )
             raise ProcessingExecutionInspectionNotReadyError(
                 "inspection is not READY for new processing"
@@ -180,7 +192,7 @@ class InspectionProcessingOrchestrator:
         # currently has no technical summaries from which its preprocessing input
         # identity can be constructed. Refuse before mutation rather than invent it.
         if snapshot.evidence:
-            raise ProcessingExecutionConflictError(
+            raise ProcessingExecutionOptionalEvidenceUnsupportedError(
                 "optional evidence is not supported by the selected synthetic executor"
             )
         identity = ProcessingStartIdentity(
@@ -467,12 +479,17 @@ class InspectionProcessingOrchestrator:
             raise ProcessingExecutionRecoveryRequiredError(
                 "processing completion failed and requires operational recovery"
             ) from exc
-        return self._mapper.current(
-            processing_run_id=processing_run_id,
-            processing_key=processing_key,
-            inspection_status=completed.inspection_status,
-            processing_status=completed.processing_status,
-            preprocessing=preprocessing_result,
-            inference=inference_result,
-            completed_at=completed.completed_at,
+        run = await self._repositories.processing.get_run_by_id(processing_run_id)
+        inspection = await self._repositories.inspections.get(
+            preprocessing_result.inspection_id
+        )
+        if run is None or inspection is None:
+            raise ProcessingExecutionRecoveryRequiredError(
+                "completed processing evidence could not be restored"
+            )
+        return await self._mapper.restore(
+            run,
+            inspection.status,
+            idempotent=completed.idempotent_existing,
+            started_now=not completed.idempotent_existing,
         )

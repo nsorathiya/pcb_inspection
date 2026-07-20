@@ -36,7 +36,13 @@ from app.services.inspection_processing.exceptions import (
     ProcessingExecutionConsistencyError,
     ProcessingExecutionInProgressError,
 )
-from app.services.inspection_processing.execution_models import ProcessingExecutionResult
+from app.services.inspection_processing.execution_models import (
+    InferenceEvidenceResult,
+    PreprocessingEvidenceResult,
+    ProcessingExecutionResult,
+    ProcessingFindingResult,
+    ProcessingSummaryResult,
+)
 from app.services.inspection_processing.input_builder import ProcessingInputSnapshot
 from app.services.inspection_processing.persistence import (
     InspectionProcessingRepository,
@@ -235,6 +241,21 @@ class SafeProcessingResultMapper:
         run: PersistedProcessingRun,
         inspection_status: InspectionStatus,
     ) -> ProcessingExecutionResult:
+        return await self.restore(
+            run,
+            inspection_status,
+            idempotent=True,
+            started_now=False,
+        )
+
+    async def restore(
+        self,
+        run: PersistedProcessingRun,
+        inspection_status: InspectionStatus,
+        *,
+        idempotent: bool,
+        started_now: bool,
+    ) -> ProcessingExecutionResult:
         pre = await self._repository.get_preprocessing_result(run.processing_run_id)
         inf = await self._repository.get_inference_result(run.processing_run_id)
         if run.status is ProcessingRunStatus.STARTED:
@@ -261,8 +282,8 @@ class SafeProcessingResultMapper:
             inspection_status,
             pre_doc,
             inf_doc,
-            idempotent=True,
-            started_now=False,
+            idempotent=idempotent,
+            started_now=started_now,
         )
 
     async def _verify_audits(self, run: PersistedProcessingRun) -> None:
@@ -456,6 +477,55 @@ class SafeProcessingResultMapper:
 
     @staticmethod
     def _map_documents(run, inspection_status, pre, inf, *, idempotent, started_now):
+        def summary(document):
+            value = document["summary"]
+            return ProcessingSummaryResult(
+                total_findings=value["total_findings"],
+                blocking_findings=value["blocking_findings"],
+                warnings=value["warnings"],
+                errors=value["errors"],
+            )
+
+        def findings(document):
+            return tuple(
+                ProcessingFindingResult(
+                    code=value["code"],
+                    severity=value["severity"],
+                    category=value["category"],
+                    message=value["message"],
+                    blocking=value["blocking"],
+                    branch=value.get("branch"),
+                    field=value.get("field"),
+                    details=dict(value.get("details", {})),
+                )
+                for value in document["findings"]
+            )
+
+        preprocessing = PreprocessingEvidenceResult(
+            preprocessing_id=pre["preprocessing_id"],
+            policy_id=pre["policy_id"],
+            policy_version=pre["policy_version"],
+            implementation_id=pre["implementation_id"],
+            implementation_version=pre["implementation_version"],
+            outcome=pre["outcome"],
+            summary=summary(pre),
+            findings=findings(pre),
+        )
+        inference = None
+        if inf is not None:
+            inference = InferenceEvidenceResult(
+                inference_id=inf["inference_id"],
+                policy_id=inf["policy_id"],
+                policy_version=inf["policy_version"],
+                engine_id=inf["engine_id"],
+                engine_version=inf["engine_version"],
+                engine_type=inf["engine_type"],
+                execution_outcome=inf["execution_outcome"],
+                decision=inf["decision"],
+                defect_type=inf["defect_type"],
+                summary=summary(inf),
+                findings=findings(inf),
+            )
         return ProcessingExecutionResult(
             inspection_id=run.inspection_id,
             validation_id=run.validation_id,
@@ -475,44 +545,8 @@ class SafeProcessingResultMapper:
             production_approved=False,
             lifecycle_idempotent_existing=idempotent,
             execution_started_now=started_now,
+            started_at=run.started_at,
             completed_at=run.completed_at,
-        )
-
-    @staticmethod
-    def current(
-        *,
-        processing_run_id: str,
-        processing_key: str,
-        inspection_status: InspectionStatus,
-        processing_status: ProcessingRunStatus,
-        preprocessing: InspectionPreprocessingResult,
-        inference: InspectionInferenceResult | None,
-        completed_at: datetime,
-    ) -> ProcessingExecutionResult:
-        return ProcessingExecutionResult(
-            inspection_id=preprocessing.inspection_id,
-            validation_id=preprocessing.validation_id,
-            processing_run_id=processing_run_id,
-            processing_key=processing_key,
-            preprocessing_id=preprocessing.preprocessing_id,
-            inference_id=None if inference is None else inference.inference_id,
-            preprocessing_outcome=preprocessing.outcome.value,
-            inference_execution_outcome=(
-                None if inference is None else inference.execution_outcome.value
-            ),
-            mock_decision=(
-                None
-                if inference is None or inference.decision is None
-                else inference.decision.value
-            ),
-            defect_type=None if inference is None else inference.defect_type,
-            inspection_status=inspection_status,
-            processing_status=processing_status,
-            synthetic_input_verified=True,
-            mock_preprocessing=True,
-            mock_inference=inference is not None,
-            production_approved=False,
-            lifecycle_idempotent_existing=False,
-            execution_started_now=True,
-            completed_at=completed_at,
+            preprocessing=preprocessing,
+            inference=inference,
         )

@@ -110,14 +110,17 @@ status, audit, rollback, and idempotency rules are unchanged. See
 
 ## Current transport boundary
 
-No API route, startup execution hook, report, preview, model load, or frontend
-integration is added. A later task may adapt a reviewed transport to the
-internal orchestrator while preserving this typed lifecycle boundary.
+A development-only POST route now invokes the trusted orchestrator, and a GET
+route retrieves the latest persisted lifecycle through a shared safe mapper.
+The GET performs no execution, artifact or manifest file read, write, or audit
+append. There is still no startup execution hook, report, preview, model load,
+or frontend integration. See `docs/inspection_processing_api.md`.
 
 ## PowerShell tests
 
 ```powershell
 python -m pytest .\backend\tests\test_inspection_processing_lifecycle.py -q
 python -m pytest .\backend\tests\test_synthetic_processing_orchestrator.py -q
+python -m pytest .\backend\tests\test_inspection_processing_api.py -q
 python -m pytest .\backend\tests -q
 ```

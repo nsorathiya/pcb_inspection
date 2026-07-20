@@ -152,9 +152,12 @@ before begin rather than fabricate the technical `ArtifactInputIdentity` fields
 required by the preprocessing result contract. A future contract task may add
 authoritative persisted evidence summaries before optional evidence is executed.
 
-No HTTP route, OpenAPI operation, startup hook, background job, model/checkpoint
-load, real-data path, confidence, preview, report, schema change, or migration is
-included.
+The development-only processing POST endpoint is now a thin application-owned
+adapter over this orchestrator. Its trusted fixture root comes only from
+application configuration, never from the request. No startup execution,
+background job, model/checkpoint load, real-data path, confidence, preview,
+report, schema change, or migration is included. See
+`docs/inspection_processing_api.md` for the transport contract.
 
 ## Internal Python usage
 
@@ -191,4 +194,3 @@ lifecycle mutation inside the existing internal boundaries.
 python -m pytest .\backend\tests\test_synthetic_processing_orchestrator.py -q
 python -m pytest .\backend\tests -q
 ```
-

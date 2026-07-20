@@ -95,13 +95,16 @@ ERROR. It does not execute either service and is not exposed by an HTTP route.
 Stored mock outcomes are development workflow values, not production PCB
 decisions. See `docs/inspection_processing_lifecycle.md`.
 
-A trusted internal synthetic processing orchestrator now coordinates exact
+A trusted internal synthetic processing orchestrator coordinates exact
 policy loading, generator-owned fixture provenance, canonical-key replay, the
 guarded lifecycle, execution-time artifact integrity preflight, existing
 synthetic preprocessing, and existing deterministic mock inference. It is not
-wired into FastAPI or startup. Completed and technical-error retries reconstruct
-persisted evidence without rereading manifests or source files. Mock decisions
-remain synthetic, confidence-free, and nonproduction. See
+wired into startup execution. When explicitly enabled for development, the
+processing API delegates POST execution only to this orchestrator and provides
+a read-only GET for persisted results. Completed and technical-error retries
+reconstruct persisted evidence without rereading manifests or source files.
+Mock decisions remain synthetic, confidence-free, and nonproduction. See
+`docs/inspection_processing_api.md` and
 `docs/synthetic_processing_orchestrator.md`.
 
 ## Run tests
@@ -206,6 +209,13 @@ idempotency, concurrency, failure, and fixture-integration tests:
 python -m pytest .\backend\tests\test_synthetic_processing_orchestrator.py -q
 ```
 
+Run the focused development-only processing execution and persisted-result API
+tests:
+
+```powershell
+python -m pytest .\backend\tests\test_inspection_processing_api.py -q
+```
+
 Run the complete backend foundation test suite:
 
 ```powershell
@@ -233,6 +243,8 @@ $env:PCB_AOI_MAX_HEIGHT_BYTES = "268435456"
 $env:PCB_AOI_MAX_MASK_BYTES = "67108864"
 $env:PCB_AOI_MAX_CALIBRATION_BYTES = "5242880"
 $env:PCB_AOI_MAX_GENERATED_ARTIFACT_BYTES = "52428800"
+$env:PCB_AOI_ENABLE_SYNTHETIC_PROCESSING_API = "false"
+$env:PCB_AOI_SYNTHETIC_FIXTURE_ROOT = ""
 ```
 
 The supported variables are:
@@ -255,6 +267,23 @@ The supported variables are:
 | `PCB_AOI_MAX_MASK_BYTES` | `67108864` (64 MiB) |
 | `PCB_AOI_MAX_CALIBRATION_BYTES` | `5242880` (5 MiB) |
 | `PCB_AOI_MAX_GENERATED_ARTIFACT_BYTES` | `52428800` (50 MiB) |
+| `PCB_AOI_ENABLE_SYNTHETIC_PROCESSING_API` | `false` |
+| `PCB_AOI_SYNTHETIC_FIXTURE_ROOT` | Unset |
+
+The synthetic processing POST endpoint is disabled by default. For trusted,
+generator-owned development fixtures only, set both variables before startup:
+
+```powershell
+$env:PCB_AOI_ENABLE_SYNTHETIC_PROCESSING_API = "true"
+$env:PCB_AOI_SYNTHETIC_FIXTURE_ROOT = "C:\pcb-aoi-trusted-fixtures"
+python -m uvicorn app.main:app --app-dir .\backend --reload
+```
+
+The application never accepts a fixture root from a request and never creates
+an implicit fixture tree. A relative fixture root is resolved from the
+repository root. Enabling the flag without configuring a root leaves POST
+unavailable with HTTP 503. GET remains a database-only retrieval path and does
+not execute processing or read fixture files.
 
 `PCB_AOI_LOG_LEVEL` accepts `DEBUG`, `INFO`, `WARNING`, `ERROR`, or
 `CRITICAL`. The current `plain` format is readable development output with

@@ -239,6 +239,11 @@ evidence.
 
 ## Current limitations
 
+After a validation passes and the inspection becomes `READY`, trusted synthetic
+fixtures may be processed through the separately gated development-only API.
+That API does not change this validation contract or turn validation into a PCB
+classification. See `docs/inspection_processing_api.md`.
+
 - Revalidation and result supersession are not defined.
 - The development policy is not production-approved.
 - A `RECEIVED` row with missing or ambiguous registered raw identities cannot

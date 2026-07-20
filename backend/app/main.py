@@ -18,6 +18,12 @@ from app.services.artifact_storage import (
     ArtifactStorageService,
 )
 from app.services.inspection_intake import InspectionIntakeCoordinator
+from app.services.inspection_processing import (
+    InspectionProcessingApiService,
+    InspectionProcessingOrchestrator,
+    ProcessingLifecycleService,
+)
+from app.services.inspection_processing.assembly import SafeProcessingResultMapper
 from app.services.inspection_validation import (
     ContractValidationPolicyEvaluator,
     DatabaseValidationArtifactRetriever,
@@ -42,6 +48,7 @@ def create_app(
     settings: Settings | None = None,
     *,
     validation_policy_loader: ValidationPolicyLoader | None = None,
+    processing_orchestrator: InspectionProcessingOrchestrator | None = None,
 ) -> FastAPI:
     """Create the model-independent FastAPI application."""
     application_settings = settings or get_settings()
@@ -105,6 +112,32 @@ def create_app(
         validation_engine,
         validation_commit,
     )
+    processing_result_mapper = SafeProcessingResultMapper(
+        repositories.processing,
+        repositories.audit_events,
+    )
+    configured_processing_orchestrator = None
+    if (
+        application_settings.enable_synthetic_processing_api
+        and application_settings.synthetic_fixture_root is not None
+    ):
+        configured_processing_orchestrator = processing_orchestrator or (
+            InspectionProcessingOrchestrator(
+                repositories,
+                runtime_paths,
+                application_settings.synthetic_fixture_root,
+                ProcessingLifecycleService(
+                    database.session_factory,
+                    repository=repositories.processing,
+                ),
+                result_mapper=processing_result_mapper,
+            )
+        )
+    inspection_processing = InspectionProcessingApiService(
+        repositories,
+        processing_result_mapper,
+        configured_processing_orchestrator,
+    )
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -153,6 +186,7 @@ def create_app(
     application.state.artifact_registration = artifact_registration
     application.state.inspection_intake = inspection_intake
     application.state.inspection_validation = inspection_validation
+    application.state.inspection_processing = inspection_processing
     application.add_exception_handler(ApiError, api_error_handler)
     application.add_exception_handler(
         RequestValidationError,

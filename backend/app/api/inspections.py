@@ -14,6 +14,10 @@ from app.api.validation_responses import (
     InspectionValidationResponse,
     map_validation_response,
 )
+from app.api.processing_responses import (
+    InspectionProcessingResponse,
+    map_processing_response,
+)
 from app.db.models import ArtifactType, InspectionStatus
 from app.services.artifact_storage import (
     ArtifactConflictError,
@@ -38,6 +42,28 @@ from app.services.inspection_validation.orchestrator import (
     ValidationPolicyNotFoundError,
     ValidationPolicyVersionUnsupportedError,
     ValidationResultNotFoundError,
+)
+from app.services.inspection_inference.exceptions import InferencePolicyLoadError
+from app.services.inspection_preprocessing.exceptions import PreprocessingPolicyLoadError
+from app.services.inspection_processing import (
+    InspectionProcessingApiService,
+    ProcessingExecutionArtifactPairError,
+    ProcessingExecutionConflictError,
+    ProcessingExecutionConsistencyError,
+    ProcessingExecutionInProgressError,
+    ProcessingExecutionInspectionNotFoundError,
+    ProcessingExecutionInspectionNotReadyError,
+    ProcessingExecutionOptionalEvidenceUnsupportedError,
+    ProcessingExecutionOrchestrationError,
+    ProcessingExecutionPolicyError,
+    ProcessingExecutionReprocessingUnsupportedError,
+    ProcessingExecutionRecoveryRequiredError,
+    ProcessingExecutionResultNotFoundError,
+    ProcessingExecutionValidationMissingError,
+    ProcessingExecutionValidationNotPassedError,
+    SyntheticProcessingNotConfiguredError,
+    SyntheticProvenanceMismatchError,
+    SyntheticProvenanceUnavailableError,
 )
 
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -162,6 +188,15 @@ class InspectionDetailResponse(BaseModel):
 class InspectionValidationRequest(BaseModel):
     policy_id: str = Field(max_length=128)
     policy_version: str = Field(max_length=64)
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class InspectionProcessingRequest(BaseModel):
+    preprocessing_policy_id: str = Field(max_length=128)
+    preprocessing_policy_version: str = Field(max_length=64)
+    inference_policy_id: str = Field(max_length=128)
+    inference_policy_version: str = Field(max_length=64)
 
     model_config = ConfigDict(extra="forbid")
 
@@ -321,6 +356,246 @@ def _map_validation_error(error: Exception) -> ApiError:
         "VALIDATION_ORCHESTRATION_FAILED",
         "Inspection validation could not be completed reliably.",
     )
+
+
+def _validated_processing_selection(
+    selection: InspectionProcessingRequest,
+) -> InspectionProcessingRequest:
+    identity = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+    version = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$")
+    if (
+        identity.fullmatch(selection.preprocessing_policy_id) is None
+        or version.fullmatch(selection.preprocessing_policy_version) is None
+        or identity.fullmatch(selection.inference_policy_id) is None
+        or version.fullmatch(selection.inference_policy_version) is None
+    ):
+        raise ApiError(
+            400,
+            "INVALID_PROCESSING_POLICY_SELECTION",
+            "Processing policy IDs or versions are invalid.",
+        )
+    return selection
+
+
+def _map_processing_error(error: Exception) -> ApiError:
+    if isinstance(error, SyntheticProcessingNotConfiguredError):
+        return ApiError(
+            503,
+            "SYNTHETIC_PROCESSING_NOT_CONFIGURED",
+            "Synthetic processing execution is not configured.",
+        )
+    if isinstance(error, ProcessingExecutionPolicyError):
+        cause = error.__cause__
+        if isinstance(cause, PreprocessingPolicyLoadError):
+            if cause.finding_code == "PREPROCESSING_POLICY_NOT_FOUND":
+                return ApiError(
+                    404,
+                    "PREPROCESSING_POLICY_NOT_FOUND",
+                    "The selected preprocessing policy was not found.",
+                )
+            if cause.finding_code == "PREPROCESSING_POLICY_VERSION_UNSUPPORTED":
+                return ApiError(
+                    404,
+                    "PREPROCESSING_POLICY_VERSION_UNSUPPORTED",
+                    "The selected preprocessing policy version is unsupported.",
+                )
+        if isinstance(cause, InferencePolicyLoadError):
+            if cause.finding_code == "INFERENCE_POLICY_NOT_FOUND":
+                return ApiError(
+                    404,
+                    "INFERENCE_POLICY_NOT_FOUND",
+                    "The selected inference policy was not found.",
+                )
+            if cause.finding_code == "INFERENCE_POLICY_VERSION_UNSUPPORTED":
+                return ApiError(
+                    404,
+                    "INFERENCE_POLICY_VERSION_UNSUPPORTED",
+                    "The selected inference policy version is unsupported.",
+                )
+        return ApiError(
+            500,
+            "PROCESSING_POLICY_UNAVAILABLE",
+            "The configured processing policy could not be loaded safely.",
+        )
+    if isinstance(error, ProcessingExecutionInspectionNotFoundError):
+        return ApiError(404, "INSPECTION_NOT_FOUND", "Inspection was not found.")
+    if isinstance(error, ProcessingExecutionResultNotFoundError):
+        return ApiError(
+            404,
+            "INSPECTION_PROCESSING_NOT_FOUND",
+            "No processing result exists for this inspection.",
+        )
+    if isinstance(error, ProcessingExecutionInProgressError):
+        return ApiError(
+            409,
+            "PROCESSING_ALREADY_IN_PROGRESS",
+            "Inspection processing is already in progress.",
+        )
+    if isinstance(error, ProcessingExecutionOptionalEvidenceUnsupportedError):
+        return ApiError(
+            409,
+            "OPTIONAL_EVIDENCE_PROCESSING_UNSUPPORTED",
+            "Synthetic processing does not yet support optional mask or calibration evidence.",
+        )
+    if isinstance(error, ProcessingExecutionReprocessingUnsupportedError):
+        return ApiError(
+            409,
+            "REPROCESSING_UNSUPPORTED",
+            "The inspection already has a final status. Reprocessing is unsupported.",
+        )
+    if isinstance(error, ProcessingExecutionInspectionNotReadyError):
+        return ApiError(
+            409,
+            "INSPECTION_NOT_READY",
+            "The inspection is not READY for processing.",
+        )
+    if isinstance(error, ProcessingExecutionValidationMissingError):
+        return ApiError(
+            409,
+            "INSPECTION_VALIDATION_REQUIRED",
+            "A persisted passed validation is required before processing.",
+        )
+    if isinstance(error, ProcessingExecutionValidationNotPassedError):
+        return ApiError(
+            409,
+            "INSPECTION_VALIDATION_NOT_PASSED",
+            "The persisted inspection validation did not pass.",
+        )
+    if isinstance(error, ProcessingExecutionArtifactPairError):
+        return ApiError(
+            409,
+            "INCOMPLETE_ARTIFACT_PAIR",
+            "The registered RGB and height artifact pair is incomplete or ambiguous.",
+        )
+    if isinstance(error, SyntheticProvenanceMismatchError):
+        return ApiError(
+            409,
+            "SYNTHETIC_PROVENANCE_MISMATCH",
+            "Trusted synthetic fixture provenance did not match the inspection.",
+        )
+    if isinstance(error, SyntheticProvenanceUnavailableError):
+        return ApiError(
+            409,
+            "SYNTHETIC_PROVENANCE_UNAVAILABLE",
+            "Trusted synthetic fixture provenance is unavailable.",
+        )
+    if isinstance(error, ProcessingExecutionConsistencyError):
+        return ApiError(
+            500,
+            "PROCESSING_DATA_INCONSISTENT",
+            "Persisted processing evidence is internally inconsistent.",
+        )
+    if isinstance(error, ProcessingExecutionRecoveryRequiredError):
+        return ApiError(
+            500,
+            "PROCESSING_RECOVERY_REQUIRED",
+            "Processing could not be finalized and requires operational recovery.",
+        )
+    if isinstance(error, ProcessingExecutionConflictError):
+        return ApiError(
+            409,
+            "PROCESSING_LIFECYCLE_CONFLICT",
+            "Processing conflicts with the current inspection lifecycle.",
+        )
+    if isinstance(error, ProcessingExecutionOrchestrationError):
+        return ApiError(
+            500,
+            "PROCESSING_ORCHESTRATION_FAILED",
+            "Inspection processing could not be completed reliably.",
+        )
+    return ApiError(
+        500,
+        "PROCESSING_ORCHESTRATION_FAILED",
+        "Inspection processing could not be completed reliably.",
+    )
+
+
+@router.post(
+    "/inspections/{inspection_id}/process",
+    response_model=InspectionProcessingResponse,
+    responses={
+        400: {"model": ApiErrorResponse},
+        404: {"model": ApiErrorResponse},
+        409: {"model": ApiErrorResponse},
+        422: {"model": ApiErrorResponse},
+        500: {"model": ApiErrorResponse},
+        503: {"model": ApiErrorResponse},
+    },
+    summary="Development-only trusted synthetic processing execution",
+    description=(
+        "Development-only endpoint for generator-owned synthetic fixtures. It "
+        "delegates execution exclusively to the trusted synthetic processing "
+        "orchestrator, which verifies fixture provenance before beginning a new "
+        "lifecycle. PASS, FAIL, and UNCERTAIN are deterministic mock workflow "
+        "decisions, not image-based predictions or production PCB dispositions. "
+        "The digest bucket does not analyze PCB defects, confidence is unavailable, "
+        "and no real AI model is executed. Exact completed retries return persisted "
+        "evidence without rerunning. Reprocessing is not supported."
+    ),
+)
+async def process_inspection(
+    inspection_id: str,
+    selection: InspectionProcessingRequest,
+    request: Request,
+) -> InspectionProcessingResponse:
+    canonical_id = _canonical_inspection_id(inspection_id)
+    selected = _validated_processing_selection(selection)
+    service: InspectionProcessingApiService = request.app.state.inspection_processing
+    try:
+        execution = await service.execute_processing(
+            canonical_id,
+            selected.preprocessing_policy_id,
+            selected.preprocessing_policy_version,
+            selected.inference_policy_id,
+            selected.inference_policy_version,
+            request_id=request.state.request_id,
+        )
+    except Exception as exc:
+        mapped = _map_processing_error(exc)
+        if mapped.status_code == 500:
+            request.app.state.logger.exception(
+                "Processing orchestration failed inspection_id=%s",
+                canonical_id,
+            )
+        raise mapped from exc
+    return map_processing_response(execution, request_id=request.state.request_id)
+
+
+@router.get(
+    "/inspections/{inspection_id}/processing",
+    response_model=InspectionProcessingResponse,
+    responses={
+        400: {"model": ApiErrorResponse},
+        404: {"model": ApiErrorResponse},
+        500: {"model": ApiErrorResponse},
+    },
+    summary="Retrieve latest persisted synthetic processing evidence",
+    description=(
+        "Returns the deterministic latest persisted processing lifecycle, typed "
+        "summaries, and ordered findings without rerunning preprocessing or mock "
+        "inference, reading artifact files, verifying fixture manifests, writing "
+        "database state, or appending audit events. Mock decisions are development "
+        "workflow evidence, not real predictions or production PCB dispositions; "
+        "confidence is unavailable."
+    ),
+)
+async def get_inspection_processing(
+    inspection_id: str,
+    request: Request,
+) -> InspectionProcessingResponse:
+    canonical_id = _canonical_inspection_id(inspection_id)
+    service: InspectionProcessingApiService = request.app.state.inspection_processing
+    try:
+        execution = await service.get_latest_processing(canonical_id)
+    except Exception as exc:
+        mapped = _map_processing_error(exc)
+        if mapped.status_code == 500:
+            request.app.state.logger.exception(
+                "Processing result read failed inspection_id=%s",
+                canonical_id,
+            )
+        raise mapped from exc
+    return map_processing_response(execution, request_id=request.state.request_id)
 
 
 @router.post(

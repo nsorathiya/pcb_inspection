@@ -10,6 +10,12 @@ class ProcessingExecutionInspectionNotReadyError(ProcessingExecutionError):
     pass
 
 
+class ProcessingExecutionReprocessingUnsupportedError(
+    ProcessingExecutionInspectionNotReadyError
+):
+    pass
+
+
 class ProcessingExecutionValidationMissingError(ProcessingExecutionError):
     pass
 
@@ -50,6 +56,12 @@ class ProcessingExecutionInProgressError(ProcessingExecutionConflictError):
     pass
 
 
+class ProcessingExecutionOptionalEvidenceUnsupportedError(
+    ProcessingExecutionConflictError
+):
+    pass
+
+
 class ProcessingExecutionConsistencyError(ProcessingExecutionConflictError):
     pass
 
@@ -61,3 +73,10 @@ class ProcessingExecutionOrchestrationError(ProcessingExecutionError):
 class ProcessingExecutionRecoveryRequiredError(ProcessingExecutionOrchestrationError):
     """A post-begin failure could not be finalized through the lifecycle service."""
 
+
+class ProcessingExecutionResultNotFoundError(ProcessingExecutionError):
+    pass
+
+
+class SyntheticProcessingNotConfiguredError(ProcessingExecutionError):
+    pass

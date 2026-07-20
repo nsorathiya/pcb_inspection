@@ -42,16 +42,25 @@ async def request_validation_error_handler(
     is_multipart = request.headers.get("content-type", "").lower().startswith(
         "multipart/form-data"
     )
+    is_processing = request.url.path.endswith("/process")
     payload = ApiErrorResponse(
         code=(
             "INCOMPLETE_OR_INVALID_MULTIPART_REQUEST"
             if is_multipart
-            else "INVALID_VALIDATION_REQUEST"
+            else (
+                "INVALID_PROCESSING_REQUEST"
+                if is_processing
+                else "INVALID_VALIDATION_REQUEST"
+            )
         ),
         message=(
             "Required multipart fields are missing or invalid."
             if is_multipart
-            else "The validation request body is missing or invalid."
+            else (
+                "The processing request body is missing or invalid."
+                if is_processing
+                else "The validation request body is missing or invalid."
+            )
         ),
         request_id=_request_id(request),
     )
