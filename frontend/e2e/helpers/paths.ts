@@ -15,6 +15,5 @@ export function defaultPythonExecutable(): string {
     ? path.join(repositoryRoot, '.venv', 'Scripts', 'python.exe')
     : path.join(repositoryRoot, '.venv', 'bin', 'python')
   if (existsSync(local)) return local
-  return process.platform === 'win32' ? 'python.exe' : 'python3'
+  return process.platform === 'win32' ? 'python.exe' : 'python'
 }
-
