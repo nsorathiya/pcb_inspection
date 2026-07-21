@@ -30,12 +30,23 @@ filesystem configuration in them.
 
 ## Verify
 
+Use Node 24.14.0 and npm 10.9.0. Install the pinned Playwright Chromium browser
+once with `npx playwright install chromium`.
+
 ```powershell
+npm ci
 npm run lint
 npm run typecheck
 npm run test:run
 npm run build
+npm run test:e2e
 ```
+
+For interactive diagnosis use `npm run test:e2e:headed`; after a failed run,
+open retained ignored diagnostics with `npm run test:e2e:report`. The suite uses
+only unique temporary runtime data and cleans successful-run diagnostics. See
+`../docs/synthetic_e2e_release_verification.md` for the complete release
+verification contract.
 
 See `../docs/operator_frontend.md` for routes, API behavior, lifecycle rules,
 accessibility, and limitations.

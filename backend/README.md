@@ -267,6 +267,12 @@ Run the complete backend foundation test suite:
 python -m pytest .\backend\tests
 ```
 
+The full real-browser synthetic workflow starts this same application against
+an isolated temporary runtime; it does not use a test-only API application.
+Run it from `frontend` with `npm run test:e2e`. Setup, trusted fixture
+generation, minimum recipe seeding, readiness, database integrity, and cleanup
+are documented in `docs/synthetic_e2e_release_verification.md`.
+
 ## Configuration
 
 Copy `.env.example` to `.env` to change local settings, or set variables in the current PowerShell session:

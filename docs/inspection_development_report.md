@@ -51,6 +51,13 @@ from the exact received `report` object using deterministic filename
 `inspection-<uuid>-development-report.json`, then revokes the object URL.
 “Print” uses `window.print()` and print CSS; no PDF is generated.
 
+Browser release verification captures the real download, checks semantic
+equality with the chosen backend `report` object, and independently recalculates
+`report_sha256` from the raw response using these canonicalization rules. Raw
+JSON is required for this check because JavaScript number parsing does not
+retain lexical forms such as `1567.0`. See
+`docs/synthetic_e2e_release_verification.md`.
+
 ## PowerShell and tests
 
 ```powershell

@@ -215,6 +215,7 @@ npm run lint
 npm run typecheck
 npm run test:run
 npm run build
+npm run test:e2e
 ```
 
 Tests cover API base and request IDs, structured/network/timeout errors,
@@ -222,6 +223,14 @@ multipart and policy payload safety, history filters/cursors/states, recipe
 versions and file intake, duplicate action protection, lifecycle-gated actions,
 validation evidence, synthetic decisions, technical failure, replay evidence,
 request IDs, and the permanent development warning.
+
+The Playwright suite runs the actual frontend and backend in a real pinned
+Chromium browser using a fresh temporary database, trusted generated fixtures,
+and two explicit recipe versions. It covers the complete PASS journey plus
+shorter FAIL, UNCERTAIN, technical ERROR, and validation-failure paths; history
+pagination, report download, print media, responsive/accessibility assertions,
+read-only database checks, and owned-process cleanup are included. See
+`docs/synthetic_e2e_release_verification.md` for commands and limitations.
 
 ## Audit timeline and development report
 

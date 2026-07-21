@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "npm@10.9.0",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=24.14.0 <25"
   },
   "scripts": {
     "dev": "vite",
@@ -13,6 +13,9 @@
     "typecheck": "tsc -b --pretty false",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -24,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
+    "@playwright/test": "1.61.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",

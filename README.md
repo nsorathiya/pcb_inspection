@@ -67,16 +67,27 @@ for trusted, generator-owned development fixtures; see
 
 ## Verification
 
+Use Node 24.14.0 (declared in `.node-version`) and npm 10.9.0 for the
+frontend. Install the pinned Chromium runtime once with
+`npx playwright install chromium`.
+
 ```powershell
 Set-Location .\frontend
+npm ci
 npm run lint
 npm run typecheck
 npm run test:run
 npm run build
+npm run test:e2e
 
 Set-Location ..
 python -m pytest .\backend\tests
 ```
+
+Browser E2E uses a fresh operating-system temporary root and exercises the
+actual FastAPI/Vite applications without touching permanent runtime data. See
+[docs/synthetic_e2e_release_verification.md](docs/synthetic_e2e_release_verification.md)
+for prerequisites, scenario coverage, diagnostics, cleanup, and CI behavior.
 
 The UI does not add authentication, recipe mutation, model management,
 reprocessing, continuous polling, PDF generation, image previews, real
