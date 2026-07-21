@@ -65,6 +65,11 @@ Synthetic processing is disabled by default. Enabling it is only appropriate
 for trusted, generator-owned development fixtures; see
 [docs/synthetic_processing_orchestrator.md](docs/synthetic_processing_orchestrator.md).
 
+For a persistent, vision-team demonstration without real production data, the
+disabled-by-default demo loader can create five synthetic lifecycle examples
+through the real intake, validation, and processing services. See
+[docs/development_demo_workspace.md](docs/development_demo_workspace.md).
+
 ## Verification
 
 Use Node 24.14.0 (declared in `.node-version`) and npm 10.9.0 for the

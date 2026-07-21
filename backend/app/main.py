@@ -5,6 +5,7 @@ from fastapi.exceptions import RequestValidationError
 
 from app.api.errors import ApiError, api_error_handler, request_validation_error_handler
 from app.api.health import router as health_router
+from app.api.demo_workspace import router as demo_workspace_router
 from app.api.inspections import router as inspections_router
 from app.api.recipes import router as recipes_router
 from app.core.config import Settings, get_settings
@@ -47,6 +48,7 @@ from app.services.inspection_validation.policy_loader import (
 )
 from app.services.recipe_catalogue import RecipeCatalogueService
 from app.services.inspection_report import InspectionReportRepository, InspectionReportService
+from app.services.demo_workspace import DemoWorkspaceService
 
 
 def create_app(
@@ -151,6 +153,16 @@ def create_app(
         InspectionReportRepository(database.session_factory)
     )
     recipe_catalogue = RecipeCatalogueService(database.session_factory)
+    demo_workspace = DemoWorkspaceService(
+        enabled=application_settings.enable_demo_workspace,
+        fixture_root=application_settings.synthetic_fixture_root,
+        runtime_paths=runtime_paths,
+        database=database,
+        repositories=repositories,
+        artifact_registration=artifact_registration,
+        validation_reader=inspection_validation,
+        processing_reader=inspection_processing,
+    )
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -204,6 +216,7 @@ def create_app(
     application.state.inspection_audit = inspection_audit
     application.state.inspection_report = inspection_report
     application.state.recipe_catalogue = recipe_catalogue
+    application.state.demo_workspace = demo_workspace
     application.add_exception_handler(ApiError, api_error_handler)
     application.add_exception_handler(
         RequestValidationError,
@@ -220,6 +233,10 @@ def create_app(
     )
     application.include_router(
         recipes_router,
+        prefix=application_settings.api_prefix,
+    )
+    application.include_router(
+        demo_workspace_router,
         prefix=application_settings.api_prefix,
     )
     return application

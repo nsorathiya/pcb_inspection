@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import BinaryIO
+from typing import BinaryIO, Callable
 from uuid import uuid4
 
 from app.db.models import ArtifactType, Inspection, InspectionArtifact, InspectionStatus
@@ -86,15 +86,18 @@ class InspectionIntakeCoordinator:
         self,
         repositories: Repositories,
         artifact_registration: ArtifactRegistrationService,
+        *,
+        inspection_id_generator: Callable[[], str] | None = None,
     ) -> None:
         self._repositories = repositories
         self._artifact_registration = artifact_registration
+        self._inspection_id = inspection_id_generator or (lambda: str(uuid4()))
 
     async def receive_pair(
         self,
         command: InspectionIntakeCommand,
     ) -> InspectionIntakeResult:
-        inspection_id = str(uuid4())
+        inspection_id = self._inspection_id()
         try:
             inspection = await self._repositories.inspections.create(
                 InspectionCreate(

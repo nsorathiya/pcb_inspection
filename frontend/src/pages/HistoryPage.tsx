@@ -1,8 +1,9 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getInspectionHistory } from '../api/inspections'
+import { getDemoWorkspace, loadDemoWorkspace } from '../api/demoWorkspace'
 import { toApiClientError, type ApiClientError } from '../api/errors'
-import type { HistoryFilters, InspectionHistoryResponse, InspectionStatus } from '../api/types'
+import type { DemoWorkspaceResponse, HistoryFilters, InspectionHistoryResponse, InspectionStatus } from '../api/types'
 import { ErrorPanel } from '../components/ErrorPanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { formatTimestamp, toUtcIso } from '../utils/format'
@@ -32,6 +33,10 @@ export function HistoryPage() {
   const [result, setResult] = useState<InspectionHistoryResponse | null>(null)
   const [error, setError] = useState<ApiClientError | null>(null)
   const [loading, setLoading] = useState(true)
+  const [demoWorkspace, setDemoWorkspace] = useState<DemoWorkspaceResponse | null>(null)
+  const [demoLoading, setDemoLoading] = useState(false)
+  const [demoError, setDemoError] = useState<ApiClientError | null>(null)
+  const [demoMessage, setDemoMessage] = useState<string | null>(null)
 
   const currentCursor = cursorStack.at(-1)
   const load = useCallback(async (signal?: AbortSignal) => {
@@ -53,6 +58,35 @@ export function HistoryPage() {
     void load(controller.signal)
     return () => controller.abort()
   }, [load])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    void getDemoWorkspace(controller.signal)
+      .then((response) => setDemoWorkspace(response.data))
+      .catch((caught) => {
+        const mapped = toApiClientError(caught)
+        if (mapped.code !== 'REQUEST_ABORTED') setDemoError(mapped)
+      })
+    return () => controller.abort()
+  }, [])
+
+  const handleDemoLoad = async () => {
+    setDemoLoading(true)
+    setDemoError(null)
+    setDemoMessage(null)
+    try {
+      const response = await loadDemoWorkspace()
+      setDemoWorkspace(response.data)
+      setDemoMessage(response.data.idempotent_existing
+        ? 'Demo workspace was already loaded; existing inspections were preserved.'
+        : 'Synthetic demo workspace loaded. Inspection history has been refreshed.')
+      await load()
+    } catch (caught) {
+      setDemoError(toApiClientError(caught))
+    } finally {
+      setDemoLoading(false)
+    }
+  }
 
   const update = (key: keyof HistoryFilters, value: string | boolean) => {
     setDraftFilters((current) => ({ ...current, [key]: value }))
@@ -84,7 +118,34 @@ export function HistoryPage() {
           <h2 id="history-title">Inspection History</h2>
           <p>Newest persisted inspections with compact validation and synthetic-processing evidence.</p>
         </div>
-        <Link className="button primary" to="/inspections/new">New paired inspection</Link>
+        <div className="page-actions">
+          {demoWorkspace?.available && (
+            <button
+              className="button secondary"
+              type="button"
+              onClick={() => void handleDemoLoad()}
+              disabled={demoLoading}
+            >
+              {demoLoading
+                ? 'Loading demo workspaceâ€¦'
+                : demoWorkspace.loaded
+                  ? 'Verify Demo Workspace'
+                  : 'Load Demo Workspace'}
+            </button>
+          )}
+          <Link className="button primary" to="/inspections/new">New paired inspection</Link>
+        </div>
+      </div>
+
+      <div className="feedback-region demo-feedback" aria-live="polite">
+        {demoMessage && <p className="action-feedback">{demoMessage}</p>}
+        {demoError && demoWorkspace?.available && (
+          <ErrorPanel
+            error={demoError}
+            title="Demo workspace could not be loaded"
+            onRetry={() => void handleDemoLoad()}
+          />
+        )}
       </div>
 
       <form className="filter-panel" onSubmit={applyFilters} aria-label="Inspection history filters">

@@ -393,3 +393,52 @@ def generate_fixtures(
         scenario_ids=selected,
         output_tree_sha256=tree_hash,
     )
+
+
+def validate_generated_fixtures(
+    output_root: Path,
+    *,
+    required_scenario_ids: tuple[str, ...] | list[str] | None = None,
+    allow_runtime_for_tests: bool = False,
+) -> GenerationResult:
+    """Validate an existing generator-owned tree without modifying it."""
+    output = _validate_output_path(
+        Path(output_root),
+        allow_runtime_for_tests=allow_runtime_for_tests,
+    )
+    _validate_owned_output(output)
+    manifest = _read_json(output / GENERATION_MANIFEST_FILENAME)
+    try:
+        seed = manifest["seed"]
+        scenario_ids = tuple(manifest["scenario_ids"])
+        tree_hash = manifest["output_tree_sha256"]
+    except (KeyError, TypeError) as exc:
+        raise SyntheticFixtureError(
+            "Existing generation manifest is incomplete"
+        ) from exc
+    if (
+        isinstance(seed, bool)
+        or not isinstance(seed, int)
+        or not 0 <= seed <= 2**63 - 1
+        or not scenario_ids
+        or len(scenario_ids) != len(set(scenario_ids))
+        or any(value not in SCENARIO_IDS for value in scenario_ids)
+        or not isinstance(tree_hash, str)
+    ):
+        raise SyntheticFixtureError("Existing generation manifest is invalid")
+    required = (
+        ()
+        if required_scenario_ids is None
+        else _selected_scenarios(required_scenario_ids)
+    )
+    missing = tuple(value for value in required if value not in scenario_ids)
+    if missing:
+        raise SyntheticFixtureError(
+            f"Existing generated output is missing required scenario: {missing[0]}"
+        )
+    return GenerationResult(
+        output_root=output,
+        seed=seed,
+        scenario_ids=scenario_ids,
+        output_tree_sha256=tree_hash,
+    )

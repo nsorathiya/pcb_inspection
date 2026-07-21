@@ -28,6 +28,12 @@ VITE_API_BASE_URL=http://127.0.0.1:8000
 `VITE_*` values are shipped to the browser. Never store secrets or backend
 filesystem configuration in them.
 
+When the backend has the development demo workspace configured, History shows
+an explicit **Load Demo Workspace** action. It is hidden when the feature is
+disabled, disables duplicate clicks while loading, reports structured errors,
+and refreshes history after a successful idempotent load. See
+`../docs/development_demo_workspace.md`.
+
 ## Verify
 
 Use Node 24.14.0 and npm 10.9.0. Install the pinned Playwright Chromium browser

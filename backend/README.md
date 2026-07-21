@@ -294,6 +294,7 @@ $env:PCB_AOI_MAX_HEIGHT_BYTES = "268435456"
 $env:PCB_AOI_MAX_MASK_BYTES = "67108864"
 $env:PCB_AOI_MAX_CALIBRATION_BYTES = "5242880"
 $env:PCB_AOI_MAX_GENERATED_ARTIFACT_BYTES = "52428800"
+$env:PCB_AOI_ENABLE_DEMO_WORKSPACE = "false"
 $env:PCB_AOI_ENABLE_SYNTHETIC_PROCESSING_API = "false"
 $env:PCB_AOI_SYNTHETIC_FIXTURE_ROOT = ""
 ```
@@ -318,6 +319,7 @@ The supported variables are:
 | `PCB_AOI_MAX_MASK_BYTES` | `67108864` (64 MiB) |
 | `PCB_AOI_MAX_CALIBRATION_BYTES` | `5242880` (5 MiB) |
 | `PCB_AOI_MAX_GENERATED_ARTIFACT_BYTES` | `52428800` (50 MiB) |
+| `PCB_AOI_ENABLE_DEMO_WORKSPACE` | `false` |
 | `PCB_AOI_ENABLE_SYNTHETIC_PROCESSING_API` | `false` |
 | `PCB_AOI_SYNTHETIC_FIXTURE_ROOT` | Unset |
 
@@ -335,6 +337,14 @@ an implicit fixture tree. A relative fixture root is resolved from the
 repository root. Enabling the flag without configuring a root leaves POST
 unavailable with HTTP 503. GET remains a database-only retrieval path and does
 not execute processing or read fixture files.
+
+The separate persistent demo loader is also disabled by default. Enable it with
+`PCB_AOI_ENABLE_DEMO_WORKSPACE=true` and configure the same safe
+`PCB_AOI_SYNTHETIC_FIXTURE_ROOT`. It exposes path-free GET state and an explicit
+POST load action under `/api/v1/development/demo-workspace`, never deletes
+existing inspections, and does not require a schema change. See
+`docs/development_demo_workspace.md` for its exact synthetic outcomes, retry,
+concurrency, and safety behaviour.
 
 `PCB_AOI_LOG_LEVEL` accepts `DEBUG`, `INFO`, `WARNING`, `ERROR`, or
 `CRITICAL`. The current `plain` format is readable development output with

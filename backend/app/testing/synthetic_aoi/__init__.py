@@ -1,6 +1,9 @@
 """Deterministic, non-production RGB/height software-fixture generation."""
 
-from app.testing.synthetic_aoi.generator import generate_fixtures
+from app.testing.synthetic_aoi.generator import (
+    generate_fixtures,
+    validate_generated_fixtures,
+)
 from app.testing.synthetic_aoi.models import (
     DEFAULT_SEED,
     GENERATOR_ID,
@@ -18,4 +21,5 @@ __all__ = [
     "SCENARIO_IDS",
     "SyntheticFixtureError",
     "generate_fixtures",
+    "validate_generated_fixtures",
 ]

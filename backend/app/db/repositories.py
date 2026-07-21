@@ -367,6 +367,18 @@ class RecipeRepository:
             await session.flush()
         return record
 
+    async def get_by_identity(
+        self,
+        recipe_id: str,
+        recipe_version: str,
+    ) -> Recipe | None:
+        statement = select(Recipe).where(
+            Recipe.recipe_id == recipe_id,
+            Recipe.recipe_version == recipe_version,
+        )
+        async with self._sessions() as session:
+            return await session.scalar(statement)
+
 
 class ModelVersionRepository:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:

@@ -61,6 +61,8 @@ h4 { margin-bottom: .4rem; color: var(--navy-900); }
 
 .page-heading { display: flex; align-items: end; justify-content: space-between; gap: 1.5rem; margin-bottom: 1.4rem; }
 .page-heading p:not(.eyebrow) { margin-bottom: 0; color: var(--slate-500); }
+.page-actions { display: flex; align-items: center; justify-content: flex-end; gap: .65rem; flex-wrap: wrap; }
+.demo-feedback { margin-bottom: 1rem; }
 .page-identifier { font-size: .78rem; word-break: break-all; }
 .button { display: inline-flex; align-items: center; justify-content: center; min-height: 2.6rem; padding: .62rem 1rem; border: 1px solid transparent; border-radius: 3px; font-weight: 750; text-decoration: none; cursor: pointer; }
 .button.primary { color: white; background: var(--blue-600); border-color: #08618e; box-shadow: 0 2px 0 #07547c; }
@@ -232,6 +234,7 @@ input:hover, select:hover { border-color: var(--slate-700); }
 
 @media (max-width: 760px) {
   .site-header, .page-heading, .site-footer { align-items: stretch; flex-direction: column; }
+  .page-actions { align-items: stretch; flex-direction: column; }
   .system-indicators { justify-content: flex-start; }
   .primary-nav { overflow-x: auto; }
   .development-warning { align-items: flex-start; }

@@ -28,6 +28,9 @@ def default_settings(monkeypatch, runtime_root: Path) -> Settings:
         "PCB_AOI_MAX_MASK_BYTES",
         "PCB_AOI_MAX_CALIBRATION_BYTES",
         "PCB_AOI_MAX_GENERATED_ARTIFACT_BYTES",
+        "PCB_AOI_ENABLE_DEMO_WORKSPACE",
+        "PCB_AOI_ENABLE_SYNTHETIC_PROCESSING_API",
+        "PCB_AOI_SYNTHETIC_FIXTURE_ROOT",
     ):
         monkeypatch.delenv(name, raising=False)
 

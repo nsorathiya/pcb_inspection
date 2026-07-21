@@ -31,6 +31,30 @@ export interface HealthResponse {
   environment: string
 }
 
+export interface DemoInspectionState {
+  key: string
+  inspection_id: string
+  board_id: string
+  status: InspectionStatus | null
+  validation_outcome: ValidationOutcome | null
+  processing_status: ProcessingStatus | null
+  preprocessing_outcome: string | null
+  mock_decision: MockDecision | null
+  complete: boolean
+}
+
+export interface DemoWorkspaceResponse {
+  enabled: boolean
+  available: boolean
+  loaded: boolean
+  recipes_ready: boolean
+  inspections: DemoInspectionState[]
+  synthetic: true
+  production_approved: false
+  idempotent_existing: boolean | null
+  request_id: string
+}
+
 export interface PageResponse {
   limit: number
   has_more: boolean

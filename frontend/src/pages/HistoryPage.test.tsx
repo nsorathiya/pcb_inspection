@@ -3,13 +3,32 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getInspectionHistory } from '../api/inspections'
+import { getDemoWorkspace, loadDemoWorkspace } from '../api/demoWorkspace'
 import { ApiClientError } from '../api/errors'
 import { HistoryPage } from './HistoryPage'
 import { emptyHistoryResponse, INSPECTION_ID } from '../test/fixtures'
 import type { InspectionHistoryResponse } from '../api/types'
 
 vi.mock('../api/inspections', () => ({ getInspectionHistory: vi.fn() }))
+vi.mock('../api/demoWorkspace', () => ({
+  getDemoWorkspace: vi.fn(),
+  loadDemoWorkspace: vi.fn(),
+}))
 const historyMock = vi.mocked(getInspectionHistory)
+const demoStatusMock = vi.mocked(getDemoWorkspace)
+const demoLoadMock = vi.mocked(loadDemoWorkspace)
+
+const disabledDemo = {
+  enabled: false,
+  available: false,
+  loaded: false,
+  recipes_ready: false,
+  inspections: [],
+  synthetic: true as const,
+  production_approved: false as const,
+  idempotent_existing: null,
+  request_id: 'demo-status',
+}
 
 const populated: InspectionHistoryResponse = {
   ...emptyHistoryResponse,
@@ -37,7 +56,10 @@ function renderPage() {
 describe('inspection history page', () => {
   beforeEach(() => {
     historyMock.mockReset()
+    demoStatusMock.mockReset()
+    demoLoadMock.mockReset()
     historyMock.mockResolvedValue({ data: emptyHistoryResponse, requestId: 'request-id' })
+    demoStatusMock.mockResolvedValue({ data: disabledDemo, requestId: 'demo-status' })
   })
 
   it('renders the unfiltered empty database state', async () => {
@@ -86,5 +108,47 @@ describe('inspection history page', () => {
     expect(screen.getByText('INSPECTION_HISTORY_READ_FAILED')).toBeInTheDocument()
     expect(screen.getByText('history-error-request')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled()
+  })
+
+  it('shows the explicit demo action only when configured and refreshes history after loading', async () => {
+    const available = { ...disabledDemo, enabled: true, available: true }
+    const loaded = { ...available, loaded: true, recipes_ready: true, idempotent_existing: false }
+    demoStatusMock.mockResolvedValue({ data: available, requestId: 'demo-status' })
+    demoLoadMock.mockResolvedValue({ data: loaded, requestId: 'demo-load' })
+    renderPage()
+
+    const button = await screen.findByRole('button', { name: 'Load Demo Workspace' })
+    await userEvent.click(button)
+
+    expect(await screen.findByText(/Synthetic demo workspace loaded/)).toBeInTheDocument()
+    expect(demoLoadMock).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(historyMock).toHaveBeenCalledTimes(2))
+    expect(screen.getByRole('button', { name: 'Verify Demo Workspace' })).toBeEnabled()
+  })
+
+  it('disables duplicate demo clicks while loading and presents structured load errors', async () => {
+    const available = { ...disabledDemo, enabled: true, available: true }
+    demoStatusMock.mockResolvedValue({ data: available, requestId: 'demo-status' })
+    let rejectLoad: ((reason?: unknown) => void) | undefined
+    demoLoadMock.mockImplementation(() => new Promise((_resolve, reject) => {
+      rejectLoad = reject
+    }))
+    renderPage()
+
+    const button = await screen.findByRole('button', { name: 'Load Demo Workspace' })
+    await userEvent.click(button)
+    expect(screen.getByRole('button', { name: /Loading demo workspace/ })).toBeDisabled()
+    rejectLoad?.(new ApiClientError(503, 'DEMO_WORKSPACE_NOT_CONFIGURED', 'Demo unavailable.', 'demo-error'))
+
+    expect(await screen.findByText('Demo unavailable.')).toBeInTheDocument()
+    expect(screen.getByText('DEMO_WORKSPACE_NOT_CONFIGURED')).toBeInTheDocument()
+    expect(screen.getByText('demo-error')).toBeInTheDocument()
+    expect(demoLoadMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not render the demo action when the backend feature is disabled', async () => {
+    renderPage()
+    await screen.findByText('No inspections received yet')
+    expect(screen.queryByRole('button', { name: /Demo Workspace/i })).not.toBeInTheDocument()
   })
 })
