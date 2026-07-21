@@ -56,7 +56,7 @@ jobs:
 
       - name: Run browser E2E
         working-directory: frontend
-        run: npm run test:e2e
+        run: PCB_AOI_E2E_PYTHON="$pythonLocation/bin/python" npm run test:e2e
 
       - name: Upload E2E diagnostics on failure
         if: failure()

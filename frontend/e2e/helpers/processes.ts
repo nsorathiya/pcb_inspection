@@ -2,21 +2,31 @@ import { closeSync, openSync } from 'node:fs'
 import { createServer } from 'node:net'
 import { spawn, spawnSync } from 'node:child_process'
 
-export function normalizedEnvironment(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+export function environmentPathKey(platform: NodeJS.Platform = process.platform): 'Path' | 'PATH' {
+  return platform === 'win32' ? 'Path' : 'PATH'
+}
+
+export function normalizedEnvironment(
+  overrides: NodeJS.ProcessEnv = {},
+  sourceEnvironment: NodeJS.ProcessEnv = process.env,
+  platform: NodeJS.Platform = process.platform,
+): NodeJS.ProcessEnv {
   const result: NodeJS.ProcessEnv = {}
+  const pathKey = environmentPathKey(platform)
   let pathValue: string | undefined
-  for (const [key, value] of Object.entries(process.env)) {
+  for (const [key, value] of Object.entries(sourceEnvironment)) {
     if (key.toLowerCase() === 'path') {
       pathValue ??= value
     } else {
       result[key] = value
     }
   }
-  if (pathValue) result.Path = pathValue
+  if (pathValue) result[pathKey] = pathValue
   for (const [key, value] of Object.entries(overrides)) {
     if (key.toLowerCase() === 'path') {
       delete result.Path
-      if (value !== undefined) result.Path = value
+      delete result.PATH
+      if (value !== undefined) result[pathKey] = value
     } else if (value === undefined) {
       delete result[key]
     } else {
