@@ -163,3 +163,8 @@ python -m pytest .\backend\tests\test_inspection_processing_api.py -q
 python -m pytest .\backend\tests\test_synthetic_processing_orchestrator.py -q
 python -m pytest .\backend\tests -q
 ```
+
+Persisted processing evidence may also appear in the deterministic read-only
+development report. Report retrieval never invokes this POST workflow, never
+verifies fixture manifests, and never reads artifacts. Mock decisions remain
+development-only and nonproduction; see `inspection_development_report.md`.

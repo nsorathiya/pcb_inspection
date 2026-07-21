@@ -4,9 +4,9 @@ React + Vite + strict TypeScript interface for the repository's existing
 file-based AOI development APIs.
 
 The UI supports inspection history, read-only recipe selection, paired-file
-intake, technical validation, persisted evidence retrieval, and explicitly
-synthetic processing. Mock results are not real AI predictions or production
-PCB decisions.
+intake, technical validation, persisted evidence retrieval, an audit timeline,
+and a deterministic development report with JSON download and browser print.
+Mock results are not real AI predictions or production PCB decisions.
 
 ## Run locally
 

@@ -11,6 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.db.models import AuditEvent, Inspection, InspectionStatus
 from app.db.validation_types import ValidationOutcome
+from app.services.audit_actions import (
+    INSPECTION_VALIDATION_ERROR as AUDIT_ACTION_VALIDATION_ERROR,
+    INSPECTION_VALIDATION_FAILED as AUDIT_ACTION_VALIDATION_FAILED,
+    INSPECTION_VALIDATION_PASSED as AUDIT_ACTION_VALIDATION_PASSED,
+)
 from app.services.inspection_validation.interfaces import InspectionValidationResult
 from app.services.inspection_validation.persistence import (
     InspectionValidationRepository,
@@ -22,9 +27,6 @@ from app.services.inspection_validation.persistence import (
     _retrieved_utc,
 )
 
-AUDIT_ACTION_VALIDATION_PASSED = "INSPECTION_VALIDATION_PASSED"
-AUDIT_ACTION_VALIDATION_FAILED = "INSPECTION_VALIDATION_FAILED"
-AUDIT_ACTION_VALIDATION_ERROR = "INSPECTION_VALIDATION_ERROR"
 
 INPUT_VALIDATION_FAILED = "INPUT_VALIDATION_FAILED"
 VALIDATOR_INTERNAL_ERROR = "VALIDATOR_INTERNAL_ERROR"

@@ -37,6 +37,101 @@ export interface PageResponse {
   next_cursor: string | null
 }
 
+export interface AuditTimelineItem {
+  audit_event_id: string
+  inspection_id: string
+  action: string
+  created_at: string
+  actor_id: string | null
+  request_id: string | null
+  details: Record<string, JsonValue>
+  details_redacted: boolean
+  development_only: boolean | null
+  mock_result: MockDecision | null
+  production_approved: boolean | null
+}
+
+export interface InspectionAuditResponse {
+  items: AuditTimelineItem[]
+  page: PageResponse
+  request_id: string
+}
+
+export interface DevelopmentReportArtifact {
+  artifact_type: string
+  sha256: string
+  byte_size: number
+  media_type: string | null
+  created_at: string
+}
+
+export interface DevelopmentReportValidation {
+  contract_version: string
+  validation_id: string
+  validation_key: string
+  result_sha256: string
+  outcome: ValidationOutcome
+  policy: { policy_id: string; policy_version: string }
+  validator_version: string
+  started_at: string
+  completed_at: string
+  rgb_technical_summary: Record<string, JsonValue>
+  height_technical_summary: Record<string, JsonValue>
+  findings: Array<Record<string, JsonValue>>
+  summary: Record<string, JsonValue>
+}
+
+export interface DevelopmentReportProcessing {
+  processing_run_id: string
+  validation_id: string
+  processing_key: string
+  lifecycle_status: ProcessingStatus
+  preprocessing_policy: Record<string, string>
+  preprocessing_implementation: Record<string, string>
+  inference_policy: Record<string, string>
+  engine: Record<string, string>
+  started_at: string
+  completed_at: string | null
+  final_decision: MockDecision | null
+  error: { code: string; message: string } | null
+  preprocessing: Record<string, JsonValue> | null
+  inference: Record<string, JsonValue> | null
+  synthetic_input: boolean
+  mock_preprocessing: boolean
+  mock_inference: boolean
+  production_approved: false
+}
+
+export interface InspectionDevelopmentReport {
+  contract_version: string
+  inspection_id: string
+  development_only: true
+  production_approved: false
+  synthetic_evidence_present: boolean
+  mock_inference_present: boolean
+  inspection: {
+    created_at: string
+    board_id: string
+    recipe_id: string
+    recipe_version: string
+    lot_id: string | null
+    operator_id: string | null
+    status: InspectionStatus
+    error: { code: string; message: string } | null
+  }
+  artifacts: DevelopmentReportArtifact[]
+  validation: DevelopmentReportValidation | null
+  processing: DevelopmentReportProcessing | null
+  audit: AuditTimelineItem[]
+  limitations: string[]
+}
+
+export interface InspectionDevelopmentReportResponse {
+  report: InspectionDevelopmentReport
+  report_sha256: string
+  request_id: string
+}
+
 export interface RecipeCatalogueItem {
   recipe_id: string
   recipe_version: string

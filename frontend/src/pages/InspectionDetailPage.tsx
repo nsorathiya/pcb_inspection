@@ -18,6 +18,7 @@ import { LifecycleSummary } from '../components/LifecycleSummary'
 import { ProcessingPanel } from '../components/ProcessingPanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { ValidationPanel } from '../components/ValidationPanel'
+import { AuditTimeline } from '../components/AuditTimeline'
 import { formatBytes, formatTimestamp } from '../utils/format'
 
 const CANONICAL_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
@@ -124,7 +125,7 @@ export function InspectionDetailPage() {
     <section aria-labelledby="inspection-detail-title">
       <div className="page-heading">
         <div><p className="eyebrow">Persisted workflow evidence</p><h2 id="inspection-detail-title">Inspection Detail</h2><p className="mono page-identifier">{inspectionId}</p></div>
-        <button className="button secondary" type="button" onClick={() => void load()} disabled={loading || Boolean(action)}>{loading ? 'Refreshing…' : 'Refresh'}</button>
+        <div className="button-row"><a href="#audit-timeline" className="button secondary">View Audit Timeline</a><Link className="button secondary" to={`/inspections/${inspectionId}/report`}>Open Development Report</Link><button className="button secondary" type="button" onClick={() => void load()} disabled={loading || Boolean(action)}>{loading ? 'Refreshing…' : 'Refresh'}</button></div>
       </div>
       <div className="feedback-region" aria-live="polite">{feedback && <p className="action-feedback">{feedback}</p>}{loading && !inspection && <p className="loading-state">Loading persisted inspection evidence…</p>}{error && <ErrorPanel error={error} onRetry={() => void load()} />}</div>
 
@@ -151,6 +152,7 @@ export function InspectionDetailPage() {
 
           <ValidationPanel result={validation} inspectionStatus={inspection.status} running={action === 'validate'} onValidate={() => void validate()} />
           <ProcessingPanel result={processing} inspectionStatus={inspection.status} running={action === 'process'} onProcess={() => void process()} />
+          <AuditTimeline inspectionId={inspectionId} />
 
           {inspection.status === 'PROCESSING' && <div className="manual-refresh-note" role="status"><strong>Processing is recorded as in progress.</strong> Use manual Refresh to retrieve authoritative persisted state. Another processing request is disabled.</div>}
           {inspection.status === 'VALIDATION_FAILED' && <div className="manual-refresh-note"><strong>Processing is unavailable.</strong> Review the completed technical validation findings above.</div>}

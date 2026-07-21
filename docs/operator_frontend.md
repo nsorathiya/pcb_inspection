@@ -223,14 +223,29 @@ versions and file intake, duplicate action protection, lifecycle-gated actions,
 validation evidence, synthetic decisions, technical failure, replay evidence,
 request IDs, and the permanent development warning.
 
+## Audit timeline and development report
+
+The inspection detail embeds a semantic ordered Audit Timeline backed only by
+persisted events. It supports cursor-based “Load more,” empty/loading/error
+states, historical actor/request IDs, safe detail rows, and explicit redaction
+indicators. The detail page also links to the dedicated Development Report.
+
+The report route displays inspection, artifact, validation, processing,
+findings, audit, limitation, and SHA-256 evidence with a persistent
+development/nonproduction warning. JSON download uses the exact backend report
+object. Print uses browser print CSS and retains identity, hash, warning,
+evidence, and limitations while hiding navigation and buttons. Neither action
+changes backend state or creates a PDF/report file.
+
 ## Known limitations
 
 - Synthetic processing POST is disabled unless the backend is explicitly
   configured with trusted generated fixtures.
 - The UI has no authentication or authorization and is development-only.
 - Recipe catalogue is read-only; recipe creation and activation are absent.
-- There is no reprocessing, background polling, full audit timeline, report,
-  preview, overlay, camera, PLC, MES, model administration, or real inference.
+- There is no reprocessing, background polling, backend PDF/report-file
+  generation, preview, overlay, camera, PLC, MES, model administration, or real
+  inference.
 - File upload progress is an indeterminate busy state because the API supplies
   no byte-progress contract.
 - Production hosting must configure SPA fallback and an appropriate API routing

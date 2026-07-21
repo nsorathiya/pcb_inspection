@@ -20,6 +20,7 @@ from app.services.artifact_storage import (
 )
 from app.services.inspection_intake import InspectionIntakeCoordinator
 from app.services.inspection_history import InspectionHistoryService
+from app.services.inspection_audit import InspectionAuditRepository, InspectionAuditService
 from app.services.inspection_processing import (
     InspectionProcessingApiService,
     InspectionProcessingOrchestrator,
@@ -45,6 +46,7 @@ from app.services.inspection_validation.policy_loader import (
     DEVELOPMENT_POLICY_VERSION,
 )
 from app.services.recipe_catalogue import RecipeCatalogueService
+from app.services.inspection_report import InspectionReportRepository, InspectionReportService
 
 
 def create_app(
@@ -142,6 +144,12 @@ def create_app(
         configured_processing_orchestrator,
     )
     inspection_history = InspectionHistoryService(database.session_factory)
+    inspection_audit = InspectionAuditService(
+        InspectionAuditRepository(database.session_factory)
+    )
+    inspection_report = InspectionReportService(
+        InspectionReportRepository(database.session_factory)
+    )
     recipe_catalogue = RecipeCatalogueService(database.session_factory)
 
     @asynccontextmanager
@@ -193,6 +201,8 @@ def create_app(
     application.state.inspection_validation = inspection_validation
     application.state.inspection_processing = inspection_processing
     application.state.inspection_history = inspection_history
+    application.state.inspection_audit = inspection_audit
+    application.state.inspection_report = inspection_report
     application.state.recipe_catalogue = recipe_catalogue
     application.add_exception_handler(ApiError, api_error_handler)
     application.add_exception_handler(

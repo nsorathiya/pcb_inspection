@@ -180,6 +180,11 @@ def test_post_pass_retry_and_get_use_one_safe_persisted_lifecycle(
         assert retry.json()["validation_key"] == payload["validation_key"]
         assert retry.json()["idempotent_existing"] is True
         assert _counts(application, inspection_id) == before
+        report = client.get(f"/api/v1/inspections/{inspection_id}/report")
+        assert report.status_code == 200, report.json()
+        assert report.json()["report"]["inspection"]["status"] == "READY"
+        assert report.json()["report"]["validation"]["outcome"] == "VALIDATION_PASSED"
+        assert report.json()["report"]["processing"] is None
 
         statements: list[str] = []
 
@@ -215,8 +220,12 @@ def test_completed_validation_failed_returns_200_and_failed_status(tmp_path) -> 
             f"/api/v1/inspections/{inspection_id}/validate",
             json=POLICY,
         )
+        report = client.get(f"/api/v1/inspections/{inspection_id}/report")
 
     assert response.status_code == 200, response.json()
+    assert report.status_code == 200, report.json()
+    assert report.json()["report"]["inspection"]["status"] == "VALIDATION_FAILED"
+    assert report.json()["report"]["validation"]["outcome"] == "VALIDATION_FAILED"
     assert response.json()["validation_outcome"] == "VALIDATION_FAILED"
     assert response.json()["inspection_status"] == "VALIDATION_FAILED"
     assert response.json()["summary"]["blocking_count"] > 0
@@ -282,8 +291,12 @@ def test_completed_validation_error_returns_200_and_error_status(tmp_path) -> No
             f"/api/v1/inspections/{inspection_id}/validate",
             json=POLICY,
         )
+        report = client.get(f"/api/v1/inspections/{inspection_id}/report")
 
     assert response.status_code == 200, response.json()
+    assert report.status_code == 200, report.json()
+    assert report.json()["report"]["inspection"]["status"] == "ERROR"
+    assert report.json()["report"]["validation"]["outcome"] == "VALIDATION_ERROR"
     assert response.json()["validation_outcome"] == "VALIDATION_ERROR"
     assert response.json()["inspection_status"] == "ERROR"
     assert [item["code"] for item in response.json()["findings"]] == [

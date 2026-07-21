@@ -2,7 +2,7 @@ import asyncio
 import json
 from dataclasses import replace
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -22,6 +22,7 @@ from app.db.validation_types import ValidationOutcome
 from app.main import create_app
 from app.services.artifact_storage import ArtifactInput
 from app.services.inspection_validation import ValidationCommitService, ValidationSummary
+from app.services.inspection_processing.models import ProcessingStartIdentity
 from app.testing.synthetic_aoi import generate_fixtures
 
 PREPROCESSING_ID = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
@@ -207,8 +208,13 @@ def test_post_returns_safe_mock_decisions_and_persisted_evidence(
             json=PROCESSING_POLICY,
             headers={REQUEST_ID_HEADER: "processing-request"},
         )
+        report_response = client.get(
+            f"/api/v1/inspections/{prepared}/report",
+            headers={REQUEST_ID_HEADER: "report-request"},
+        )
 
     assert response.status_code == 200, response.json()
+    assert report_response.status_code == 200, report_response.json()
     payload = response.json()
     assert response.headers[REQUEST_ID_HEADER] == payload["request_id"] == "processing-request"
     assert payload["mock_decision"] == expected
@@ -229,6 +235,20 @@ def test_post_returns_safe_mock_decisions_and_persisted_evidence(
     } <= {item["code"] for item in payload["inference"]["findings"]}
     assert payload["defect_type"] is not None if expected == "FAIL" else payload["defect_type"] is None
     assert "confidence" not in _all_keys(payload)
+    report = report_response.json()["report"]
+    assert report_response.json()["request_id"] == "report-request"
+    assert report["processing"]["final_decision"] == expected
+    assert report["processing"]["inference"]["decision"] == expected
+    assert report["processing"]["inference"]["defect_type"] is not None if expected == "FAIL" else report["processing"]["inference"]["defect_type"] is None
+    assert "confidence" not in _all_keys(report)
+    assert report["development_only"] is True
+    assert report["production_approved"] is False
+    assert report["synthetic_evidence_present"] is True
+    assert report["mock_inference_present"] is True
+    assert [item["action"] for item in report["audit"]][-2:] == [
+        "INSPECTION_PROCESSING_STARTED",
+        f"INSPECTION_MOCK_RESULT_{expected}",
+    ]
     assert "path" not in _all_keys(payload)
     assert "buffer" not in _all_keys(payload)
     assert str(fixtures.resolve()) not in response.text
@@ -327,15 +347,65 @@ def test_different_dimensions_complete_and_replay_as_technical_error(
             f"/api/v1/inspections/{inspection_id}/process",
             json=PROCESSING_POLICY,
         )
+        report = client.get(f"/api/v1/inspections/{inspection_id}/report")
 
     assert first.status_code == retry.status_code == 200
+    assert report.status_code == 200, report.json()
     assert first.json()["inspection_status"] == "ERROR"
     assert first.json()["processing_status"] == "ERROR"
     assert first.json()["preprocessing_outcome"] == "PREPROCESSING_FAILED"
     assert first.json()["inference"] is None
     assert retry.json()["processing_run_id"] == first.json()["processing_run_id"]
     assert retry.json()["lifecycle_idempotent_existing"] is True
+    assert report.json()["report"]["inspection"]["status"] == "ERROR"
+    assert report.json()["report"]["processing"]["lifecycle_status"] == "ERROR"
+    assert report.json()["report"]["processing"]["inference"] is None
     assert _processing_counts(application, inspection_id) == (1, 1, 0, 2)
+
+
+def test_processing_report_represents_started_partial_lifecycle(tmp_path, monkeypatch):
+    scenario_id = "valid_rgb_png_height_tiff"
+    application, fixtures = _application(tmp_path, scenario_id)
+    with TestClient(application) as client:
+        inspection_id = _prepare(application, client, fixtures, scenario_id, monkeypatch)
+        orchestrator = application.state.inspection_processing._orchestrator
+        snapshot = asyncio.run(orchestrator._inputs.read(inspection_id))
+        preprocessing = orchestrator._pre_policies.load(
+            PROCESSING_POLICY["preprocessing_policy_id"],
+            PROCESSING_POLICY["preprocessing_policy_version"],
+        )
+        inference = orchestrator._inf_policies.load(
+            PROCESSING_POLICY["inference_policy_id"],
+            PROCESSING_POLICY["inference_policy_version"],
+        )
+        processing_key = orchestrator._processing_key(snapshot, preprocessing, inference)
+        identity = ProcessingStartIdentity(
+            processing_run_id=str(uuid4()), inspection_id=inspection_id,
+            validation_id=snapshot.validation.validation_id,
+            validation_result_sha256=snapshot.validation.result_sha256,
+            rgb_artifact=orchestrator._key_artifact(snapshot.rgb),
+            height_artifact=orchestrator._key_artifact(snapshot.height),
+            evidence_artifacts=(),
+            preprocessing_policy_id=preprocessing.policy_id,
+            preprocessing_policy_version=preprocessing.policy_version,
+            preprocessing_implementation_id=orchestrator._implementation_id,
+            preprocessing_implementation_version=orchestrator._implementation_version,
+            inference_policy_id=inference.policy_id,
+            inference_policy_version=inference.policy_version,
+            engine_id=orchestrator._engine_id,
+            engine_version=orchestrator._engine_version,
+            engine_type="MOCK",
+        )
+        asyncio.run(orchestrator._lifecycle.begin_processing(identity, processing_key))
+        report = client.get(f"/api/v1/inspections/{inspection_id}/report")
+
+    assert report.status_code == 200, report.json()
+    payload = report.json()["report"]
+    assert payload["inspection"]["status"] == "PROCESSING"
+    assert payload["processing"]["lifecycle_status"] == "STARTED"
+    assert payload["processing"]["preprocessing"] is None
+    assert payload["processing"]["inference"] is None
+    assert payload["processing"]["final_decision"] is None
 
 
 @pytest.mark.parametrize(

@@ -28,7 +28,9 @@ The operator UI provides:
 - explicit recipe/version selection from the read-only catalogue;
 - paired RGB and height/depth file intake;
 - lifecycle-gated validation and synthetic processing actions;
-- persisted validation findings and synthetic processing evidence; and
+- persisted validation findings and synthetic processing evidence;
+- a safety-projected audit timeline and deterministic development report with
+  JSON download and browser printing; and
 - structured error messages with request IDs.
 
 See [docs/operator_frontend.md](docs/operator_frontend.md) for the frontend
@@ -77,5 +79,7 @@ python -m pytest .\backend\tests
 ```
 
 The UI does not add authentication, recipe mutation, model management,
-reprocessing, continuous polling, reporting, image previews, real inference, or
-production approval.
+reprocessing, continuous polling, PDF generation, image previews, real
+inference, or production approval. See
+[docs/inspection_audit_api.md](docs/inspection_audit_api.md) and
+[docs/inspection_development_report.md](docs/inspection_development_report.md).

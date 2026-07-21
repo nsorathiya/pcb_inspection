@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 
 from app.api.errors import ApiError, ApiErrorResponse
 from app.api.history_responses import InspectionHistoryResponse, map_history_response
+from app.api.audit_responses import AuditTimelineResponse, map_audit_timeline
 from app.api.validation_responses import (
     InspectionValidationResponse,
     map_validation_response,
@@ -75,6 +76,21 @@ from app.services.inspection_history import (
     HistoryFilterInput,
     HistoryRetrievalError,
     InspectionHistoryService,
+)
+from app.services.inspection_audit import (
+    AuditCursorError,
+    AuditCursorInspectionMismatchError,
+    AuditCursorVersionError,
+    AuditProjectionError,
+    AuditRetrievalError,
+    InspectionAuditService,
+)
+from app.services.inspection_report import (
+    DevelopmentReportCanonicalError,
+    DevelopmentReportConsistencyError,
+    DevelopmentReportEnvelope,
+    DevelopmentReportRetrievalError,
+    InspectionReportService,
 )
 
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -654,6 +670,137 @@ async def list_inspection_history(
             "Inspection history could not be retrieved.",
         ) from exc
     return map_history_response(result, request_id=request.state.request_id)
+
+
+@router.get(
+    "/inspections/{inspection_id}/audit",
+    response_model=AuditTimelineResponse,
+    responses={
+        400: {"model": ApiErrorResponse},
+        404: {"model": ApiErrorResponse},
+        422: {"model": ApiErrorResponse},
+        500: {"model": ApiErrorResponse},
+    },
+    summary="Retrieve a persisted inspection audit timeline",
+    description=(
+        "Read-only chronological lifecycle evidence for one inspection. This route "
+        "does not execute validation, preprocessing, or inference and does not add "
+        "audit events. Details are projected through action-specific safety "
+        "allowlists; unknown or unsafe details may be redacted. Bounded keyset "
+        "pagination is available through the opaque cursor."
+    ),
+)
+async def get_inspection_audit(
+    inspection_id: str,
+    request: Request,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    cursor: str | None = None,
+) -> AuditTimelineResponse:
+    canonical_id = _canonical_inspection_id(inspection_id)
+    service: InspectionAuditService = request.app.state.inspection_audit
+    try:
+        timeline = await service.get_timeline(canonical_id, limit=limit, cursor=cursor)
+    except LookupError as exc:
+        raise ApiError(404, "INSPECTION_NOT_FOUND", "Inspection was not found.") from exc
+    except AuditCursorInspectionMismatchError as exc:
+        raise ApiError(
+            400,
+            "AUDIT_CURSOR_INSPECTION_MISMATCH",
+            "The audit cursor does not belong to this inspection.",
+        ) from exc
+    except AuditCursorVersionError as exc:
+        raise ApiError(
+            400,
+            "UNSUPPORTED_AUDIT_CURSOR_VERSION",
+            "The audit cursor version is unsupported.",
+        ) from exc
+    except AuditCursorError as exc:
+        raise ApiError(400, "INVALID_AUDIT_CURSOR", "The audit cursor is invalid.") from exc
+    except AuditProjectionError as exc:
+        request.app.state.logger.exception("Audit projection failed inspection_id=%s", canonical_id)
+        raise ApiError(
+            500,
+            "AUDIT_PROJECTION_FAILED",
+            "The audit timeline could not be represented safely.",
+        ) from exc
+    except AuditRetrievalError as exc:
+        request.app.state.logger.exception("Audit retrieval failed inspection_id=%s", canonical_id)
+        raise ApiError(
+            500,
+            "AUDIT_RETRIEVAL_FAILED",
+            "The audit timeline could not be retrieved.",
+        ) from exc
+    except Exception as exc:
+        request.app.state.logger.exception("Unexpected audit retrieval failure inspection_id=%s", canonical_id)
+        raise ApiError(
+            500,
+            "AUDIT_RETRIEVAL_FAILED",
+            "The audit timeline could not be retrieved.",
+        ) from exc
+    return map_audit_timeline(timeline, request.state.request_id)
+
+
+@router.get(
+    "/inspections/{inspection_id}/report",
+    response_model=DevelopmentReportEnvelope,
+    responses={
+        400: {"model": ApiErrorResponse},
+        404: {"model": ApiErrorResponse},
+        500: {"model": ApiErrorResponse},
+    },
+    summary="Retrieve a deterministic inspection development report",
+    description=(
+        "Builds a deterministic development report from persisted database evidence "
+        "only. No artifact or fixture files are read, no validation or AI processing "
+        "is rerun, and no PDF or database record is produced. Confidence is "
+        "unavailable; mock outcomes are development workflow evidence, not production "
+        "decisions. The SHA-256 demonstrates response reproducibility, not production "
+        "certification."
+    ),
+)
+async def get_inspection_report(
+    inspection_id: str,
+    request: Request,
+) -> DevelopmentReportEnvelope:
+    canonical_id = _canonical_inspection_id(inspection_id)
+    service: InspectionReportService = request.app.state.inspection_report
+    try:
+        report, report_sha256 = await service.get_report(canonical_id)
+    except LookupError as exc:
+        raise ApiError(404, "INSPECTION_NOT_FOUND", "Inspection was not found.") from exc
+    except DevelopmentReportConsistencyError as exc:
+        request.app.state.logger.exception("Development report consistency failed inspection_id=%s", canonical_id)
+        raise ApiError(
+            500,
+            "DEVELOPMENT_REPORT_INCONSISTENT",
+            "Persisted report evidence is internally inconsistent.",
+        ) from exc
+    except DevelopmentReportCanonicalError as exc:
+        request.app.state.logger.exception("Development report serialization failed inspection_id=%s", canonical_id)
+        raise ApiError(
+            500,
+            "DEVELOPMENT_REPORT_SERIALIZATION_FAILED",
+            "The development report could not be serialized.",
+        ) from exc
+    except DevelopmentReportRetrievalError as exc:
+        request.app.state.logger.exception("Development report retrieval failed inspection_id=%s", canonical_id)
+        raise ApiError(
+            500,
+            "DEVELOPMENT_REPORT_RETRIEVAL_FAILED",
+            "The development report could not be retrieved.",
+        ) from exc
+    except Exception as exc:
+        request.app.state.logger.exception("Unexpected development report failure inspection_id=%s", canonical_id)
+        raise ApiError(
+            500,
+            "DEVELOPMENT_REPORT_RETRIEVAL_FAILED",
+            "The development report could not be retrieved.",
+        ) from exc
+    return DevelopmentReportEnvelope(
+        report=report,
+        report_sha256=report_sha256,
+        request_id=request.state.request_id,
+    )
 
 
 @router.post(

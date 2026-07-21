@@ -18,6 +18,7 @@ from app.services.artifact_storage.service import (
     ArtifactRegistrationService,
     _RegistrationOperation,
 )
+from app.services.audit_actions import INSPECTION_INTAKE_FAILED, INSPECTION_RECEIVED
 
 
 @dataclass(frozen=True)
@@ -149,7 +150,7 @@ class InspectionIntakeCoordinator:
                 AuditEventCreate(
                     entity_type="inspection",
                     entity_id=inspection_id,
-                    action="INSPECTION_RECEIVED",
+                    action=INSPECTION_RECEIVED,
                     actor_id=command.operator_id,
                     request_id=command.request_id,
                     details={
@@ -199,7 +200,7 @@ class InspectionIntakeCoordinator:
                     AuditEventCreate(
                         entity_type="inspection",
                         entity_id=inspection_id,
-                        action="INSPECTION_INTAKE_FAILED",
+                        action=INSPECTION_INTAKE_FAILED,
                         actor_id=command.operator_id,
                         request_id=command.request_id,
                         details={

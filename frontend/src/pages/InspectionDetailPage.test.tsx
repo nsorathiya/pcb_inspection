@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   getInspection,
+  getInspectionAudit,
   getProcessing,
   getValidation,
   runProcessing,
@@ -15,6 +16,7 @@ import { InspectionDetailPage } from './InspectionDetailPage'
 
 vi.mock('../api/inspections', () => ({
   getInspection: vi.fn(),
+  getInspectionAudit: vi.fn(),
   getProcessing: vi.fn(),
   getValidation: vi.fn(),
   runProcessing: vi.fn(),
@@ -22,6 +24,7 @@ vi.mock('../api/inspections', () => ({
 }))
 
 const detailMock = vi.mocked(getInspection)
+const auditMock = vi.mocked(getInspectionAudit)
 const getValidationMock = vi.mocked(getValidation)
 const getProcessingMock = vi.mocked(getProcessing)
 const runValidationMock = vi.mocked(runValidation)
@@ -48,7 +51,10 @@ function mockState(status: Parameters<typeof detailResponse>[0], options?: { val
 }
 
 describe('inspection detail workflow', () => {
-  beforeEach(() => mockState('RECEIVED'))
+  beforeEach(() => {
+    mockState('RECEIVED')
+    auditMock.mockResolvedValue({ data: { items: [], page: { limit: 50, has_more: false, next_cursor: null }, request_id: 'audit-request' }, requestId: 'audit-request' })
+  })
 
   it('rejects malformed IDs before making API calls', () => {
     renderPage('not-a-uuid')

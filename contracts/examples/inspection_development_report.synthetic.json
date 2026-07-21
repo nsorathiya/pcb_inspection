@@ -1,0 +1,60 @@
+{
+  "contract_version": "pcb-aoi-inspection-development-report/1.0",
+  "inspection_id": "11111111-1111-4111-8111-111111111111",
+  "development_only": true,
+  "production_approved": false,
+  "synthetic_evidence_present": true,
+  "mock_inference_present": false,
+  "inspection": {
+    "created_at": "2026-07-21T08:00:00Z",
+    "board_id": "SYNTHETIC-BOARD-A",
+    "recipe_id": "SYNTHETIC-RECIPE-A",
+    "recipe_version": "1.0",
+    "lot_id": null,
+    "operator_id": null,
+    "status": "PROCESSING",
+    "error": null
+  },
+  "artifacts": [],
+  "validation": {
+    "contract_version": "pcb-aoi-inspection-validation/1.0",
+    "validation_id": "33333333-3333-4333-8333-333333333333",
+    "validation_key": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "result_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "outcome": "VALIDATION_PASSED",
+    "policy": {"policy_id": "development-native-rgb-height", "policy_version": "1.0"},
+    "validator_version": "1.0",
+    "started_at": "2026-07-21T08:00:10Z",
+    "completed_at": "2026-07-21T08:00:20Z",
+    "rgb_technical_summary": {"artifact_type": "RGB_RAW", "readability_status": "READABLE"},
+    "height_technical_summary": {"artifact_type": "HEIGHT_RAW", "readability_status": "READABLE"},
+    "findings": [],
+    "summary": {"finding_count": 0, "info_count": 0, "warning_count": 0, "error_count": 0, "blocking_count": 0, "technically_ready": true, "synthetic_example": true}
+  },
+  "processing": {
+    "processing_run_id": "22222222-2222-4222-8222-222222222222",
+    "validation_id": "33333333-3333-4333-8333-333333333333",
+    "processing_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "lifecycle_status": "STARTED",
+    "preprocessing_policy": {"policy_id": "synthetic-paired-rgb-height", "policy_version": "1.0"},
+    "preprocessing_implementation": {"implementation_id": "synthetic-copy", "implementation_version": "1.0"},
+    "inference_policy": {"policy_id": "synthetic-deterministic-mock-inference", "policy_version": "1.0"},
+    "engine": {"engine_id": "synthetic-deterministic-mock-engine", "engine_version": "1.0", "engine_type": "MOCK"},
+    "started_at": "2026-07-21T08:01:00Z",
+    "completed_at": null,
+    "final_decision": null,
+    "error": null,
+    "preprocessing": null,
+    "inference": null,
+    "synthetic_input": false,
+    "mock_preprocessing": false,
+    "mock_inference": false,
+    "production_approved": false
+  },
+  "audit": [],
+  "limitations": [
+    "This development report is not a production quality certificate, calibration certificate, model-validation report, accuracy report, or legal disposition record.",
+    "Physical calibration is not proven.",
+    "Real 2D/3D registration is not proven."
+  ]
+}

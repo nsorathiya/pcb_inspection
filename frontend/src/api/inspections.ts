@@ -2,6 +2,8 @@ import { apiRequest, type ApiResponse } from './client'
 import type {
   HistoryFilters,
   InspectionDetailResponse,
+  InspectionAuditResponse,
+  InspectionDevelopmentReportResponse,
   InspectionHistoryResponse,
   InspectionIntakeResponse,
   InspectionProcessingResponse,
@@ -83,6 +85,24 @@ export function getInspection(
   signal?: AbortSignal,
 ): Promise<ApiResponse<InspectionDetailResponse>> {
   return apiRequest(`/api/v1/inspections/${inspectionId}`, { signal })
+}
+
+export function getInspectionAudit(
+  inspectionId: string,
+  cursor?: string,
+  limit = 50,
+  signal?: AbortSignal,
+): Promise<ApiResponse<InspectionAuditResponse>> {
+  const parameters = new URLSearchParams({ limit: String(limit) })
+  if (cursor) parameters.set('cursor', cursor)
+  return apiRequest(`/api/v1/inspections/${inspectionId}/audit?${parameters.toString()}`, { signal })
+}
+
+export function getInspectionReport(
+  inspectionId: string,
+  signal?: AbortSignal,
+): Promise<ApiResponse<InspectionDevelopmentReportResponse>> {
+  return apiRequest(`/api/v1/inspections/${inspectionId}/report`, { signal })
 }
 
 export function getValidation(

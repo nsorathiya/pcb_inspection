@@ -17,6 +17,13 @@ from app.db.models import (
 )
 from app.db.processing_types import ProcessingFinalDecision, ProcessingRunStatus
 from app.db.validation_types import ValidationOutcome
+from app.services.audit_actions import (
+    INSPECTION_MOCK_RESULT_FAIL as AUDIT_MOCK_FAIL,
+    INSPECTION_MOCK_RESULT_PASS as AUDIT_MOCK_PASS,
+    INSPECTION_MOCK_RESULT_UNCERTAIN as AUDIT_MOCK_UNCERTAIN,
+    INSPECTION_PROCESSING_ERROR as AUDIT_PROCESSING_ERROR,
+    INSPECTION_PROCESSING_STARTED as AUDIT_PROCESSING_STARTED,
+)
 from app.services.inspection_inference.models import (
     InferenceExecutionOutcome,
     InspectionInferenceResult,
@@ -42,11 +49,6 @@ from app.services.inspection_processing.persistence import (
     retrieved_utc,
 )
 
-AUDIT_PROCESSING_STARTED = "INSPECTION_PROCESSING_STARTED"
-AUDIT_MOCK_PASS = "INSPECTION_MOCK_RESULT_PASS"
-AUDIT_MOCK_FAIL = "INSPECTION_MOCK_RESULT_FAIL"
-AUDIT_MOCK_UNCERTAIN = "INSPECTION_MOCK_RESULT_UNCERTAIN"
-AUDIT_PROCESSING_ERROR = "INSPECTION_PROCESSING_ERROR"
 
 
 class ProcessingLifecycleError(Exception):

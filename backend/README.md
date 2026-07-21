@@ -396,3 +396,23 @@ records through request-local context.
 For an inspection-details GET, this header identifies the current read
 request. The body field `intake_request_id` is the separately persisted ID from
 the original upload and is not overwritten by the current request ID.
+
+## Read-only audit timeline and development report
+
+- `GET /api/v1/inspections/{inspection_id}/audit` returns an inspection-owned,
+  safety-projected timeline with keyset pagination (`limit` 1–200, default 50).
+- `GET /api/v1/inspections/{inspection_id}/report` returns deterministic
+  contract `pcb-aoi-inspection-development-report/1.0` and a SHA-256 of its
+  canonical JSON bytes.
+
+Both routes use persisted database evidence only. They do not read artifact or
+fixture files, execute workflow stages, write audits, or persist reports. The
+report is development evidence, not a production inspection certificate. See
+`docs/inspection_audit_api.md` and `docs/inspection_development_report.md`.
+
+```powershell
+Set-Location .\backend
+..\.venv\Scripts\python.exe -m pytest `
+  tests\test_inspection_audit_api.py `
+  tests\test_inspection_report_api.py -q
+```

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { buildInspectionFormData, runProcessing } from './inspections'
+import { buildInspectionFormData, getInspectionAudit, getInspectionReport, runProcessing } from './inspections'
 import { recipesResponse } from '../test/fixtures'
 
 describe('inspection API requests', () => {
@@ -46,5 +46,18 @@ describe('inspection API requests', () => {
     })
     expect(Object.keys(body)).toHaveLength(4)
     expect(JSON.stringify(body)).not.toMatch(/synthetic_flag|decision|confidence/i)
+  })
+
+  it('uses the audit and report paths and preserves an opaque cursor', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{}', {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+    await getInspectionAudit('11111111-1111-4111-8111-111111111111', 'opaque.cursor/value', 17)
+    await getInspectionReport('11111111-1111-4111-8111-111111111111')
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/v1/inspections/11111111-1111-4111-8111-111111111111/audit?limit=17&cursor=opaque.cursor%2Fvalue')
+    expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/v1/inspections/11111111-1111-4111-8111-111111111111/report')
+    expect(vi.mocked(crypto.randomUUID)).toHaveBeenCalledTimes(2)
   })
 })

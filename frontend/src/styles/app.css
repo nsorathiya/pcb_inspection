@@ -194,6 +194,32 @@ input:hover, select:hover { border-color: var(--slate-700); }
 .decision-uncertain { background: var(--amber-100); border-color: var(--amber-700); }
 .decision-uncertain .decision-icon { background: var(--amber-700); }
 
+.audit-timeline { display: grid; gap: 0; margin: 0 0 1rem; padding: 0; list-style: none; }
+.audit-timeline > li { position: relative; display: grid; grid-template-columns: 1.25rem 1fr; gap: .8rem; padding-bottom: 1rem; }
+.audit-timeline > li::before { position: absolute; top: 1rem; bottom: 0; left: .57rem; width: 2px; content: ''; background: var(--slate-300); }
+.audit-timeline > li:last-child::before { display: none; }
+.audit-marker { z-index: 1; width: 1.15rem; height: 1.15rem; margin-top: .25rem; background: var(--blue-100); border: 3px solid var(--blue-600); border-radius: 50%; }
+.audit-timeline article { min-width: 0; padding: .85rem; background: #f8fafc; border: 1px solid var(--slate-200); }
+.audit-timeline code { color: var(--slate-500); font-size: .72rem; overflow-wrap: anywhere; }
+.audit-timeline time { color: var(--slate-500); font-size: .78rem; }
+.audit-details, .report-evidence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .45rem .8rem; margin: .75rem 0 0; }
+.audit-details div, .report-evidence-grid div { min-width: 0; padding: .45rem; background: white; border: 1px solid var(--slate-200); }
+.audit-details dt, .report-evidence-grid dt { color: var(--slate-500); font-size: .67rem; font-weight: 800; text-transform: uppercase; }
+.audit-details dd, .report-evidence-grid dd { margin: .15rem 0 0; overflow-wrap: anywhere; }
+.redacted-indicator { margin: .65rem 0 0; color: var(--amber-700); font-size: .78rem; font-weight: 700; }
+.report-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.report-toolbar > div { display: flex; gap: .6rem; flex-wrap: wrap; }
+.report-title-block { margin-bottom: .7rem; }
+.report-hash { margin-top: .5rem; font-size: .72rem; overflow-wrap: anywhere; }
+.report-warning { display: flex; flex-direction: column; gap: .15rem; margin-bottom: 1rem; padding: .9rem 1rem; color: #5d3604; background: var(--amber-100); border: 2px solid var(--amber-700); }
+.report-sections { display: grid; gap: .2rem; }
+.report-limitations { border-top-color: var(--amber-700); }
+.report-limitations ul { margin-bottom: 0; }
+.report-audit-list { display: grid; gap: .55rem; margin: 0; padding-left: 1.3rem; }
+.report-audit-list li { padding: .55rem; border-bottom: 1px solid var(--slate-200); }
+.report-audit-list time, .report-audit-list strong, .report-audit-list span { display: block; }
+.report-audit-list time, .report-audit-list span { color: var(--slate-500); font-size: .76rem; }
+
 .not-found { padding: 3rem; text-align: center; background: white; border: 1px solid var(--slate-300); }
 .not-found .button { margin-top: 1rem; }
 .sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important; }
@@ -217,8 +243,23 @@ input:hover, select:hover { border-color: var(--slate-700); }
   .policy-callout, .policy-stack { grid-template-columns: 1fr; }
   .pagination { justify-content: space-between; }
   .main-content { padding-inline: .75rem; }
+  .report-toolbar { align-items: stretch; flex-direction: column; }
+  .audit-details, .report-evidence-grid { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+
+@media print {
+  :root { color: #000; background: #fff; }
+  body { background: #fff; font-size: 10pt; }
+  .site-header, .primary-nav, .site-footer, .development-warning, .no-print, .error-panel, button { display: none !important; }
+  .app-shell { display: block; }
+  .main-content { width: 100%; padding: 0; }
+  .development-report { color: #000; }
+  .report-warning { display: flex !important; color: #000; background: #fff; border: 3px double #000; }
+  .panel { break-inside: avoid; margin-bottom: .6rem; padding: .7rem; color: #000; background: #fff; border: 1px solid #000; box-shadow: none; }
+  .finding-list li, .artifact-card, .technical-summary, .report-evidence-grid div { break-inside: avoid; color: #000; background: #fff; border-color: #555; }
+  a { color: #000; text-decoration: none; }
 }

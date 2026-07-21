@@ -146,3 +146,8 @@ From the repository root in Windows PowerShell:
 ```
 
 Tests use temporary runtime roots and real temporary SQLite databases.
+
+The operator detail workflow separately loads the read-only audit timeline and
+links to the deterministic development report. These contracts do not change
+this endpoint’s response or lifecycle behavior; see
+`inspection_audit_api.md` and `inspection_development_report.md`.
