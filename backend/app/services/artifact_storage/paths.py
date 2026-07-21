@@ -193,6 +193,7 @@ class ArtifactPathPolicy:
         if route.subdirectory is not None:
             parent /= route.subdirectory
         destination = parent / f"{route.stored_stem}{extension}"
+        self._assert_no_redirects(self._paths.root, destination.parent)
         self._assert_confined(destination, category_root)
         relative_path = destination.relative_to(self._paths.root).as_posix()
         self._validate_relative_path(relative_path)

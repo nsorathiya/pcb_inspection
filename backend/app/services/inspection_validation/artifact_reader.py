@@ -57,15 +57,15 @@ class ManagedArtifactPathResolver:
             raise ArtifactResolutionError("ARTIFACT_PATH_UNSAFE")
         target = self._paths.root.joinpath(*pure.parts)
         root = self._paths.root
-        try:
-            target.resolve(strict=False).relative_to(root)
-        except (OSError, ValueError) as exc:
-            raise ArtifactResolutionError("ARTIFACT_PATH_UNSAFE") from exc
         current = root
         for part in pure.parts:
             current /= part
             if os.path.lexists(current) and _is_redirect(current):
                 raise ArtifactResolutionError("ARTIFACT_SYMLINK_REJECTED")
+        try:
+            target.resolve(strict=False).relative_to(root)
+        except (OSError, ValueError) as exc:
+            raise ArtifactResolutionError("ARTIFACT_PATH_UNSAFE") from exc
         if not target.exists():
             raise ArtifactResolutionError("ARTIFACT_FILE_MISSING")
         if not target.is_file():
