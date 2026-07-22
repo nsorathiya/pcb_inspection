@@ -11,6 +11,20 @@ export interface PixelPoint {
   y: number
 }
 
+export type EngineeringCoordinateSpace = 'RGB' | 'HEIGHT'
+export type EngineeringTool = 'pointer' | 'pan' | 'sample' | 'correspondence' | 'rectangle' | 'line'
+export type EngineeringViewMode = 'RGB' | 'Height' | 'Side-by-side' | 'Alpha overlay' | 'Split comparison'
+
+export interface EngineeringCoordinates {
+  rgbX: number
+  rgbY: number
+  heightX: number
+  heightY: number
+  rgbSelected: boolean
+  heightSelected: boolean
+  activeSpace: EngineeringCoordinateSpace
+}
+
 export interface CorrespondencePoint {
   id: string
   rgb: PixelPoint
@@ -31,12 +45,145 @@ export type EngineeringRoi =
   | { id: string; kind: 'RECTANGLE'; coordinateSpace: 'RGB' | 'HEIGHT'; x: number; y: number; width: number; height: number; nativeHeightStatistics?: NativeHeightRoiStatistics }
   | { id: string; kind: 'LINE'; coordinateSpace: 'RGB' | 'HEIGHT'; x1: number; y1: number; x2: number; y2: number; distancePixels: number }
 
+export interface EngineeringSessionSnapshot {
+  mode: EngineeringViewMode
+  zoom: number
+  scaleMode: 'fit' | 'actual'
+  pan: PixelPoint
+  overlayOpacity: number
+  splitPosition: number
+  coordinates: EngineeringCoordinates
+  alignment: SessionAlignment
+  correspondences: CorrespondencePoint[]
+  pendingRgbPoint: PixelPoint | null
+  pendingHeightPoint: PixelPoint | null
+  rois: EngineeringRoi[]
+}
+
+export interface SessionHistory<T> {
+  past: T[]
+  present: T
+  future: T[]
+}
+
+export const SESSION_HISTORY_LIMIT = 50
+
 export const DEFAULT_ALIGNMENT: SessionAlignment = {
   translationX: 0,
   translationY: 0,
   rotationDegrees: 0,
   scaleX: 1,
   scaleY: 1,
+}
+
+export const DEFAULT_ENGINEERING_SESSION: EngineeringSessionSnapshot = {
+  mode: 'Side-by-side',
+  zoom: 1,
+  scaleMode: 'fit',
+  pan: { x: 0, y: 0 },
+  overlayOpacity: 50,
+  splitPosition: 50,
+  coordinates: {
+    rgbX: 0,
+    rgbY: 0,
+    heightX: 0,
+    heightY: 0,
+    rgbSelected: false,
+    heightSelected: false,
+    activeSpace: 'RGB',
+  },
+  alignment: DEFAULT_ALIGNMENT,
+  correspondences: [],
+  pendingRgbPoint: null,
+  pendingHeightPoint: null,
+  rois: [],
+}
+
+export function createSessionHistory<T>(initial: T): SessionHistory<T> {
+  return { past: [], present: initial, future: [] }
+}
+
+export function commitSessionHistory<T>(
+  history: SessionHistory<T>,
+  next: T,
+  limit = SESSION_HISTORY_LIMIT,
+): SessionHistory<T> {
+  if (Object.is(history.present, next)) return history
+  return {
+    past: [...history.past, history.present].slice(-limit),
+    present: next,
+    future: [],
+  }
+}
+
+export function undoSessionHistory<T>(history: SessionHistory<T>): SessionHistory<T> {
+  const previous = history.past.at(-1)
+  if (previous === undefined) return history
+  return {
+    past: history.past.slice(0, -1),
+    present: previous,
+    future: [history.present, ...history.future],
+  }
+}
+
+export function redoSessionHistory<T>(history: SessionHistory<T>): SessionHistory<T> {
+  const next = history.future[0]
+  if (next === undefined) return history
+  return {
+    past: [...history.past, history.present].slice(-SESSION_HISTORY_LIMIT),
+    present: next,
+    future: history.future.slice(1),
+  }
+}
+
+export interface DisplayRectangle {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+export function displayPointToImagePoint(
+  clientPoint: PixelPoint,
+  display: DisplayRectangle,
+  image: { width: number; height: number },
+  alignment: SessionAlignment = DEFAULT_ALIGNMENT,
+  outerScale: PixelPoint = { x: 1, y: 1 },
+): PixelPoint | null {
+  if (
+    display.width <= 0
+    || display.height <= 0
+    || image.width <= 0
+    || image.height <= 0
+    || alignment.scaleX <= 0
+    || alignment.scaleY <= 0
+    || outerScale.x <= 0
+    || outerScale.y <= 0
+  ) return null
+
+  const centreX = display.left + display.width / 2
+  const centreY = display.top + display.height / 2
+  const translatedX = clientPoint.x - centreX - alignment.translationX * outerScale.x
+  const translatedY = clientPoint.y - centreY - alignment.translationY * outerScale.y
+  const radians = alignment.rotationDegrees * Math.PI / 180
+  const cosine = Math.cos(radians)
+  const sine = Math.sin(radians)
+  const unrotatedX = cosine * translatedX + sine * translatedY
+  const unrotatedY = -sine * translatedX + cosine * translatedY
+  const localX = unrotatedX / alignment.scaleX + display.width / 2
+  const localY = unrotatedY / alignment.scaleY + display.height / 2
+  if (localX < 0 || localY < 0 || localX >= display.width || localY >= display.height) return null
+  return {
+    x: Math.min(image.width - 1, Math.floor(localX / display.width * image.width)),
+    y: Math.min(image.height - 1, Math.floor(localY / display.height * image.height)),
+  }
+}
+
+export function clampImagePoint(point: PixelPoint, image: { width: number; height: number }): PixelPoint {
+  return {
+    x: Math.min(image.width - 1, Math.max(0, point.x)),
+    y: Math.min(image.height - 1, Math.max(0, point.y)),
+  }
 }
 
 function clean(value: number): number {

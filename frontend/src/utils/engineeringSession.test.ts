@@ -4,10 +4,16 @@ import {
   affineMatrix,
   alignmentExportFilename,
   buildAlignmentExport,
+  clampImagePoint,
+  commitSessionHistory,
   correspondenceResidual,
+  createSessionHistory,
+  displayPointToImagePoint,
+  redoSessionHistory,
   residualSummary,
   suggestedTranslation,
   transformHeightPoint,
+  undoSessionHistory,
   type CorrespondencePoint,
   type EngineeringRoi,
 } from './engineeringSession'
@@ -51,5 +57,42 @@ describe('session-only engineering calculations', () => {
     expect(serialized).not.toContain('confidence')
     expect(serialized).not.toContain('millimet')
     expect(serialized).not.toContain('microm')
+  })
+
+  it('converts post-zoom and pan display coordinates and safely rejects outside clicks', () => {
+    const display = { left: 120, top: 80, width: 640, height: 480 }
+    expect(displayPointToImagePoint({ x: 280, y: 200 }, display, { width: 640, height: 480 })).toEqual({ x: 160, y: 120 })
+    expect(displayPointToImagePoint({ x: 119, y: 200 }, display, { width: 640, height: 480 })).toBeNull()
+    expect(displayPointToImagePoint({ x: 760, y: 200 }, display, { width: 640, height: 480 })).toBeNull()
+  })
+
+  it('inverts session translation, rotation, and scaling during height coordinate conversion', () => {
+    const display = { left: 100, top: 100, width: 200, height: 100 }
+    const aligned = { translationX: 10, translationY: -5, rotationDegrees: 90, scaleX: 2, scaleY: 1 }
+    const centre = displayPointToImagePoint(
+      { x: 220, y: 140 },
+      display,
+      { width: 20, height: 10 },
+      aligned,
+      { x: 2, y: 2 },
+    )
+    expect(centre).toEqual({ x: 10, y: 5 })
+    expect(clampImagePoint({ x: -3, y: 99 }, { width: 20, height: 10 })).toEqual({ x: 0, y: 9 })
+  })
+
+  it('keeps bounded immutable undo/redo history and clears redo after a new action', () => {
+    let history = createSessionHistory(0)
+    for (let value = 1; value <= 75; value += 1) history = commitSessionHistory(history, value)
+    expect(history.past).toHaveLength(50)
+    expect(history.present).toBe(75)
+    history = undoSessionHistory(history)
+    expect(history.present).toBe(74)
+    expect(history.future).toEqual([75])
+    history = redoSessionHistory(history)
+    expect(history.present).toBe(75)
+    history = undoSessionHistory(history)
+    history = commitSessionHistory(history, 100)
+    expect(history.present).toBe(100)
+    expect(history.future).toEqual([])
   })
 })

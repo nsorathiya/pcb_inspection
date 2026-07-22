@@ -1,8 +1,9 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getEngineeringSample, getEngineeringView } from '../api/engineeringViewer'
+import { ApiClientError } from '../api/errors'
 import type { EngineeringSampleResponse, EngineeringViewResponse } from '../api/types'
 import { INSPECTION_ID } from '../test/fixtures'
 import { EngineeringViewPage } from './EngineeringViewPage'
@@ -72,8 +73,15 @@ function renderPage(id = INSPECTION_ID) {
   )
 }
 
+function setRasterGeometry(element: HTMLElement, rect: { left: number; top: number; width: number; height: number }) {
+  Object.defineProperty(element, 'offsetWidth', { configurable: true, value: rect.width })
+  Object.defineProperty(element, 'offsetHeight', { configurable: true, value: rect.height })
+  element.getBoundingClientRect = () => ({ ...rect, right: rect.left + rect.width, bottom: rect.top + rect.height, x: rect.left, y: rect.top, toJSON: () => ({}) })
+}
+
 describe('vision engineering workspace', () => {
   beforeEach(() => {
+    vi.stubGlobal('PointerEvent', MouseEvent)
     viewMock.mockReset()
     sampleMock.mockReset()
     viewMock.mockResolvedValue({ data: engineeringResponse(), requestId: 'engineering-request' })
@@ -85,8 +93,9 @@ describe('vision engineering workspace', () => {
     renderPage()
     await screen.findByRole('heading', { name: 'PCB 2D/3D Vision Engineering Workspace' })
 
+    const modes = screen.getByRole('group', { name: 'Vision view modes' })
     for (const mode of ['RGB', 'Height', 'Side-by-side', 'Alpha overlay', 'Split comparison']) {
-      await user.click(screen.getByRole('button', { name: mode }))
+      await user.click(within(modes).getByRole('button', { name: mode }))
       expect(document.querySelector('.vision-canvas')).toHaveAttribute('data-view-mode', mode)
     }
     expect(screen.getByRole('slider', { name: 'Split position' })).toBeInTheDocument()
@@ -102,8 +111,8 @@ describe('vision engineering workspace', () => {
     expect(screen.getByLabelText('Zoom level')).toHaveTextContent('125%')
     await user.click(screen.getByRole('button', { name: 'Pan right' }))
     expect(document.querySelector('.vision-canvas')).toHaveAttribute('data-pan', '0.05,0.00')
-    expect(screen.getByText(/normalized pan x 0.05, y 0.00/)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Reset' }))
+    expect(screen.getByRole('status', { name: 'Engineering workspace status' })).toHaveTextContent('Zoom 125%')
+    await user.click(screen.getByRole('button', { name: 'Reset view' }))
     expect(screen.getByLabelText('Zoom level')).toHaveTextContent('100%')
   })
 
@@ -120,9 +129,10 @@ describe('vision engineering workspace', () => {
     await user.clear(screen.getByLabelText('Height Y coordinate'))
     await user.type(screen.getByLabelText('Height Y coordinate'), '78')
     expect(sampleMock).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('button', { name: 'Sample native values' }))
-    await waitFor(() => expect(sampleMock).toHaveBeenCalledWith(INSPECTION_ID, { rgbX: 12, rgbY: 34, heightX: 56, heightY: 78 }))
-    expect(screen.getByText('[10, 20, 30]')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Sample values' }))
+    await waitFor(() => expect(sampleMock).toHaveBeenCalledWith(INSPECTION_ID, { rgbX: 12, rgbY: 34, heightX: 56, heightY: 78, rgbSelected: true, heightSelected: true, activeSpace: 'HEIGHT' }, expect.any(AbortSignal)))
+    const rgbInspector = screen.getByRole('region', { name: 'RGB evidence' })
+    expect(within(rgbInspector).getByText('10')).toBeInTheDocument()
     expect(screen.getByText('2048')).toBeInTheDocument()
     expect(screen.getAllByText('Unavailable').length).toBeGreaterThan(0)
   })
@@ -137,10 +147,13 @@ describe('vision engineering workspace', () => {
   })
 
   it('shows integrity metadata and persisted pipeline evidence without execution actions', async () => {
+    const user = userEvent.setup()
     renderPage()
     const inspector = await screen.findByRole('complementary', { name: 'Metadata and pixel inspector' })
-    expect(within(inspector).getByText('uint8')).toBeInTheDocument()
-    expect(within(inspector).getByText('uint16')).toBeInTheDocument()
+    await user.click(within(inspector).getByText('RGB integrity metadata'))
+    await user.click(within(inspector).getByText('Height integrity metadata'))
+    expect(within(inspector).getByText(/PNG - uint8/)).toBeInTheDocument()
+    expect(within(inspector).getByText(/TIFF - uint16/)).toBeInTheDocument()
     expect(within(inspector).getByText('NOT_CALIBRATED')).toBeInTheDocument()
     expect(within(inspector).getByText('NOT_REGISTERED')).toBeInTheDocument()
     expect(screen.getByText('VALIDATION_PASSED')).toBeInTheDocument()
@@ -159,7 +172,7 @@ describe('vision engineering workspace', () => {
     expect(screen.getByLabelText('RGB X coordinate')).toHaveAttribute('max', '639')
   })
 
-  it('provides named landmarks, controls, warnings, and a shared-crosshair state', async () => {
+  it('provides named landmarks, tools, warnings, guide, and persistent status', async () => {
     const user = userEvent.setup()
     renderPage()
     expect(await screen.findByRole('navigation', { name: 'Engineering evidence navigator' })).toBeInTheDocument()
@@ -167,8 +180,14 @@ describe('vision engineering workspace', () => {
     expect(screen.getByRole('complementary', { name: 'Metadata and pixel inspector' })).toBeInTheDocument()
     expect(screen.getByRole('toolbar', { name: 'Vision canvas controls' })).toBeInTheDocument()
     expect(screen.getAllByText(/No physical calibration/).length).toBeGreaterThan(0)
-    await user.click(screen.getByRole('button', { name: 'Shared crosshair' }))
-    expect(screen.getByRole('button', { name: 'Shared crosshair' })).toHaveAttribute('aria-pressed', 'true')
+    const tools = screen.getByRole('toolbar', { name: 'Engineering tools' })
+    expect(within(tools).getByRole('button', { name: /Pointer/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('region', { name: 'Engineering workspace guide' })).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Engineering workspace status' })).toHaveTextContent('Units unavailable')
+    await user.click(screen.getByRole('button', { name: 'Dismiss guide' }))
+    expect(screen.queryByRole('region', { name: 'Engineering workspace guide' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Show guide' }))
+    expect(screen.getByRole('region', { name: 'Engineering workspace guide' })).toBeInTheDocument()
   })
 
   it('keeps affine alignment in session state and resets it without a backend write', async () => {
@@ -182,7 +201,7 @@ describe('vision engineering workspace', () => {
     await user.clear(rotation)
     await user.type(rotation, '10')
     expect(screen.getByTestId('matrix-0-2')).toHaveTextContent('7')
-    expect(screen.getByTestId('height-evidence-frame')).toHaveStyle({ transformOrigin: 'center' })
+    expect(screen.getByTestId('height-raster').firstElementChild).toHaveStyle({ transformOrigin: 'center' })
     expect(viewMock).toHaveBeenCalledTimes(1)
     await user.click(screen.getByRole('button', { name: 'Reset alignment' }))
     expect(translationX).toHaveValue(0)
@@ -215,6 +234,150 @@ describe('vision engineering workspace', () => {
     expect(screen.getByText(/Pixel residual:/)).toHaveTextContent('0 px')
     await user.click(screen.getByRole('button', { name: 'Remove P1' }))
     expect(screen.getByText('No correspondence pairs in this browser session.')).toBeInTheDocument()
+  })
+
+  it('selects independent native coordinates directly on the images and clears both crosshairs', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'PCB 2D/3D Vision Engineering Workspace' })
+    const rgbRaster = screen.getByTestId('rgb-raster')
+    const heightRaster = screen.getByTestId('height-raster')
+    setRasterGeometry(rgbRaster, { left: 20, top: 40, width: 320, height: 240 })
+    setRasterGeometry(heightRaster, { left: 400, top: 40, width: 320, height: 240 })
+    const canvas = screen.getByTestId('vision-canvas')
+
+    fireEvent.pointerDown(canvas, { clientX: 180, clientY: 160, pointerId: 1 })
+    expect(screen.getByLabelText('RGB X coordinate')).toHaveValue(320)
+    expect(screen.getByLabelText('RGB Y coordinate')).toHaveValue(240)
+    expect(screen.getByTestId('rgb-crosshair')).toHaveAccessibleName('RGB selected coordinate X 320, Y 240')
+    expect(sampleMock).not.toHaveBeenCalled()
+
+    fireEvent.pointerDown(canvas, { clientX: 480, clientY: 100, pointerId: 2 })
+    expect(screen.getByLabelText('Height X coordinate')).toHaveValue(160)
+    expect(screen.getByLabelText('Height Y coordinate')).toHaveValue(120)
+    expect(screen.getByTestId('height-crosshair')).toHaveAccessibleName('Height selected coordinate X 160, Y 120')
+
+    await user.click(screen.getByRole('button', { name: 'Clear selected coordinates' }))
+    expect(screen.queryByTestId('rgb-crosshair')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('height-crosshair')).not.toBeInTheDocument()
+  })
+
+  it('uses Sample clicks for exactly one GET while preserving the other coordinate space', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'PCB 2D/3D Vision Engineering Workspace' })
+    const rgbRaster = screen.getByTestId('rgb-raster')
+    const heightRaster = screen.getByTestId('height-raster')
+    setRasterGeometry(rgbRaster, { left: 0, top: 0, width: 320, height: 240 })
+    setRasterGeometry(heightRaster, { left: 400, top: 0, width: 320, height: 240 })
+    await user.clear(screen.getByLabelText('Height X coordinate'))
+    await user.type(screen.getByLabelText('Height X coordinate'), '56')
+    await user.clear(screen.getByLabelText('Height Y coordinate'))
+    await user.type(screen.getByLabelText('Height Y coordinate'), '78')
+    await user.click(screen.getByRole('button', { name: /Sample S/ }))
+    fireEvent.pointerDown(screen.getByTestId('vision-canvas'), { clientX: 80, clientY: 60, pointerId: 1 })
+
+    await waitFor(() => expect(sampleMock).toHaveBeenCalledTimes(1))
+    expect(sampleMock.mock.calls[0]?.[1]).toMatchObject({ rgbX: 160, rgbY: 120, heightX: 56, heightY: 78 })
+    expect(screen.getByLabelText('Height X coordinate')).toHaveValue(56)
+    expect(screen.getByLabelText('Height Y coordinate')).toHaveValue(78)
+  })
+
+  it('cancels stale sample requests and keeps visible request IDs on failures', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'PCB 2D/3D Vision Engineering Workspace' })
+    await user.click(screen.getByRole('button', { name: 'Sample values' }))
+    await waitFor(() => expect(sampleMock).toHaveBeenCalledTimes(1))
+    const firstSignal = sampleMock.mock.calls[0]?.[2]
+    await user.click(screen.getByRole('button', { name: 'Sample values' }))
+    expect(firstSignal?.aborted).toBe(true)
+
+    sampleMock.mockRejectedValueOnce(new ApiClientError(422, 'SAMPLE_OUT_OF_BOUNDS', 'Sample is outside the raster.', 'request-visible-123'))
+    await user.click(screen.getByRole('button', { name: 'Sample values' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Request ID: request-visible-123')
+  })
+
+  it('supports one active tool, keyboard shortcuts, coordinate adjustment, and undo/redo', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'PCB 2D/3D Vision Engineering Workspace' })
+    const rgbX = screen.getByLabelText('RGB X coordinate')
+    await user.clear(rgbX)
+    await user.type(rgbX, '10')
+    fireEvent.keyDown(window, { key: 'ArrowRight' })
+    expect(rgbX).toHaveValue(11)
+    expect(screen.getByTestId('rgb-crosshair')).toHaveAccessibleName('RGB selected coordinate X 11, Y 0')
+    fireEvent.keyDown(window, { key: 'ArrowDown', shiftKey: true })
+    expect(screen.getByLabelText('RGB Y coordinate')).toHaveValue(10)
+    expect(screen.getByRole('status', { name: 'Engineering workspace status' })).toHaveTextContent('RGB 11,10')
+
+    for (const [key, label] of [['h', 'Pan'], ['s', 'Sample'], ['c', 'Correspondence'], ['r', 'Rectangle'], ['l', 'Line'], ['v', 'Pointer']] as const) {
+      fireEvent.keyDown(window, { key })
+      const tools = screen.getByRole('toolbar', { name: 'Engineering tools' })
+      expect(within(tools).getByRole('button', { name: new RegExp(label) })).toHaveAttribute('aria-pressed', 'true')
+      expect(within(tools).getAllByRole('button').filter((button) => button.getAttribute('aria-pressed') === 'true')).toHaveLength(1)
+    }
+
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true })
+    expect(screen.getByLabelText('RGB Y coordinate')).toHaveValue(0)
+    fireEvent.keyDown(window, { key: 'y', ctrlKey: true })
+    expect(screen.getByLabelText('RGB Y coordinate')).toHaveValue(10)
+  })
+
+  it('suppresses shortcuts while typing and Escape cancels an incomplete correspondence', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'PCB 2D/3D Vision Engineering Workspace' })
+    const tools = screen.getByRole('toolbar', { name: 'Engineering tools' })
+    const rgbX = screen.getByLabelText('RGB X coordinate')
+    rgbX.focus()
+    fireEvent.keyDown(rgbX, { key: 's' })
+    expect(within(tools).getByRole('button', { name: /Pointer/ })).toHaveAttribute('aria-pressed', 'true')
+
+    rgbX.blur()
+    fireEvent.keyDown(document.body, { key: '=' })
+    expect(screen.getByLabelText('Zoom level')).toHaveTextContent('125%')
+    fireEvent.keyDown(document.body, { key: '-' })
+    expect(screen.getByLabelText('Zoom level')).toHaveTextContent('100%')
+    fireEvent.keyDown(document.body, { key: '0' })
+    expect(screen.getByRole('button', { name: 'Actual pixels' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.keyDown(document.body, { key: 'f' })
+    expect(screen.getByRole('button', { name: 'Fit' })).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.keyDown(document.body, { key: 'c' })
+    await user.click(screen.getByRole('button', { name: 'Add RGB point' }))
+    expect(screen.getByText(/Pending RGB/)).toBeInTheDocument()
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    expect(screen.queryByText(/Pending RGB/)).not.toBeInTheDocument()
+  })
+
+  it('clears session selections and history when the workspace remounts', async () => {
+    const first = renderPage()
+    await screen.findByRole('heading', { name: 'PCB 2D/3D Vision Engineering Workspace' })
+    fireEvent.change(screen.getByLabelText('RGB X coordinate'), { target: { value: '22' } })
+    expect(screen.getByTestId('rgb-crosshair')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled()
+    first.unmount()
+
+    renderPage()
+    await screen.findByRole('heading', { name: 'PCB 2D/3D Vision Engineering Workspace' })
+    expect(screen.getByLabelText('RGB X coordinate')).toHaveValue(0)
+    expect(screen.queryByTestId('rgb-crosshair')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
+  })
+
+  it('exposes all shortcut help and makes no production decision action available', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'PCB 2D/3D Vision Engineering Workspace' })
+    await user.click(screen.getByRole('button', { name: 'Keyboard help' }))
+    const help = screen.getByRole('dialog', { name: 'Keyboard shortcuts' })
+    expect(help).toHaveTextContent('V Pointer, H Pan, S Sample, C Correspondence, R Rectangle, L Line')
+    expect(help).toHaveTextContent('Arrow keys move 1 pixel')
+    expect(screen.queryByRole('button', { name: /production|approve|pass|fail/i })).not.toBeInTheDocument()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: 'Keyboard shortcuts' })).not.toBeInTheDocument()
   })
 
   it.each([

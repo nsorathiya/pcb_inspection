@@ -74,6 +74,45 @@ alpha-overlay, and split-comparison modes; synchronized normalized zoom and pan;
 independent RGB/height coordinates; an explicit native-value sample action; and an
 SVG 64-bin height histogram.
 
+### Direct interaction and session tools
+
+Pointer and Sample clicks are converted from browser CSS coordinates to zero-based
+native raster coordinates after canvas zoom and pan. Height clicks also invert the
+session-only affine display transform. A click outside the native raster is ignored.
+RGB and height selections remain independent: selecting one never overwrites the
+other. Sample performs one read-only GET for the newly selected coordinate pair,
+cancels an older in-flight sample request, and shows the backend request ID if the
+latest request fails. Manual coordinate inputs remain available for exact entry.
+
+Selected RGB and height pixels have separate labelled crosshairs. They remain visible
+while other tools are active and can be cleared together. Arrow keys adjust the active
+selection by one native pixel; Shift+Arrow adjusts it by ten, always clamped to the
+corresponding raster.
+
+Exactly one canvas tool is active:
+
+- `V` Pointer
+- `H` Pan
+- `S` Sample
+- `C` Correspondence
+- `R` Rectangle
+- `L` Line
+
+View shortcuts are `+`/`-` for zoom, `F` for fit, and `0` for actual pixels. Escape
+cancels an incomplete interaction. Ctrl/Cmd+Z undoes session actions and
+Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y redoes them. The bounded in-memory history retains the
+latest 50 session states and is cleared on reload or route change.
+
+The RGB and height inspectors report their own selected coordinate, native values,
+dimensions, and integrity/calibration/registration evidence. Before an explicit
+sample, values say **Not sampled**. Physical values and units remain **Unavailable**.
+A persistent status bar reports inspection identity, raster dimensions, zoom, active
+tool, selections, pair count, registration status, and unavailable units.
+
+A non-blocking quick-start guide opens on entry, can be dismissed or reopened, and is
+session-only. Toolbar buttons expose pressed state and keyboard shortcuts to assistive
+technology. The interface never maps a viewer action to a production PASS/FAIL action.
+
 The layout keeps the evidence navigator on the left, the vision canvas in the centre,
 metadata and pixel inspection on the right, and persisted pipeline evidence below.
 It adapts to desktop, laptop, and tablet widths without changing coordinate semantics.
@@ -91,8 +130,8 @@ claim automatic or production registration.
 An operator can pair explicit RGB and height correspondence pixels. Per-pair, mean,
 and maximum residuals are calculated in pixels. An optional translation suggestion
 is displayed and must be applied explicitly; it is never automatic registration.
-Point, rectangle, and line tools retain separate RGB/height coordinate spaces.
-Rectangle width, height, and area and line distance are pixel measurements. Height
+Rectangle and line tools retain separate RGB/height coordinate spaces. Rectangle
+width, height, and area and line distance are pixel measurements. Height
 rectangles may read bounded native-value statistics from the read-only ROI endpoint.
 No millimetre or micrometre conversion is performed.
 

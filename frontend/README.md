@@ -8,6 +8,13 @@ intake, technical validation, persisted evidence retrieval, an audit timeline,
 and a deterministic development report with JSON download and browser print.
 Mock results are not real AI predictions or production PCB decisions.
 
+When the backend engineering-viewer flag is enabled, inspection detail links to the
+read-only **PCB 2D/3D Vision Engineering Workspace**. It supports direct independent
+RGB/height pixel selection, native sampling, labelled crosshairs, one active canvas
+tool, keyboard shortcuts, 50-state session undo/redo, client-only alignment and pixel
+measurements, onboarding, and a persistent status bar. No viewer interaction persists
+alignment or creates a production decision. See `../docs/engineering_viewer.md`.
+
 ## Run locally
 
 Start the FastAPI application on `http://127.0.0.1:8000`, then:

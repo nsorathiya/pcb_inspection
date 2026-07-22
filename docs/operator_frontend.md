@@ -248,13 +248,20 @@ changes backend state or creates a PDF/report file.
 
 ## Known limitations
 
+The optional engineering route is a development-only, GET-only evidence workspace.
+Its direct RGB/height selections, crosshairs, tools, keyboard shortcuts, undo/redo,
+alignment, correspondence points, and pixel measurements exist only in browser
+session state. It does not establish calibration or registration, fabricate physical
+units, or expose a production PASS/FAIL action. Detailed behavior and shortcuts are
+documented in `engineering_viewer.md`.
+
 - Synthetic processing POST is disabled unless the backend is explicitly
   configured with trusted generated fixtures.
 - The UI has no authentication or authorization and is development-only.
 - Recipe catalogue is read-only; recipe creation and activation are absent.
-- There is no reprocessing, background polling, backend PDF/report-file
-  generation, preview, overlay, camera, PLC, MES, model administration, or real
-  inference.
+- There is no reprocessing, background polling, backend PDF/report-file generation,
+  camera, PLC, MES, model administration, real inference, real calibration, or
+  production registration. Viewer previews and overlays are development-only.
 - File upload progress is an indeterminate busy state because the API supplies
   no byte-progress contract.
 - Production hosting must configure SPA fallback and an appropriate API routing
