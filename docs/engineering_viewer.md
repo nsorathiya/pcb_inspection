@@ -63,6 +63,21 @@ validation, run preprocessing, or invoke inference. The optional height ROI endp
 is intentionally deferred; the current surface provides only strictly bounded point
 sampling and whole-image 64-bin statistics.
 
+## Vision engineering workspace
+
+The frontend route `/inspections/{id}/engineering-view` presents the read-only API as
+the **PCB 2D/3D Vision Engineering Workspace**. Open it from an inspection detail
+page with **Open Engineering Workspace**. The page provides RGB, height, side-by-side,
+alpha-overlay, and split-comparison modes; synchronized normalized zoom and pan;
+independent RGB/height coordinates; an explicit native-value sample action; and an
+SVG 64-bin height histogram.
+
+The layout keeps the evidence navigator on the left, the vision canvas in the centre,
+metadata and pixel inspection on the right, and persisted pipeline evidence below.
+It adapts to desktop, laptop, and tablet widths without changing coordinate semantics.
+The canvas never treats the derived preview as native height data, never invents a
+physical unit, and never calls a validation or processing endpoint.
+
 ## Tests
 
 From the repository root:
@@ -73,4 +88,8 @@ From the repository root:
   .\backend\tests\test_inspection_details.py `
   .\backend\tests\test_inspection_validation_api.py `
   .\backend\tests\test_inspection_processing_api.py -q
+Set-Location .\frontend
+npm run test:run -- src/pages/EngineeringViewPage.test.tsx
+npm run test:run
+npm run build
 ```

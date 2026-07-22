@@ -125,7 +125,7 @@ export function InspectionDetailPage() {
     <section aria-labelledby="inspection-detail-title">
       <div className="page-heading">
         <div><p className="eyebrow">Persisted workflow evidence</p><h2 id="inspection-detail-title">Inspection Detail</h2><p className="mono page-identifier">{inspectionId}</p></div>
-        <div className="button-row"><a href="#audit-timeline" className="button secondary">View Audit Timeline</a><Link className="button secondary" to={`/inspections/${inspectionId}/report`}>Open Development Report</Link><button className="button secondary" type="button" onClick={() => void load()} disabled={loading || Boolean(action)}>{loading ? 'Refreshing…' : 'Refresh'}</button></div>
+        <div className="button-row"><a href="#audit-timeline" className="button secondary">View Audit Timeline</a><Link className="button secondary" to={`/inspections/${inspectionId}/engineering-view`}>Open Engineering Workspace</Link><Link className="button secondary" to={`/inspections/${inspectionId}/report`}>Open Development Report</Link><button className="button secondary" type="button" onClick={() => void load()} disabled={loading || Boolean(action)}>{loading ? 'Refreshing…' : 'Refresh'}</button></div>
       </div>
       <div className="feedback-region" aria-live="polite">{feedback && <p className="action-feedback">{feedback}</p>}{loading && !inspection && <p className="loading-state">Loading persisted inspection evidence…</p>}{error && <ErrorPanel error={error} onRetry={() => void load()} />}</div>
 

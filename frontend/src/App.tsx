@@ -5,6 +5,7 @@ import { InspectionDetailPage } from './pages/InspectionDetailPage'
 import { NewInspectionPage } from './pages/NewInspectionPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { InspectionReportPage } from './pages/InspectionReportPage'
+import { EngineeringViewPage } from './pages/EngineeringViewPage'
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
           <Route path="inspections/new" element={<NewInspectionPage />} />
           <Route path="inspections/:inspectionId" element={<InspectionDetailPage />} />
           <Route path="inspections/:inspectionId/report" element={<InspectionReportPage />} />
+          <Route path="inspections/:inspectionId/engineering-view" element={<EngineeringViewPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

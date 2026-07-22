@@ -102,5 +102,7 @@ inference, or production approval. See
 
 The backend also provides an optional disabled-by-default read-only engineering
 viewer for integrity-verified synthetic RGB/native-height metadata, derived in-memory
-previews, and native point sampling. See
+previews, and native point sampling. When enabled, open an inspection's
+`/inspections/{id}/engineering-view` frontend route for the responsive 2D/3D vision
+engineering workspace. See
 [docs/engineering_viewer.md](docs/engineering_viewer.md).

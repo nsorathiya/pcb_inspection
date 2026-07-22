@@ -401,3 +401,87 @@ export interface RecipeFilters {
   name?: string
   status?: RecipeStatus | ''
 }
+
+export interface EngineeringRasterMetadata {
+  artifact_type: 'RGB_RAW' | 'HEIGHT_RAW'
+  detected_format: string
+  width: number
+  height: number
+  channels: number
+  bit_depth: number
+  color_mode: string
+  storage_data_type: string | null
+  sha256: string
+  byte_size: number
+}
+
+export interface EngineeringHeightStatistics {
+  native_min: number
+  native_max: number
+  valid_count: number
+  invalid_count: number
+  histogram: {
+    bin_count: 64
+    native_min: number
+    native_max: number
+    counts: number[]
+  }
+}
+
+export interface EngineeringValidationEvidence {
+  available: boolean
+  validation_id: string | null
+  outcome: string | null
+  policy_id: string | null
+  policy_version: string | null
+  technically_ready: boolean | null
+  finding_codes: string[]
+}
+
+export interface EngineeringProcessingEvidence {
+  available: boolean
+  processing_run_id: string | null
+  processing_status: string | null
+  preprocessing_outcome: string | null
+  mock_decision: string | null
+  production_approved: boolean | null
+  synthetic_input_verified: boolean | null
+  finding_codes: string[]
+}
+
+export interface EngineeringViewResponse {
+  inspection_id: string
+  inspection_status: string
+  rgb: EngineeringRasterMetadata
+  height: EngineeringRasterMetadata
+  height_statistics: EngineeringHeightStatistics
+  calibration_status: string
+  registration_status: string
+  physical_height_unit: null
+  validation: EngineeringValidationEvidence
+  processing: EngineeringProcessingEvidence
+  warnings: string[]
+  synthetic_input_verified: boolean
+  production_approved: false
+  request_id: string
+}
+
+export interface EngineeringSampleResponse {
+  inspection_id: string
+  rgb: {
+    x: number
+    y: number
+    storage_data_type: string | null
+    values: number[]
+  }
+  height: {
+    x: number
+    y: number
+    storage_data_type: string | null
+    value: number | null
+    valid: boolean
+    physical_unit: null
+  }
+  warnings: string[]
+  request_id: string
+}
