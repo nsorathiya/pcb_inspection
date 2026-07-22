@@ -94,17 +94,48 @@ test('loads the demo workspace and proves session-only engineering alignment and
   await page.getByLabel('Scale Y').fill('0.9')
   await expect(page.getByTestId('matrix-0-2')).toHaveText('7')
   await expect(page.getByTestId('matrix-1-2')).toHaveText('-3')
+  await expect(page.getByTestId('vision-canvas')).toHaveAttribute('data-alignment-view', 'ORIGINAL')
+  await page.getByRole('button', { name: 'Apply transform to view only' }).click()
+  await expect(page.getByTestId('vision-canvas')).toHaveAttribute('data-alignment-view', 'DEVELOPMENT')
 
   await viewModes.getByRole('button', { name: 'Side-by-side', exact: true }).click()
   await page.keyboard.press('c')
-  rgbRaster = await page.getByTestId('rgb-raster').boundingBox()
-  heightRaster = await page.getByTestId('height-raster').boundingBox()
-  await page.mouse.click(rgbRaster!.x + rgbRaster!.width * 0.35, rgbRaster!.y + rgbRaster!.height * 0.35)
-  await page.mouse.click(heightRaster!.x + heightRaster!.width * 0.35, heightRaster!.y + heightRaster!.height * 0.35)
-  await expect(page.getByText(/Pixel residual:/)).toBeVisible()
-  await expect(page.getByText(/Mean residual/).locator('..')).toContainText('px')
-  await expect(page.getByText(/Maximum residual/).locator('..')).toContainText('px')
+  const addPair = async (rgbPosition: { x: number; y: number }, heightPosition: { x: number; y: number }) => {
+    rgbRaster = await page.getByTestId('rgb-raster').boundingBox()
+    heightRaster = await page.getByTestId('height-raster').boundingBox()
+    expect(rgbRaster).not.toBeNull()
+    expect(heightRaster).not.toBeNull()
+    await page.getByTestId('rgb-raster').click({ position: { x: rgbRaster!.width * rgbPosition.x, y: rgbRaster!.height * rgbPosition.y } })
+    await expect(page.getByRole('button', { name: 'Add Pair' })).toBeDisabled()
+    await page.getByTestId('height-raster').click({ position: { x: heightRaster!.width * heightPosition.x, y: heightRaster!.height * heightPosition.y } })
+    await expect(page.getByRole('button', { name: 'Add Pair' })).toBeEnabled()
+    await page.getByRole('button', { name: 'Add Pair' }).click()
+  }
+  await addPair({ x: .25, y: .25 }, { x: .22, y: .24 })
+  await addPair({ x: .5, y: .45 }, { x: .48, y: .44 })
+  await addPair({ x: .72, y: .68 }, { x: .68, y: .66 })
+  await expect(page.getByTestId('rgb-landmark-P1')).toBeVisible()
+  await expect(page.getByTestId('height-landmark-P2')).toBeVisible()
+  await expect(page.getByTestId('rgb-landmark-P3')).toBeVisible()
+  await expect(page.locator('.engineering-residual')).toHaveCount(3)
+  await expect(page.locator('.engineering-residual.highest')).toHaveCount(1)
+  await expect(page.getByText(/Development residual:/).first()).toBeVisible()
+  await expect(page.getByText(/Mean development residual/).locator('..')).toContainText('px')
+  await expect(page.getByText(/Maximum development residual/).locator('..')).toContainText('px')
+  await expect(page.getByText(/Minimum development residual/).locator('..')).toContainText('px')
+  await expect(page.getByText(/Median development residual/).locator('..')).toContainText('px')
+  await expect(page.getByText(/Highest residual pair/).locator('..')).toContainText(/P[123]/)
   await expect(page.getByRole('button', { name: 'Apply translation suggestion' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Return to original' }).click()
+  await expect(page.getByTestId('vision-canvas')).toHaveAttribute('data-alignment-view', 'ORIGINAL')
+  await page.getByRole('button', { name: 'Apply transform to view only' }).click()
+  await expect(page.getByTestId('vision-canvas')).toHaveAttribute('data-alignment-view', 'DEVELOPMENT')
+  await page.getByRole('button', { name: 'Start flicker comparison' }).click()
+  await expect(page.getByTestId('vision-canvas')).toHaveAttribute('data-flicker-running', 'true')
+  await page.waitForTimeout(500)
+  await page.getByRole('button', { name: 'Stop flicker' }).click()
+  await expect(page.getByTestId('vision-canvas')).toHaveAttribute('data-flicker-running', 'false')
 
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Export alignment JSON' }).click()
@@ -117,7 +148,25 @@ test('loads the demo workspace and proves session-only engineering alignment and
   expect(exported.development_only).toBe(true)
   expect(exported.production_approved).toBe(false)
   expect(exported.units).toBe('pixels')
-  expect(exported.correspondences).toHaveLength(1)
+  expect(exported.active_view).toBe('DEVELOPMENT')
+  expect(exported.comparison_coordinate_space).toBe('RGB_DISPLAY_PIXELS')
+  expect(exported.correspondences).toHaveLength(3)
+  expect(exported.correspondences).toEqual(expect.arrayContaining([
+    expect.objectContaining({ id: 'P1', pair_number: 1 }),
+    expect.objectContaining({ id: 'P2', pair_number: 2 }),
+    expect.objectContaining({ id: 'P3', pair_number: 3 }),
+  ]))
+  expect(exported.residual_summary).toEqual(expect.objectContaining({
+    mean_pixels: expect.any(Number),
+    maximum_pixels: expect.any(Number),
+    minimum_pixels: expect.any(Number),
+    median_pixels: expect.any(Number),
+    highest_pair_id: expect.stringMatching(/^P[123]$/),
+  }))
+  expect(exported.limitations).toEqual(expect.arrayContaining([
+    'RESIDUALS_ARE_DEVELOPMENT_VISUALIZATION_NOT_A_QUALITY_CLAIM',
+    'ALIGNMENT_APPLIES_TO_BROWSER_RENDERING_ONLY',
+  ]))
   const exportKeys = collectKeys(exported)
   expect(exportKeys.has('relative_path')).toBe(false)
   expect(exportKeys.has('path')).toBe(false)

@@ -14,6 +14,12 @@ export interface PixelPoint {
 export type EngineeringCoordinateSpace = 'RGB' | 'HEIGHT'
 export type EngineeringTool = 'pointer' | 'pan' | 'sample' | 'correspondence' | 'rectangle' | 'line'
 export type EngineeringViewMode = 'RGB' | 'Height' | 'Side-by-side' | 'Alpha overlay' | 'Split comparison'
+export type AlignmentViewState = 'ORIGINAL' | 'DEVELOPMENT'
+
+export interface RasterComparisonDimensions {
+  rgb: { width: number; height: number }
+  height: { width: number; height: number }
+}
 
 export interface EngineeringCoordinates {
   rgbX: number
@@ -54,6 +60,10 @@ export interface EngineeringSessionSnapshot {
   splitPosition: number
   coordinates: EngineeringCoordinates
   alignment: SessionAlignment
+  alignmentView: AlignmentViewState
+  showResiduals: boolean
+  selectedCorrespondenceId: string | null
+  nextCorrespondenceNumber: number
   correspondences: CorrespondencePoint[]
   pendingRgbPoint: PixelPoint | null
   pendingHeightPoint: PixelPoint | null
@@ -93,6 +103,10 @@ export const DEFAULT_ENGINEERING_SESSION: EngineeringSessionSnapshot = {
     activeSpace: 'RGB',
   },
   alignment: DEFAULT_ALIGNMENT,
+  alignmentView: 'ORIGINAL',
+  showResiduals: true,
+  selectedCorrespondenceId: null,
+  nextCorrespondenceNumber: 1,
   correspondences: [],
   pendingRgbPoint: null,
   pendingHeightPoint: null,
@@ -221,25 +235,73 @@ export function transformHeightPoint(point: PixelPoint, alignment: SessionAlignm
   }
 }
 
-export function correspondenceResidual(point: CorrespondencePoint, alignment: SessionAlignment): number {
-  const transformed = transformHeightPoint(point.height, alignment)
-  return clean(Math.hypot(point.rgb.x - transformed.x, point.rgb.y - transformed.y))
-}
-
-export function residualSummary(points: CorrespondencePoint[], alignment: SessionAlignment) {
-  const residuals = points.map((point) => correspondenceResidual(point, alignment))
+export function transformHeightPointToRgb(
+  point: PixelPoint,
+  alignment: SessionAlignment,
+  dimensions?: RasterComparisonDimensions,
+): PixelPoint {
+  if (!dimensions) return transformHeightPoint(point, alignment)
+  const mapped = {
+    x: (point.x + 0.5) * dimensions.rgb.width / dimensions.height.width - 0.5,
+    y: (point.y + 0.5) * dimensions.rgb.height / dimensions.height.height - 0.5,
+  }
+  const centre = {
+    x: (dimensions.rgb.width - 1) / 2,
+    y: (dimensions.rgb.height - 1) / 2,
+  }
+  const transformed = transformHeightPoint(
+    { x: mapped.x - centre.x, y: mapped.y - centre.y },
+    alignment,
+  )
   return {
-    residuals,
-    meanPixels: residuals.length ? clean(residuals.reduce((sum, value) => sum + value, 0) / residuals.length) : null,
-    maximumPixels: residuals.length ? clean(Math.max(...residuals)) : null,
+    x: clean(transformed.x + centre.x),
+    y: clean(transformed.y + centre.y),
   }
 }
 
-export function suggestedTranslation(points: CorrespondencePoint[], alignment: SessionAlignment): PixelPoint | null {
+export function correspondenceResidual(
+  point: CorrespondencePoint,
+  alignment: SessionAlignment,
+  dimensions?: RasterComparisonDimensions,
+): number {
+  const transformed = transformHeightPointToRgb(point.height, alignment, dimensions)
+  return clean(Math.hypot(point.rgb.x - transformed.x, point.rgb.y - transformed.y))
+}
+
+export function residualSummary(
+  points: CorrespondencePoint[],
+  alignment: SessionAlignment,
+  dimensions?: RasterComparisonDimensions,
+) {
+  const residuals = points.map((point) => correspondenceResidual(point, alignment, dimensions))
+  const sorted = [...residuals].sort((left, right) => left - right)
+  const midpoint = Math.floor(sorted.length / 2)
+  const median = sorted.length
+    ? sorted.length % 2
+      ? sorted[midpoint]!
+      : clean((sorted[midpoint - 1]! + sorted[midpoint]!) / 2)
+    : null
+  const maximum = residuals.length ? clean(Math.max(...residuals)) : null
+  const highestIndex = maximum === null ? -1 : residuals.indexOf(maximum)
+  return {
+    residuals,
+    meanPixels: residuals.length ? clean(residuals.reduce((sum, value) => sum + value, 0) / residuals.length) : null,
+    maximumPixels: maximum,
+    minimumPixels: residuals.length ? clean(Math.min(...residuals)) : null,
+    medianPixels: median,
+    highestPairId: highestIndex >= 0 ? points[highestIndex]!.id : null,
+  }
+}
+
+export function suggestedTranslation(
+  points: CorrespondencePoint[],
+  alignment: SessionAlignment,
+  dimensions?: RasterComparisonDimensions,
+): PixelPoint | null {
   if (!points.length) return null
   const withoutTranslation = { ...alignment, translationX: 0, translationY: 0 }
   const deltas = points.map((point) => {
-    const transformed = transformHeightPoint(point.height, withoutTranslation)
+    const transformed = transformHeightPointToRgb(point.height, withoutTranslation, dimensions)
     return { x: point.rgb.x - transformed.x, y: point.rgb.y - transformed.y }
   })
   return {
@@ -254,23 +316,35 @@ export function buildAlignmentExport(
   points: CorrespondencePoint[],
   rois: EngineeringRoi[],
   overlayOpacityPercent: number,
+  options: {
+    activeView?: AlignmentViewState
+    dimensions?: RasterComparisonDimensions
+  } = {},
 ) {
-  const residuals = residualSummary(points, alignment)
+  const residuals = residualSummary(points, alignment, options.dimensions)
   return {
     contract_version: 'pcb-aoi-development-alignment/1.0',
     inspection_id: inspectionId,
     development_only: true,
     production_approved: false,
     units: 'pixels',
+    active_view: options.activeView ?? 'ORIGINAL',
+    comparison_coordinate_space: 'RGB_DISPLAY_PIXELS',
     alignment: {
       translation: { x: alignment.translationX, y: alignment.translationY },
       rotation_degrees: alignment.rotationDegrees,
       scale: { x: alignment.scaleX, y: alignment.scaleY },
       overlay_opacity_percent: overlayOpacityPercent,
       affine_matrix_3x3: affineMatrix(alignment),
+      source_coordinate_space: 'HEIGHT_DISPLAY_PIXELS',
+      target_coordinate_space: 'RGB_DISPLAY_PIXELS',
+      transform_origin: 'RGB_DISPLAY_CENTRE',
+      scale_units: 'UNITLESS',
+      application: 'BROWSER_VIEW_ONLY',
     },
     correspondences: points.map((point, index) => ({
       id: point.id,
+      pair_number: Number(point.id.replace(/^P/, '')),
       rgb: point.rgb,
       height: point.height,
       residual_pixels: residuals.residuals[index],
@@ -278,6 +352,9 @@ export function buildAlignmentExport(
     residual_summary: {
       mean_pixels: residuals.meanPixels,
       maximum_pixels: residuals.maximumPixels,
+      minimum_pixels: residuals.minimumPixels,
+      median_pixels: residuals.medianPixels,
+      highest_pair_id: residuals.highestPairId,
     },
     measurements: rois,
     limitations: [
@@ -285,6 +362,8 @@ export function buildAlignmentExport(
       'NO_AUTOMATIC_PRODUCTION_REGISTRATION',
       'NO_PHYSICAL_UNIT_CONVERSION',
       'NO_PRODUCTION_INSPECTION_DECISION',
+      'RESIDUALS_ARE_DEVELOPMENT_VISUALIZATION_NOT_A_QUALITY_CLAIM',
+      'ALIGNMENT_APPLIES_TO_BROWSER_RENDERING_ONLY',
     ],
   }
 }

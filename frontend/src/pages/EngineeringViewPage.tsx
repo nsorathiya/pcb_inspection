@@ -22,7 +22,10 @@ import {
   redoSessionHistory,
   residualSummary,
   suggestedTranslation,
+  transformHeightPointToRgb,
   undoSessionHistory,
+  type AlignmentViewState,
+  type CorrespondencePoint,
   type EngineeringCoordinateSpace,
   type EngineeringRoi,
   type EngineeringSessionSnapshot,
@@ -34,11 +37,15 @@ import {
 
 const CANONICAL_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const VIEW_MODES: EngineeringViewMode[] = ['RGB', 'Height', 'Side-by-side', 'Alpha overlay', 'Split comparison']
+const TRANSLATION_LIMIT = 10_000
+const ROTATION_LIMIT = 180
+const SCALE_MINIMUM = 0.01
+const SCALE_MAXIMUM = 100
 const TOOL_DEFINITIONS: Array<{ tool: EngineeringTool; label: string; shortcut: string; help: string }> = [
   { tool: 'pointer', label: 'Pointer', shortcut: 'V', help: 'click the RGB or height view to select a native pixel.' },
   { tool: 'pan', label: 'Pan', shortcut: 'H', help: 'drag the canvas or use the pan buttons.' },
   { tool: 'sample', label: 'Sample', shortcut: 'S', help: 'click the RGB or height view to select and sample native values.' },
-  { tool: 'correspondence', label: 'Correspondence', shortcut: 'C', help: 'click one RGB point and one height point to form a pair.' },
+  { tool: 'correspondence', label: 'Correspondence', shortcut: 'C', help: 'select RGB, then height, then confirm with Add Pair.' },
   { tool: 'rectangle', label: 'Rectangle', shortcut: 'R', help: 'drag a pixel rectangle in the active coordinate space.' },
   { tool: 'line', label: 'Line', shortcut: 'L', help: 'drag a pixel line in the active coordinate space.' },
 ]
@@ -70,6 +77,13 @@ function EvidenceImage({
   metadata,
   selectedPoint,
   rois,
+  correspondences,
+  selectedCorrespondenceId,
+  onSelectCorrespondence,
+  residualAlignment,
+  residualDimensions,
+  showResiduals,
+  highestResidualId,
   alignmentTransform,
 }: {
   kind: RasterKind
@@ -77,6 +91,13 @@ function EvidenceImage({
   metadata: EngineeringRasterMetadata
   selectedPoint: PixelPoint | null
   rois: EngineeringRoi[]
+  correspondences: CorrespondencePoint[]
+  selectedCorrespondenceId: string | null
+  onSelectCorrespondence: (id: string) => void
+  residualAlignment: EngineeringSessionSnapshot['alignment']
+  residualDimensions: { rgb: { width: number; height: number }; height: { width: number; height: number } }
+  showResiduals: boolean
+  highestResidualId: string | null
   alignmentTransform?: string
 }) {
   const coordinateSpace = kind === 'RGB' ? 'RGB' : 'HEIGHT'
@@ -102,6 +123,51 @@ function EvidenceImage({
               if (roi.kind === 'POINT') return <circle key={roi.id} cx={roi.x + 0.5} cy={roi.y + 0.5} r={strokeWidth * 1.8} data-roi-id={roi.id} />
               if (roi.kind === 'RECTANGLE') return <rect key={roi.id} x={roi.x} y={roi.y} width={roi.width} height={roi.height} data-roi-id={roi.id} />
               return <line key={roi.id} x1={roi.x1 + 0.5} y1={roi.y1 + 0.5} x2={roi.x2 + 0.5} y2={roi.y2 + 0.5} data-roi-id={roi.id} />
+            })}
+          </svg>
+          <svg className="engineering-landmark-overlay" viewBox={`0 0 ${metadata.width} ${metadata.height}`} aria-label={`${kind} correspondence landmarks`}>
+            <title>{kind} numbered correspondence landmarks</title>
+            {kind === 'RGB' && showResiduals && correspondences.map((point) => {
+              const transformed = transformHeightPointToRgb(point.height, residualAlignment, residualDimensions)
+              const residual = correspondenceResidual(point, residualAlignment, residualDimensions)
+              const labelX = (point.rgb.x + transformed.x) / 2
+              const labelY = (point.rgb.y + transformed.y) / 2
+              return (
+                <g key={`residual-${point.id}`} className={`engineering-residual ${highestResidualId === point.id ? 'highest' : ''}`} data-testid={`residual-${point.id}`}>
+                  <line x1={transformed.x + 0.5} y1={transformed.y + 0.5} x2={point.rgb.x + 0.5} y2={point.rgb.y + 0.5} />
+                  <circle className="transformed-height-point" cx={transformed.x + 0.5} cy={transformed.y + 0.5} r={strokeWidth * 1.5} />
+                  <text x={labelX + 0.5} y={labelY + 0.5}>{point.id} {residual}px</text>
+                </g>
+              )
+            })}
+            {correspondences.map((point) => {
+              const coordinate = kind === 'RGB' ? point.rgb : point.height
+              const selected = selectedCorrespondenceId === point.id
+              const half = strokeWidth * 2.6
+              return (
+                <g
+                  key={`${kind}-${point.id}`}
+                  className={`engineering-landmark ${kind.toLowerCase()} ${selected ? 'selected' : ''}`}
+                  data-testid={`${kind.toLowerCase()}-landmark-${point.id}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Select ${point.id} ${kind} landmark`}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => { event.stopPropagation(); onSelectCorrespondence(point.id) }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      onSelectCorrespondence(point.id)
+                    }
+                  }}
+                >
+                  {kind === 'RGB'
+                    ? <circle cx={coordinate.x + 0.5} cy={coordinate.y + 0.5} r={half} />
+                    : <polygon points={`${coordinate.x + 0.5},${coordinate.y + 0.5 - half} ${coordinate.x + 0.5 + half},${coordinate.y + 0.5} ${coordinate.x + 0.5},${coordinate.y + 0.5 + half} ${coordinate.x + 0.5 - half},${coordinate.y + 0.5}`} />}
+                  <text x={coordinate.x + 0.5 + half * 1.35} y={coordinate.y + 0.5 - half * 1.35}>{point.id}</text>
+                </g>
+              )
             })}
           </svg>
           {selectedPoint && <Crosshair kind={kind} point={selectedPoint} metadata={metadata} />}
@@ -163,6 +229,10 @@ export function EngineeringViewPage() {
   const [roiLoading, setRoiLoading] = useState(false)
   const [guideOpen, setGuideOpen] = useState(true)
   const [keyboardHelpOpen, setKeyboardHelpOpen] = useState(false)
+  const [flickerRunning, setFlickerRunning] = useState(false)
+  const [flickerPhase, setFlickerPhase] = useState<AlignmentViewState>('DEVELOPMENT')
+  const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
+  const [flickerNotice, setFlickerNotice] = useState<string | null>(null)
   const drag = useRef<{ clientX: number; clientY: number; panX: number; panY: number; before: EngineeringSessionSnapshot; moved: boolean } | null>(null)
   const roiStart = useRef<{ point: PixelPoint; space: EngineeringCoordinateSpace } | null>(null)
   const sampleAbort = useRef<AbortController | null>(null)
@@ -213,12 +283,59 @@ export function EngineeringViewPage() {
     setSampleError(null)
     setGuideOpen(true)
     setKeyboardHelpOpen(false)
+    setFlickerRunning(false)
+    setFlickerPhase('DEVELOPMENT')
+    setFlickerNotice(null)
     drag.current = null
     roiStart.current = null
     sampleAbort.current?.abort()
   }, [inspectionId])
 
   useEffect(() => () => sampleAbort.current?.abort(), [])
+
+  useEffect(() => {
+    const query = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+    if (!query) return
+    const update = () => setReducedMotion(query.matches)
+    update()
+    query.addEventListener?.('change', update)
+    return () => query.removeEventListener?.('change', update)
+  }, [])
+
+  useEffect(() => {
+    if (!flickerRunning) return
+    const stopWhenHidden = () => {
+      if (document.hidden) {
+        setFlickerRunning(false)
+        setFlickerPhase('DEVELOPMENT')
+        setFlickerNotice('Flicker stopped because this browser tab is hidden.')
+      }
+    }
+    const interval = window.setInterval(() => {
+      if (!document.hidden) setFlickerPhase((current) => current === 'ORIGINAL' ? 'DEVELOPMENT' : 'ORIGINAL')
+    }, 400)
+    document.addEventListener('visibilitychange', stopWhenHidden)
+    return () => {
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', stopWhenHidden)
+    }
+  }, [flickerRunning])
+
+  useEffect(() => {
+    if (session.mode !== 'Alpha overlay' && flickerRunning) {
+      setFlickerRunning(false)
+      setFlickerPhase('DEVELOPMENT')
+      setFlickerNotice('Flicker stopped after leaving Alpha overlay mode.')
+    }
+  }, [flickerRunning, session.mode])
+
+  useEffect(() => {
+    if (reducedMotion && flickerRunning) {
+      setFlickerRunning(false)
+      setFlickerPhase('DEVELOPMENT')
+      setFlickerNotice('Flicker stopped because reduced motion is enabled in the browser or operating system.')
+    }
+  }, [flickerRunning, reducedMotion])
 
   const requestSample = useCallback(async (coordinates: EngineeringSessionSnapshot['coordinates']) => {
     if (!view) return
@@ -324,6 +441,10 @@ export function EngineeringViewPage() {
   if (error && !view) return <ErrorPanel error={error} onRetry={() => void load()} title="Engineering workspace unavailable" />
   if (!view) return null
 
+  const renderedAlignmentView = flickerRunning ? flickerPhase : session.alignmentView
+  const renderedAlignment = renderedAlignmentView === 'DEVELOPMENT' ? session.alignment : DEFAULT_ALIGNMENT
+  const comparisonDimensions = { rgb: { width: view.rgb.width, height: view.rgb.height }, height: { width: view.height.width, height: view.height.height } }
+
   const pointForSpace = (event: ReactPointerEvent<HTMLDivElement>, space: EngineeringCoordinateSpace): PixelPoint | null => {
     const anchor = event.currentTarget.querySelector<HTMLElement>(`[data-raster-space="${space}"]`)
     if (!anchor) return null
@@ -337,7 +458,7 @@ export function EngineeringViewPage() {
       { x: event.clientX, y: event.clientY },
       bounds,
       metadata,
-      space === 'HEIGHT' ? session.alignment : DEFAULT_ALIGNMENT,
+      space === 'HEIGHT' ? renderedAlignment : DEFAULT_ALIGNMENT,
       outerScale,
     )
   }
@@ -364,10 +485,28 @@ export function EngineeringViewPage() {
       const coordinates = space === 'RGB'
         ? { ...current.coordinates, rgbX: point.x, rgbY: point.y, rgbSelected: true, activeSpace: 'RGB' as const }
         : { ...current.coordinates, heightX: point.x, heightY: point.y, heightSelected: true, activeSpace: 'HEIGHT' as const }
-      const rgb = space === 'RGB' ? point : current.pendingRgbPoint
-      const height = space === 'HEIGHT' ? point : current.pendingHeightPoint
-      if (rgb && height) return { ...current, coordinates, correspondences: [...current.correspondences, { id: `P${current.correspondences.length + 1}`, rgb, height }], pendingRgbPoint: null, pendingHeightPoint: null }
-      return { ...current, coordinates, pendingRgbPoint: space === 'RGB' ? point : current.pendingRgbPoint, pendingHeightPoint: space === 'HEIGHT' ? point : current.pendingHeightPoint }
+      return {
+        ...current,
+        coordinates,
+        pendingRgbPoint: space === 'RGB' ? point : current.pendingRgbPoint,
+        pendingHeightPoint: space === 'HEIGHT' && current.pendingRgbPoint ? point : current.pendingHeightPoint,
+      }
+    })
+  }
+
+  const addPendingCorrespondence = () => {
+    if (!session.pendingRgbPoint || !session.pendingHeightPoint) return
+    commit((current) => {
+      if (!current.pendingRgbPoint || !current.pendingHeightPoint) return current
+      const id = `P${current.nextCorrespondenceNumber}`
+      return {
+        ...current,
+        correspondences: [...current.correspondences, { id, rgb: current.pendingRgbPoint, height: current.pendingHeightPoint }],
+        selectedCorrespondenceId: id,
+        nextCorrespondenceNumber: current.nextCorrespondenceNumber + 1,
+        pendingRgbPoint: null,
+        pendingHeightPoint: null,
+      }
     })
   }
 
@@ -436,21 +575,54 @@ export function EngineeringViewPage() {
   const rgbSelectedPoint = session.coordinates.rgbSelected ? { x: session.coordinates.rgbX, y: session.coordinates.rgbY } : null
   const heightSelectedPoint = session.coordinates.heightSelected ? { x: session.coordinates.heightX, y: session.coordinates.heightY } : null
   const matrix = affineMatrix(session.alignment)
-  const residuals = residualSummary(session.correspondences, session.alignment)
-  const translationSuggestion = suggestedTranslation(session.correspondences, session.alignment)
+  const residuals = residualSummary(session.correspondences, session.alignment, comparisonDimensions)
+  const translationSuggestion = suggestedTranslation(session.correspondences, session.alignment, comparisonDimensions)
+  const correspondenceStep = !session.pendingRgbPoint ? 1 : !session.pendingHeightPoint ? 2 : 3
   const rgbValues = sampledRgbValues(sample)
   const toolDefinition = TOOL_DEFINITIONS.find((item) => item.tool === tool) ?? TOOL_DEFINITIONS[0]!
   const transform = `translate(${session.pan.x * 100}%, ${session.pan.y * 100}%) scale(${session.zoom})`
   const dimensionMismatch = view.rgb.width !== view.height.width || view.rgb.height !== view.height.height
-  const rgbImage = <EvidenceImage kind="RGB" src={engineeringPreviewUrl(inspectionId, 'rgb')} metadata={view.rgb} selectedPoint={rgbSelectedPoint} rois={session.rois} />
-  const heightImage = <EvidenceImage kind="Height" src={engineeringPreviewUrl(inspectionId, 'height')} metadata={view.height} selectedPoint={heightSelectedPoint} rois={session.rois} alignmentTransform={cssAffineMatrix(session.alignment)} />
+  const selectCorrespondence = (id: string) => commit((current) => ({ ...current, selectedCorrespondenceId: id }))
+  const sharedEvidenceProps = {
+    correspondences: session.correspondences,
+    selectedCorrespondenceId: session.selectedCorrespondenceId,
+    onSelectCorrespondence: selectCorrespondence,
+    residualAlignment: session.alignment,
+    residualDimensions: comparisonDimensions,
+    showResiduals: session.showResiduals,
+    highestResidualId: residuals.highestPairId,
+  }
+  const rgbImage = <EvidenceImage kind="RGB" src={engineeringPreviewUrl(inspectionId, 'rgb')} metadata={view.rgb} selectedPoint={rgbSelectedPoint} rois={session.rois} {...sharedEvidenceProps} />
+  const heightImage = <EvidenceImage kind="Height" src={engineeringPreviewUrl(inspectionId, 'height')} metadata={view.height} selectedPoint={heightSelectedPoint} rois={session.rois} alignmentTransform={renderedAlignmentView === 'DEVELOPMENT' ? cssAffineMatrix(session.alignment) : undefined} {...sharedEvidenceProps} />
 
   const addManualCorrespondence = (space: EngineeringCoordinateSpace) => {
     const point = space === 'RGB' ? { x: session.coordinates.rgbX, y: session.coordinates.rgbY } : { x: session.coordinates.heightX, y: session.coordinates.heightY }
     addCorrespondenceSelection(space, point)
   }
+  const setAlignmentView = (next: AlignmentViewState) => {
+    setFlickerRunning(false)
+    setFlickerPhase(next)
+    setFlickerNotice(null)
+    commit((current) => ({ ...current, alignmentView: next }))
+  }
+  const startFlicker = () => {
+    if (reducedMotion) {
+      setFlickerNotice('Flicker is unavailable because reduced motion is enabled in the browser or operating system.')
+      return
+    }
+    commit((current) => ({ ...current, mode: 'Alpha overlay', alignmentView: 'DEVELOPMENT' }))
+    setFlickerPhase('ORIGINAL')
+    setFlickerNotice('Manual flicker is running at 2.5 changes per second. This is a visual comparison, not proof of registration quality.')
+    setFlickerRunning(true)
+  }
+  const stopFlicker = () => {
+    setFlickerRunning(false)
+    setFlickerPhase('DEVELOPMENT')
+    setFlickerNotice('Flicker stopped. Development-aligned view is shown.')
+  }
+  const bounded = (value: number, minimum: number, maximum: number) => Number.isFinite(value) ? Math.min(maximum, Math.max(minimum, value)) : 0
   const exportAlignment = () => {
-    const payload = buildAlignmentExport(inspectionId, session.alignment, session.correspondences, session.rois, session.overlayOpacity)
+    const payload = buildAlignmentExport(inspectionId, session.alignment, session.correspondences, session.rois, session.overlayOpacity, { activeView: session.alignmentView, dimensions: comparisonDimensions })
     const url = URL.createObjectURL(new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: 'application/json' }))
     const anchor = document.createElement('a'); anchor.href = url; anchor.download = alignmentExportFilename(inspectionId); anchor.click(); URL.revokeObjectURL(url)
   }
@@ -484,7 +656,7 @@ export function EngineeringViewPage() {
           {keyboardHelpOpen && <section className="keyboard-help-panel" id="engineering-keyboard-help" role="dialog" aria-modal="false" aria-labelledby="keyboard-help-title"><div className="subpanel-heading"><h3 id="keyboard-help-title">Keyboard shortcuts</h3><button type="button" onClick={() => setKeyboardHelpOpen(false)}>Close</button></div><dl><div><dt>Tools</dt><dd>V Pointer, H Pan, S Sample, C Correspondence, R Rectangle, L Line</dd></div><div><dt>View</dt><dd>+/- Zoom, F Fit, 0 Actual pixels</dd></div><div><dt>Selection</dt><dd>Arrow keys move 1 pixel; Shift+Arrow moves 10 pixels</dd></div><div><dt>History</dt><dd>Ctrl/Cmd+Z Undo; Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y Redo</dd></div><div><dt>Cancel</dt><dd>Escape cancels an incomplete action</dd></div></dl></section>}
           <div className="coordinate-space-controls" role="group" aria-label="Active coordinate space"><span>Coordinate space</span><button type="button" aria-pressed={session.coordinates.activeSpace === 'RGB'} onClick={() => commit((current) => ({ ...current, coordinates: { ...current.coordinates, activeSpace: 'RGB' } }))}>RGB</button><button type="button" aria-pressed={session.coordinates.activeSpace === 'HEIGHT'} onClick={() => commit((current) => ({ ...current, coordinates: { ...current.coordinates, activeSpace: 'HEIGHT' } }))}>Height</button><button type="button" disabled={!session.coordinates.rgbSelected && !session.coordinates.heightSelected} onClick={clearSelections}>Clear selected coordinates</button></div>
           {(session.mode === 'Alpha overlay' || session.mode === 'Split comparison') && <div className="comparison-controls"><strong className="overlay-space-label">Interaction targets {session.coordinates.activeSpace === 'RGB' ? 'RGB' : 'Height'} coordinates; no registration is implied.</strong>{session.mode === 'Alpha overlay' && <label>Overlay opacity <input aria-label="Overlay opacity" type="range" min="0" max="100" value={session.overlayOpacity} onChange={(event) => commit((current) => ({ ...current, overlayOpacity: Number(event.target.value) }))} /><output>{session.overlayOpacity}%</output></label>}{session.mode === 'Split comparison' && <label>Split position <input aria-label="Split position" type="range" min="0" max="100" value={session.splitPosition} onChange={(event) => commit((current) => ({ ...current, splitPosition: Number(event.target.value) }))} /><output>{session.splitPosition}%</output></label>}</div>}
-          <div className={`vision-canvas tool-${tool} scale-${session.scaleMode}`} data-testid="vision-canvas" data-view-mode={session.mode} data-pan={`${session.pan.x.toFixed(2)},${session.pan.y.toFixed(2)}`} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={(event) => void pointerUp(event)} onPointerCancel={() => { drag.current = null; roiStart.current = null }}>
+          <div className={`vision-canvas tool-${tool} scale-${session.scaleMode}`} data-testid="vision-canvas" data-view-mode={session.mode} data-alignment-view={renderedAlignmentView} data-flicker-running={flickerRunning ? 'true' : 'false'} data-pan={`${session.pan.x.toFixed(2)},${session.pan.y.toFixed(2)}`} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={(event) => void pointerUp(event)} onPointerCancel={() => { drag.current = null; roiStart.current = null }}>
             <div className="vision-canvas-grid" aria-hidden="true" /><div className="vision-transform-surface" style={{ transform }}>
               {session.mode === 'RGB' && <div id="rgb-evidence" className="single-evidence">{rgbImage}</div>}{session.mode === 'Height' && <div id="height-evidence" className="single-evidence">{heightImage}</div>}{session.mode === 'Side-by-side' && <div className="side-by-side-evidence"><div id="rgb-evidence">{rgbImage}</div><div id="height-evidence">{heightImage}</div></div>}{session.mode === 'Alpha overlay' && <div className="stacked-evidence"><div>{rgbImage}</div><div className="overlay-layer" style={{ opacity: session.overlayOpacity / 100 }}>{heightImage}</div></div>}{session.mode === 'Split comparison' && <div className="stacked-evidence"><div>{rgbImage}</div><div className="split-layer" style={{ clipPath: `inset(0 0 0 ${session.splitPosition}%)` }}>{heightImage}</div><span className="split-divider" style={{ left: `${session.splitPosition}%` }} aria-hidden="true" /></div>}
             </div>
@@ -503,8 +675,70 @@ export function EngineeringViewPage() {
           </form>
           <Histogram view={view} />
 
-          <section className="engineering-session-panel" aria-labelledby="session-alignment-title"><div className="subpanel-heading"><h4 id="session-alignment-title">Session alignment</h4><span>Not persisted</span></div><p className="engineering-panel-note">Development-only visual alignment. Reload clears it and no automatic registration is performed.</p><div className="alignment-control-grid"><label>Translation X (pixels)<input type="number" value={session.alignment.translationX} onChange={(event) => commit((current) => ({ ...current, alignment: { ...current.alignment, translationX: Number(event.target.value) } }))} /></label><label>Translation Y (pixels)<input type="number" value={session.alignment.translationY} onChange={(event) => commit((current) => ({ ...current, alignment: { ...current.alignment, translationY: Number(event.target.value) } }))} /></label><label>Rotation (degrees)<input type="number" step="0.1" value={session.alignment.rotationDegrees} onChange={(event) => commit((current) => ({ ...current, alignment: { ...current.alignment, rotationDegrees: Number(event.target.value) } }))} /></label><label>Scale X<input type="number" min="0.01" step="0.01" value={session.alignment.scaleX} onChange={(event) => commit((current) => ({ ...current, alignment: { ...current.alignment, scaleX: Math.max(0.01, Number(event.target.value)) } }))} /></label><label>Scale Y<input type="number" min="0.01" step="0.01" value={session.alignment.scaleY} onChange={(event) => commit((current) => ({ ...current, alignment: { ...current.alignment, scaleY: Math.max(0.01, Number(event.target.value)) } }))} /></label><label>Overlay opacity<input type="range" min="0" max="100" value={session.overlayOpacity} onChange={(event) => commit((current) => ({ ...current, overlayOpacity: Number(event.target.value) }))} /><output>{session.overlayOpacity}%</output></label></div><button type="button" className="button secondary" onClick={() => commit((current) => ({ ...current, alignment: DEFAULT_ALIGNMENT }))}>Reset alignment</button><div className="affine-matrix" role="table" aria-label="3 by 3 affine matrix">{matrix.flatMap((row, rowIndex) => row.map((value, columnIndex) => <output key={`${rowIndex}-${columnIndex}`} role="cell" data-testid={`matrix-${rowIndex}-${columnIndex}`}>{value}</output>))}</div>
-            <div className="subpanel-heading correspondence-heading"><h4>Correspondence points</h4><span>Pixel residuals</span></div><div className="correspondence-actions"><button type="button" onClick={() => addManualCorrespondence('RGB')}>Add RGB point</button><button type="button" onClick={() => addManualCorrespondence('HEIGHT')}>Add height point</button><button type="button" disabled={!session.correspondences.length && !session.pendingRgbPoint && !session.pendingHeightPoint} onClick={() => commit((current) => ({ ...current, correspondences: [], pendingRgbPoint: null, pendingHeightPoint: null }))}>Clear correspondence points</button></div>{(session.pendingRgbPoint || session.pendingHeightPoint) && <p className="engineering-panel-note" aria-live="polite">Pending {session.pendingRgbPoint ? `RGB (${session.pendingRgbPoint.x}, ${session.pendingRgbPoint.y})` : `height (${session.pendingHeightPoint!.x}, ${session.pendingHeightPoint!.y})`} point; select the other coordinate space.</p>}{session.correspondences.length ? <ul className="correspondence-list">{session.correspondences.map((point) => <li key={point.id}><span><strong>{point.id}</strong> RGB ({point.rgb.x}, {point.rgb.y}) / height ({point.height.x}, {point.height.y})</span><span>Pixel residual: <output>{correspondenceResidual(point, session.alignment)}</output> px</span><button type="button" aria-label={`Remove ${point.id}`} onClick={() => commit((current) => ({ ...current, correspondences: current.correspondences.filter((item) => item.id !== point.id) }))}>Remove</button></li>)}</ul> : <p className="engineering-empty-inline">No correspondence pairs in this browser session.</p>}<dl className="engineering-definition-list compact residual-summary"><div><dt>Mean residual</dt><dd>{residuals.meanPixels === null ? 'Unavailable' : `${residuals.meanPixels} px`}</dd></div><div><dt>Maximum residual</dt><dd>{residuals.maximumPixels === null ? 'Unavailable' : `${residuals.maximumPixels} px`}</dd></div></dl>{translationSuggestion && <div className="translation-suggestion"><span>Suggested translation: X {translationSuggestion.x}px, Y {translationSuggestion.y}px</span><button type="button" onClick={() => commit((current) => ({ ...current, alignment: { ...current.alignment, translationX: translationSuggestion.x, translationY: translationSuggestion.y } }))}>Apply translation suggestion</button></div>}<button type="button" className="button secondary export-alignment" onClick={exportAlignment}>Export alignment JSON</button>
+          <section className="engineering-session-panel" aria-labelledby="session-alignment-title">
+            <div className="subpanel-heading"><h4 id="session-alignment-title">Session alignment</h4><span className="development-badge">Development · not persisted</span></div>
+            <p className="engineering-panel-note">Optional visual development workflow only. Reload clears every point and transform; no automatic or production registration is performed.</p>
+
+            <section className="alignment-group" aria-labelledby="alignment-view-group-title">
+              <div className="subpanel-heading"><h5 id="alignment-view-group-title">View</h5><strong className={`alignment-view-state ${renderedAlignmentView.toLowerCase()}`}>{renderedAlignmentView === 'ORIGINAL' ? 'Original' : 'Development-aligned'} view</strong></div>
+              <p>Choose what the browser renders. The original artifact is never modified.</p>
+              <div className="segmented-controls" role="group" aria-label="Original and development alignment view">
+                <button type="button" aria-pressed={session.alignmentView === 'ORIGINAL' && !flickerRunning} onClick={() => setAlignmentView('ORIGINAL')}>Return to original</button>
+                <button type="button" aria-pressed={session.alignmentView === 'DEVELOPMENT' && !flickerRunning} onClick={() => setAlignmentView('DEVELOPMENT')}>Apply transform to view only</button>
+              </div>
+              <label>Overlay opacity<input type="range" min="0" max="100" value={session.overlayOpacity} onChange={(event) => commit((current) => ({ ...current, overlayOpacity: Number(event.target.value) }))} /><output>{session.overlayOpacity}%</output></label>
+              <div className="flicker-controls"><button type="button" onClick={startFlicker} disabled={flickerRunning || reducedMotion}>Start flicker comparison</button><button type="button" onClick={stopFlicker} disabled={!flickerRunning}>Stop flicker</button></div>
+              <p className="engineering-panel-note" role="status" aria-live="polite">{flickerNotice ?? 'Manual flicker alternates original and development-aligned rendering at 2.5 changes per second; it is not proof of registration.'}</p>
+            </section>
+
+            <section className="alignment-group" aria-labelledby="alignment-transform-group-title">
+              <div className="subpanel-heading"><h5 id="alignment-transform-group-title">Transform</h5><span>px / degrees / unitless scale</span></div>
+              <div className="alignment-control-grid">
+                <label>Translation X (pixels)<input type="number" min={-TRANSLATION_LIMIT} max={TRANSLATION_LIMIT} value={session.alignment.translationX} onChange={(event) => commit((current) => ({ ...current, alignment: { ...current.alignment, translationX: bounded(Number(event.target.value), -TRANSLATION_LIMIT, TRANSLATION_LIMIT) } }))} /></label>
+                <label>Translation Y (pixels)<input type="number" min={-TRANSLATION_LIMIT} max={TRANSLATION_LIMIT} value={session.alignment.translationY} onChange={(event) => commit((current) => ({ ...current, alignment: { ...current.alignment, translationY: bounded(Number(event.target.value), -TRANSLATION_LIMIT, TRANSLATION_LIMIT) } }))} /></label>
+                <label>Rotation (degrees)<input type="number" min={-ROTATION_LIMIT} max={ROTATION_LIMIT} step="0.1" value={session.alignment.rotationDegrees} onChange={(event) => commit((current) => ({ ...current, alignment: { ...current.alignment, rotationDegrees: bounded(Number(event.target.value), -ROTATION_LIMIT, ROTATION_LIMIT) } }))} /></label>
+                <label>Scale X (unitless)<input type="number" min={SCALE_MINIMUM} max={SCALE_MAXIMUM} step="0.01" value={session.alignment.scaleX} onChange={(event) => commit((current) => ({ ...current, alignment: { ...current.alignment, scaleX: bounded(Number(event.target.value), SCALE_MINIMUM, SCALE_MAXIMUM) } }))} /></label>
+                <label>Scale Y (unitless)<input type="number" min={SCALE_MINIMUM} max={SCALE_MAXIMUM} step="0.01" value={session.alignment.scaleY} onChange={(event) => commit((current) => ({ ...current, alignment: { ...current.alignment, scaleY: bounded(Number(event.target.value), SCALE_MINIMUM, SCALE_MAXIMUM) } }))} /></label>
+              </div>
+              <button type="button" className="button secondary" onClick={() => commit((current) => ({ ...current, alignment: DEFAULT_ALIGNMENT, alignmentView: 'DEVELOPMENT' }))}>Reset transform to identity</button>
+            </section>
+
+            <section className="alignment-group correspondence-workflow" aria-labelledby="correspondence-points-title">
+              <div className="subpanel-heading"><h5 id="correspondence-points-title">Correspondence</h5><span>Optional · browser session only</span></div>
+              <ol className="correspondence-steps" aria-label="Guided correspondence steps">
+                <li className={correspondenceStep === 1 ? 'current' : session.pendingRgbPoint ? 'complete' : ''}><strong>1</strong><span>Select RGB point</span></li>
+                <li className={correspondenceStep === 2 ? 'current' : session.pendingHeightPoint ? 'complete' : ''}><strong>2</strong><span>Select height point</span></li>
+                <li className={correspondenceStep === 3 ? 'current' : ''}><strong>3</strong><span>Add Pair</span></li>
+                <li className={session.correspondences.length ? 'available' : ''}><strong>4</strong><span>Repeat, review development residuals, then adjust or apply the display transform</span></li>
+              </ol>
+              <p className="correspondence-current-step" role="status" aria-live="polite"><strong>Current step {correspondenceStep}:</strong> {correspondenceStep === 1 ? `Select the RGB point for P${session.nextCorrespondenceNumber}.` : correspondenceStep === 2 ? `Select the matching height point for P${session.nextCorrespondenceNumber}.` : `Review both coordinates and add P${session.nextCorrespondenceNumber}.`}</p>
+              <div className="correspondence-actions">
+                <button type="button" onClick={() => addManualCorrespondence('RGB')}>Use selected RGB point</button>
+                <button type="button" disabled={!session.pendingRgbPoint} onClick={() => addManualCorrespondence('HEIGHT')}>Use selected height point</button>
+                <button type="button" className="add-pair" disabled={!session.pendingRgbPoint || !session.pendingHeightPoint} onClick={addPendingCorrespondence}>Add Pair</button>
+                <button type="button" disabled={!session.pendingRgbPoint && !session.pendingHeightPoint} onClick={cancelCurrentAction}>Cancel current pair</button>
+                <button type="button" disabled={!session.correspondences.length && !session.pendingRgbPoint && !session.pendingHeightPoint} onClick={() => {
+                  if (window.confirm('Clear all correspondence pairs from this browser session?')) commit((current) => ({ ...current, correspondences: [], selectedCorrespondenceId: null, pendingRgbPoint: null, pendingHeightPoint: null }))
+                }}>Clear all correspondence points</button>
+              </div>
+              {(session.pendingRgbPoint || session.pendingHeightPoint) && <p className="engineering-panel-note pending-pair" aria-live="polite">Pending P{session.nextCorrespondenceNumber}: RGB {session.pendingRgbPoint ? `(${session.pendingRgbPoint.x}, ${session.pendingRgbPoint.y})` : 'not selected'}; height {session.pendingHeightPoint ? `(${session.pendingHeightPoint.x}, ${session.pendingHeightPoint.y})` : 'not selected'}.</p>}
+              {session.correspondences.length ? <ul className="correspondence-list" aria-label="Correspondence pair list">{session.correspondences.map((point) => <li key={point.id} className={`${session.selectedCorrespondenceId === point.id ? 'selected' : ''} ${residuals.highestPairId === point.id ? 'highest-residual' : ''}`}><button type="button" className="correspondence-select" aria-pressed={session.selectedCorrespondenceId === point.id} onClick={() => selectCorrespondence(point.id)}><strong>{point.id}</strong> RGB ({point.rgb.x}, {point.rgb.y}) / height ({point.height.x}, {point.height.y})</button><span>Development residual: <output>{correspondenceResidual(point, session.alignment, comparisonDimensions)}</output> px {residuals.highestPairId === point.id ? '· highest' : ''}</span><button type="button" aria-label={`Remove ${point.id}`} onClick={() => commit((current) => ({ ...current, correspondences: current.correspondences.filter((item) => item.id !== point.id), selectedCorrespondenceId: current.selectedCorrespondenceId === point.id ? null : current.selectedCorrespondenceId }))}>Remove</button></li>)}</ul> : <p className="engineering-empty-inline">No correspondence pairs in this browser session. Development residuals are unavailable.</p>}
+            </section>
+
+            <section className="alignment-group" aria-labelledby="alignment-results-group-title">
+              <div className="subpanel-heading"><h5 id="alignment-results-group-title">Results</h5><span className="development-badge">Development view only</span></div>
+              <label className="residual-toggle"><input type="checkbox" checked={session.showResiduals} onChange={(event) => commit((current) => ({ ...current, showResiduals: event.target.checked }))} />Show development residual lines on RGB view</label>
+              <p className="engineering-panel-note">Residual coordinate space: transformed height display coordinates normalized into RGB display pixels. These values are visual development residuals, not a quality or registration claim.</p>
+              <dl className="engineering-definition-list compact residual-summary">
+                <div><dt>Pair count</dt><dd>{session.correspondences.length}</dd></div><div><dt>Mean development residual</dt><dd>{residuals.meanPixels === null ? 'Unavailable' : `${residuals.meanPixels} px`}</dd></div>
+                <div><dt>Maximum development residual</dt><dd>{residuals.maximumPixels === null ? 'Unavailable' : `${residuals.maximumPixels} px`}</dd></div><div><dt>Minimum development residual</dt><dd>{residuals.minimumPixels === null ? 'Unavailable' : `${residuals.minimumPixels} px`}</dd></div>
+                <div><dt>Median development residual</dt><dd>{residuals.medianPixels === null ? 'Unavailable' : `${residuals.medianPixels} px`}</dd></div><div><dt>Highest residual pair</dt><dd>{residuals.highestPairId ?? 'Unavailable'}</dd></div>
+              </dl>
+              {translationSuggestion && <div className="translation-suggestion"><span>Optional translation suggestion: X {translationSuggestion.x}px, Y {translationSuggestion.y}px</span><button type="button" onClick={() => commit((current) => ({ ...current, alignment: { ...current.alignment, translationX: translationSuggestion.x, translationY: translationSuggestion.y } }))}>Apply translation suggestion</button></div>}
+              <div className="matrix-context"><strong>3 × 3 affine display matrix</strong><span>Source: height display coordinates</span><span>Target: RGB display coordinates</span><span>Origin: RGB display centre</span><span>Translation: pixels · rotation: degrees · scale: unitless</span><span>Application: browser view only</span></div>
+              <div className="affine-matrix" role="table" aria-label="3 by 3 development affine display matrix">{matrix.flatMap((row, rowIndex) => row.map((value, columnIndex) => <output key={`${rowIndex}-${columnIndex}`} role="cell" data-testid={`matrix-${rowIndex}-${columnIndex}`}>{value}</output>))}</div>
+              <button type="button" className="button secondary export-alignment" onClick={exportAlignment}>Export alignment JSON</button>
+            </section>
           </section>
 
           <section className="engineering-session-panel" aria-labelledby="measurement-tools-title"><div className="subpanel-heading"><h4 id="measurement-tools-title">Pixel measurements</h4><span>{session.coordinates.activeSpace === 'RGB' ? 'RGB' : 'Height'} space</span></div><p className="engineering-panel-note">Use Rectangle or Line on the canvas. Height rectangles may request bounded native statistics. Values remain pixels or native samples.</p>{roiLoading && <p role="status">Calculating native height statistics...</p>}{roiError && <div className="sample-error" role="alert"><strong>{roiError.code}</strong><span>{roiError.message}</span><span>Request ID: {roiError.requestId}</span></div>}<div className="measurement-heading"><strong>Measurements</strong><button type="button" disabled={!session.rois.length} onClick={() => commit((current) => ({ ...current, rois: [] }))}>Clear measurements</button></div>{session.rois.length ? <ul className="measurement-list">{session.rois.map((roi) => <li key={roi.id} data-measurement-kind={roi.kind}><div><strong>{roi.id} - {roi.coordinateSpace} {roi.kind.toLowerCase()}</strong>{roi.kind === 'POINT' && <span>({roi.x}, {roi.y}) px</span>}{roi.kind === 'RECTANGLE' && <span>{roi.width} x {roi.height} px; area {roi.width * roi.height} px^2</span>}{roi.kind === 'LINE' && <span>({roi.x1}, {roi.y1}) to ({roi.x2}, {roi.y2}); distance {roi.distancePixels} px</span>}{roi.kind === 'RECTANGLE' && roi.nativeHeightStatistics && <span>Native height min {roi.nativeHeightStatistics.nativeMin}, max {roi.nativeHeightStatistics.nativeMax}, mean {roi.nativeHeightStatistics.nativeMean} ({roi.nativeHeightStatistics.storageDataType ?? 'native type unavailable'}; {roi.nativeHeightStatistics.validCount} valid / {roi.nativeHeightStatistics.invalidCount} invalid)</span>}</div><button type="button" aria-label={`Remove ${roi.id}`} onClick={() => commit((current) => ({ ...current, rois: current.rois.filter((item) => item.id !== roi.id) }))}>Remove</button></li>)}</ul> : <p className="engineering-empty-inline">No pixel measurements in this browser session.</p>}</section>

@@ -12,8 +12,13 @@ When the backend engineering-viewer flag is enabled, inspection detail links to 
 read-only **PCB 2D/3D Vision Engineering Workspace**. It supports direct independent
 RGB/height pixel selection, native sampling, labelled crosshairs, one active canvas
 tool, keyboard shortcuts, 50-state session undo/redo, client-only alignment and pixel
-measurements, onboarding, and a persistent status bar. No viewer interaction persists
-alignment or creates a production decision. See `../docs/engineering_viewer.md`.
+measurements, onboarding, and a persistent status bar. The optional guided alignment
+workflow stages RGB and height points before an explicit **Add Pair**, shows numbered
+landmarks and development residual vectors, summarizes pixel residuals, and supports
+Original/Development-aligned and reduced-motion-safe manual flicker comparison.
+Controls and the 3x3 matrix are explicitly display-only: no viewer interaction
+persists alignment, changes an artifact, or creates a production decision. See
+`../docs/engineering_viewer.md`.
 
 ## Run locally
 
@@ -53,6 +58,13 @@ npm run typecheck
 npm run test:run
 npm run build
 npm run test:e2e
+```
+
+Focused engineering-workspace verification:
+
+```powershell
+npm run test:run -- src/utils/engineeringSession.test.ts src/pages/EngineeringViewPage.test.tsx
+npx playwright test e2e/specs/zz-engineering-workspace.spec.ts
 ```
 
 For interactive diagnosis use `npm run test:e2e:headed`; after a failed run,

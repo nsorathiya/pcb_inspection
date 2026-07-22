@@ -121,15 +121,40 @@ physical unit, and never calls a validation or processing endpoint.
 
 ### Session-only alignment and measurements
 
-The workspace provides development-only translation X/Y, rotation, scale X/Y,
-overlay opacity, and a visible 3x3 affine matrix. Alignment is applied only to the
-rendered height layer. It is React browser state: reload, route change, or closing
-the page clears it. The frontend does not send alignment to the backend and does not
-claim automatic or production registration.
+The workspace groups controls as **View**, **Transform**, **Correspondence**, and
+**Results**. Translation X/Y is bounded to pixels, rotation to degrees, and scale is
+bounded and unitless. The Results group labels the 3x3 affine display matrix as a
+height-display-to-RGB-display transform around the RGB display centre. It is never
+presented as a camera, calibration, or production matrix.
 
-An operator can pair explicit RGB and height correspondence pixels. Per-pair, mean,
-and maximum residuals are calculated in pixels. An optional translation suggestion
-is displayed and must be applied explicitly; it is never automatic registration.
+The default **Original** view leaves the height preview untransformed. **Apply
+transform to view only** switches to a prominent **Development-aligned** state;
+**Return to original** restores original rendering, while identity reset remains in
+the same bounded undo/redo history. Alignment is applied only to the browser-rendered
+height layer. Reload, route change, or closing the page clears it. The frontend does
+not send alignment to the backend and does not claim automatic or production
+registration.
+
+Correspondence is an optional guided workflow: select RGB, select height, explicitly
+choose **Add Pair**, then repeat or review. Add Pair remains disabled until both
+points are valid. Pairs receive stable numbers displayed with distinct shapes and
+text on both rasters, remain visible through zoom and pan, and can be selected from
+either raster or the list. Removal is per pair; clearing all requires confirmation.
+
+Each pair draws an optional development-residual line from the transformed height
+point to its RGB target, with a pixel magnitude. The largest residual is highlighted.
+For mismatched raster dimensions, height coordinates are normalized into the RGB
+display-pixel comparison space before the display transform is evaluated. The
+summary reports count, mean, maximum, minimum, median, highest pair number, and an
+optional translation suggestion. These are explicitly *development residuals* with
+no threshold, pass/fail state, or registration-quality claim. The translation
+suggestion must be applied explicitly; it is never automatic registration.
+
+Manual flicker alternates Original and Development-aligned rendering at 2.5 changes
+per second. It starts and stops only by operator action, stops when the comparison
+mode/page is left or the tab is hidden, and is unavailable when reduced motion is
+requested. Flicker is a visual aid, not proof of alignment.
+
 Rectangle and line tools retain separate RGB/height coordinate spaces. Rectangle
 width, height, and area and line distance are pixel measurements. Height
 rectangles may read bounded native-value statistics from the read-only ROI endpoint.
@@ -138,9 +163,11 @@ No millimetre or micrometre conversion is performed.
 **Export alignment JSON** downloads the versioned
 `pcb-aoi-development-alignment/1.0` contract using the deterministic filename
 `inspection-{id}-development-alignment.json`. It is generated entirely in the
-browser and contains no paths, request ID, confidence, or fabricated physical units.
-The contract always records `development_only=true` and
-`production_approved=false`.
+browser and contains numbered pairs, the active Original/Development view, complete
+residual summary, display-coordinate labels, and stable limitation warnings. It has
+no paths, request ID, confidence, or fabricated physical units. The contract always
+records `development_only=true`, `production_approved=false`, and browser-view-only
+application.
 
 ## Tests
 

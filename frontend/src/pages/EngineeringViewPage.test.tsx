@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -79,9 +79,30 @@ function setRasterGeometry(element: HTMLElement, rect: { left: number; top: numb
   element.getBoundingClientRect = () => ({ ...rect, right: rect.left + rect.width, bottom: rect.top + rect.height, x: rect.left, y: rect.top, toJSON: () => ({}) })
 }
 
+function addManualPair(
+  rgb: { x: number; y: number },
+  height: { x: number; y: number },
+) {
+  fireEvent.change(screen.getByLabelText('RGB X coordinate'), { target: { value: String(rgb.x) } })
+  fireEvent.change(screen.getByLabelText('RGB Y coordinate'), { target: { value: String(rgb.y) } })
+  fireEvent.change(screen.getByLabelText('Height X coordinate'), { target: { value: String(height.x) } })
+  fireEvent.change(screen.getByLabelText('Height Y coordinate'), { target: { value: String(height.y) } })
+  fireEvent.click(screen.getByRole('button', { name: 'Use selected RGB point' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Use selected height point' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Add Pair' }))
+}
+
 describe('vision engineering workspace', () => {
   beforeEach(() => {
     vi.stubGlobal('PointerEvent', MouseEvent)
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn().mockImplementation(() => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    })
     viewMock.mockReset()
     sampleMock.mockReset()
     viewMock.mockResolvedValue({ data: engineeringResponse(), requestId: 'engineering-request' })
@@ -135,7 +156,7 @@ describe('vision engineering workspace', () => {
     expect(within(rgbInspector).getByText('10')).toBeInTheDocument()
     expect(screen.getByText('2048')).toBeInTheDocument()
     expect(screen.getAllByText('Unavailable').length).toBeGreaterThan(0)
-  })
+  }, 10_000)
 
   it('renders the SVG 64-bin histogram with native bounds and counts', async () => {
     const { container } = renderPage()
@@ -201,9 +222,10 @@ describe('vision engineering workspace', () => {
     await user.clear(rotation)
     await user.type(rotation, '10')
     expect(screen.getByTestId('matrix-0-2')).toHaveTextContent('7')
+    await user.click(screen.getByRole('button', { name: 'Apply transform to view only' }))
     expect(screen.getByTestId('height-raster').firstElementChild).toHaveStyle({ transformOrigin: 'center' })
     expect(viewMock).toHaveBeenCalledTimes(1)
-    await user.click(screen.getByRole('button', { name: 'Reset alignment' }))
+    await user.click(screen.getByRole('button', { name: 'Reset transform to identity' }))
     expect(translationX).toHaveValue(0)
     expect(rotation).toHaveValue(0)
     expect(screen.getByTestId('matrix-0-0')).toHaveTextContent('1')
@@ -212,7 +234,7 @@ describe('vision engineering workspace', () => {
   it('pairs explicit RGB and height points, reports residuals, and applies only an optional suggestion', async () => {
     const user = userEvent.setup()
     renderPage()
-    await screen.findByRole('heading', { name: 'Correspondence points' })
+    await screen.findByRole('heading', { name: 'Correspondence' })
     const setCoordinate = async (label: string, value: string) => {
       const input = screen.getByLabelText(label)
       await user.clear(input)
@@ -222,18 +244,136 @@ describe('vision engineering workspace', () => {
     await setCoordinate('RGB Y coordinate', '8')
     await setCoordinate('Height X coordinate', '10')
     await setCoordinate('Height Y coordinate', '5')
-    await user.click(screen.getByRole('button', { name: 'Add RGB point' }))
-    expect(screen.getByText(/Pending RGB \(12, 8\)/)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Add height point' }))
-    expect(screen.getByText(/Pixel residual:/)).toHaveTextContent(/3\.6055/)
-    expect(screen.getByText(/Suggested translation:/)).toHaveTextContent('X 2px, Y 3px')
+    expect(screen.getByRole('button', { name: 'Add Pair' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Use selected RGB point' }))
+    expect(screen.getByText(/Pending P1: RGB \(12, 8\)/)).toBeInTheDocument()
+    expect(screen.getByText(/Current step 2:/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Use selected height point' }))
+    expect(screen.getByText(/Current step 3:/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add Pair' })).toBeEnabled()
+    await user.click(screen.getByRole('button', { name: 'Add Pair' }))
+    expect(screen.getByText(/Development residual:/)).toHaveTextContent(/3\.6055/)
+    expect(screen.getByText(/Optional translation suggestion:/)).toHaveTextContent('X 2px, Y 3px')
     expect(screen.getByLabelText('Translation X (pixels)')).toHaveValue(0)
     await user.click(screen.getByRole('button', { name: 'Apply translation suggestion' }))
     expect(screen.getByLabelText('Translation X (pixels)')).toHaveValue(2)
     expect(screen.getByLabelText('Translation Y (pixels)')).toHaveValue(3)
-    expect(screen.getByText(/Pixel residual:/)).toHaveTextContent('0 px')
+    expect(screen.getByText(/Development residual:/)).toHaveTextContent('0 px')
     await user.click(screen.getByRole('button', { name: 'Remove P1' }))
-    expect(screen.getByText('No correspondence pairs in this browser session.')).toBeInTheDocument()
+    expect(screen.getByText(/No correspondence pairs in this browser session/)).toBeInTheDocument()
+  }, 10_000)
+
+  it('numbers visible landmarks, selects a pair from canvas or list, and confirms clear all', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Correspondence' })
+    addManualPair({ x: 12, y: 8 }, { x: 10, y: 5 })
+    addManualPair({ x: 30, y: 30 }, { x: 30, y: 30 })
+
+    expect(screen.getByTestId('rgb-landmark-P1')).toBeInTheDocument()
+    expect(screen.getByTestId('height-landmark-P1')).toBeInTheDocument()
+    expect(screen.getByTestId('rgb-landmark-P2')).toBeInTheDocument()
+    expect(screen.getByTestId('residual-P1')).toHaveClass('highest')
+    expect(screen.getByText('Highest residual pair').parentElement).toHaveTextContent('P1')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select P1 RGB landmark' }))
+    const pairList = screen.getByRole('list', { name: 'Correspondence pair list' })
+    expect(within(pairList).getByRole('button', { name: /P1 RGB/ })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Select P2 Height landmark' }))
+    expect(screen.getByTestId('height-landmark-P2')).toHaveClass('selected')
+    fireEvent.click(within(pairList).getByRole('button', { name: /P1 RGB/ }))
+    expect(screen.getByTestId('rgb-landmark-P1')).toHaveClass('selected')
+
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Clear all correspondence points' }))
+    expect(screen.getByTestId('rgb-landmark-P1')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Clear all correspondence points' }))
+    expect(screen.queryByTestId('rgb-landmark-P1')).not.toBeInTheDocument()
+    expect(confirm).toHaveBeenCalledTimes(2)
+    confirm.mockRestore()
+  }, 10_000)
+
+  it('shows complete development residual statistics and toggles residual visualization', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'Results' })
+    addManualPair({ x: 3, y: 4 }, { x: 0, y: 0 })
+    addManualPair({ x: 10, y: 0 }, { x: 0, y: 0 })
+    expect(screen.getByText('Pair count').parentElement).toHaveTextContent('2')
+    expect(screen.getByText('Mean development residual').parentElement).toHaveTextContent('7.5 px')
+    expect(screen.getByText('Maximum development residual').parentElement).toHaveTextContent('10 px')
+    expect(screen.getByText('Minimum development residual').parentElement).toHaveTextContent('5 px')
+    expect(screen.getByText('Median development residual').parentElement).toHaveTextContent('7.5 px')
+    expect(screen.getAllByTestId(/^residual-P/)).toHaveLength(2)
+    await user.click(screen.getByRole('checkbox', { name: 'Show development residual lines on RGB view' }))
+    expect(screen.queryByTestId('residual-P1')).not.toBeInTheDocument()
+  })
+
+  it('switches original and development rendering, resets identity, and undo/redoes transforms', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'Transform' })
+    expect(screen.getByTestId('vision-canvas')).toHaveAttribute('data-alignment-view', 'ORIGINAL')
+    fireEvent.change(screen.getByLabelText('Translation X (pixels)'), { target: { value: '9' } })
+    await user.click(screen.getByRole('button', { name: 'Apply transform to view only' }))
+    expect(screen.getByTestId('vision-canvas')).toHaveAttribute('data-alignment-view', 'DEVELOPMENT')
+    expect(screen.getByTestId('height-raster').firstElementChild).toHaveStyle({ transformOrigin: 'center' })
+    await user.click(screen.getByRole('button', { name: 'Return to original' }))
+    expect(screen.getByTestId('vision-canvas')).toHaveAttribute('data-alignment-view', 'ORIGINAL')
+
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true })
+    expect(screen.getByTestId('vision-canvas')).toHaveAttribute('data-alignment-view', 'DEVELOPMENT')
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true })
+    expect(screen.getByLabelText('Translation X (pixels)')).toHaveValue(9)
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true })
+    expect(screen.getByLabelText('Translation X (pixels)')).toHaveValue(0)
+    fireEvent.keyDown(window, { key: 'y', ctrlKey: true })
+    expect(screen.getByLabelText('Translation X (pixels)')).toHaveValue(9)
+    await user.click(screen.getByRole('button', { name: 'Reset transform to identity' }))
+    expect(screen.getByLabelText('Translation X (pixels)')).toHaveValue(0)
+    expect(screen.getByTestId('matrix-0-0')).toHaveTextContent('1')
+  })
+
+  it('runs manual flicker safely and cleans its timer when stopped or unmounted', async () => {
+    const rendered = renderPage()
+    await screen.findByRole('heading', { name: 'View' })
+    vi.useFakeTimers()
+    const clearInterval = vi.spyOn(window, 'clearInterval')
+    fireEvent.click(screen.getByRole('button', { name: 'Start flicker comparison' }))
+    expect(screen.getByTestId('vision-canvas')).toHaveAttribute('data-flicker-running', 'true')
+    expect(screen.getByTestId('vision-canvas')).toHaveAttribute('data-view-mode', 'Alpha overlay')
+    act(() => vi.advanceTimersByTime(400))
+    expect(screen.getByTestId('vision-canvas')).toHaveAttribute('data-alignment-view', 'DEVELOPMENT')
+    fireEvent.click(within(screen.getByRole('group', { name: 'Vision view modes' })).getByRole('button', { name: 'RGB' }))
+    expect(screen.getByTestId('vision-canvas')).toHaveAttribute('data-flicker-running', 'false')
+    fireEvent.click(screen.getByRole('button', { name: 'Start flicker comparison' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Stop flicker' }))
+    expect(screen.getByTestId('vision-canvas')).toHaveAttribute('data-flicker-running', 'false')
+    fireEvent.click(screen.getByRole('button', { name: 'Start flicker comparison' }))
+    rendered.unmount()
+    expect(clearInterval).toHaveBeenCalled()
+    clearInterval.mockRestore()
+    vi.useRealTimers()
+  })
+
+  it('disables flicker when reduced motion is requested', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn().mockImplementation(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    })
+    renderPage()
+    await screen.findByRole('heading', { name: 'View' })
+    expect(screen.getByRole('button', { name: 'Start flicker comparison' })).toBeDisabled()
+    expect(screen.getByText(/Manual flicker alternates/)).toBeInTheDocument()
+  })
+
+  it('labels the display matrix context without calibration or production meaning', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Results' })
+    expect(screen.getByRole('table', { name: '3 by 3 development affine display matrix' })).toBeInTheDocument()
+    expect(screen.getByText('Source: height display coordinates')).toBeInTheDocument()
+    expect(screen.getByText('Target: RGB display coordinates')).toBeInTheDocument()
+    expect(screen.getByText('Origin: RGB display centre')).toBeInTheDocument()
+    expect(screen.getByText('Application: browser view only')).toBeInTheDocument()
   })
 
   it('selects independent native coordinates directly on the images and clears both crosshairs', async () => {
@@ -346,10 +486,10 @@ describe('vision engineering workspace', () => {
     expect(screen.getByRole('button', { name: 'Fit' })).toHaveAttribute('aria-pressed', 'true')
 
     fireEvent.keyDown(document.body, { key: 'c' })
-    await user.click(screen.getByRole('button', { name: 'Add RGB point' }))
-    expect(screen.getByText(/Pending RGB/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Use selected RGB point' }))
+    expect(screen.getByText(/Pending P1: RGB/)).toBeInTheDocument()
     fireEvent.keyDown(document.body, { key: 'Escape' })
-    expect(screen.queryByText(/Pending RGB/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Pending P1: RGB/)).not.toBeInTheDocument()
   })
 
   it('clears session selections and history when the workspace remounts', async () => {
