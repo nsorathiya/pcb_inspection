@@ -485,3 +485,20 @@ export interface EngineeringSampleResponse {
   warnings: string[]
   request_id: string
 }
+
+export interface EngineeringHeightRoiResponse {
+  inspection_id: string
+  x: number
+  y: number
+  width: number
+  height: number
+  storage_data_type: string | null
+  native_min: number
+  native_max: number
+  native_mean: number
+  valid_count: number
+  invalid_count: number
+  physical_unit: null
+  warnings: string[]
+  request_id: string
+}

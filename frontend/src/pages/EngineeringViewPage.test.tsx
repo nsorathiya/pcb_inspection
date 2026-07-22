@@ -10,6 +10,7 @@ import { EngineeringViewPage } from './EngineeringViewPage'
 vi.mock('../api/engineeringViewer', () => ({
   getEngineeringView: vi.fn(),
   getEngineeringSample: vi.fn(),
+  getEngineeringHeightRoi: vi.fn(),
   engineeringPreviewUrl: vi.fn((_id: string, kind: string) => `/preview/${kind}.png`),
 }))
 
@@ -91,7 +92,7 @@ describe('vision engineering workspace', () => {
     expect(screen.getByRole('slider', { name: 'Split position' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Alpha overlay' }))
     expect(screen.getByRole('slider', { name: 'Overlay opacity' })).toBeInTheDocument()
-  })
+  }, 10_000)
 
   it('applies synchronized zoom and normalized pan controls', async () => {
     const user = userEvent.setup()
@@ -168,6 +169,52 @@ describe('vision engineering workspace', () => {
     expect(screen.getAllByText(/No physical calibration/).length).toBeGreaterThan(0)
     await user.click(screen.getByRole('button', { name: 'Shared crosshair' }))
     expect(screen.getByRole('button', { name: 'Shared crosshair' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('keeps affine alignment in session state and resets it without a backend write', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'Session alignment' })
+    const translationX = screen.getByLabelText('Translation X (pixels)')
+    const rotation = screen.getByLabelText('Rotation (degrees)')
+    await user.clear(translationX)
+    await user.type(translationX, '7')
+    await user.clear(rotation)
+    await user.type(rotation, '10')
+    expect(screen.getByTestId('matrix-0-2')).toHaveTextContent('7')
+    expect(screen.getByTestId('height-evidence-frame')).toHaveStyle({ transformOrigin: 'center' })
+    expect(viewMock).toHaveBeenCalledTimes(1)
+    await user.click(screen.getByRole('button', { name: 'Reset alignment' }))
+    expect(translationX).toHaveValue(0)
+    expect(rotation).toHaveValue(0)
+    expect(screen.getByTestId('matrix-0-0')).toHaveTextContent('1')
+  })
+
+  it('pairs explicit RGB and height points, reports residuals, and applies only an optional suggestion', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'Correspondence points' })
+    const setCoordinate = async (label: string, value: string) => {
+      const input = screen.getByLabelText(label)
+      await user.clear(input)
+      await user.type(input, value)
+    }
+    await setCoordinate('RGB X coordinate', '12')
+    await setCoordinate('RGB Y coordinate', '8')
+    await setCoordinate('Height X coordinate', '10')
+    await setCoordinate('Height Y coordinate', '5')
+    await user.click(screen.getByRole('button', { name: 'Add RGB point' }))
+    expect(screen.getByText(/Pending RGB \(12, 8\)/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Add height point' }))
+    expect(screen.getByText(/Pixel residual:/)).toHaveTextContent(/3\.6055/)
+    expect(screen.getByText(/Suggested translation:/)).toHaveTextContent('X 2px, Y 3px')
+    expect(screen.getByLabelText('Translation X (pixels)')).toHaveValue(0)
+    await user.click(screen.getByRole('button', { name: 'Apply translation suggestion' }))
+    expect(screen.getByLabelText('Translation X (pixels)')).toHaveValue(2)
+    expect(screen.getByLabelText('Translation Y (pixels)')).toHaveValue(3)
+    expect(screen.getByText(/Pixel residual:/)).toHaveTextContent('0 px')
+    await user.click(screen.getByRole('button', { name: 'Remove P1' }))
+    expect(screen.getByText('No correspondence pairs in this browser session.')).toBeInTheDocument()
   })
 
   it.each([

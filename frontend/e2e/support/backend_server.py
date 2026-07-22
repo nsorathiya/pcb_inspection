@@ -37,11 +37,11 @@ def _uuid_values(prefix: str, order: tuple[int, ...]):
 settings = Settings()
 application = create_app(settings)
 
-inspection_ids = _uuid_values("00000000-0000-4000-8000", (3, 1, 2, 4, 5, 6))
-validation_ids = _uuid_values("bbbbbbbb-bbbb-4bbb-8bbb", (3, 1, 2, 4, 5, 6))
-preprocessing_ids = _uuid_values("cccccccc-cccc-4ccc-8ccc", (3, 1, 2, 6))
-inference_ids = _uuid_values("dddddddd-dddd-4ddd-8ddd", (3, 1, 2, 6))
-processing_run_ids = _uuid_values("eeeeeeee-eeee-4eee-8eee", (3, 1, 2, 4, 6))
+inspection_ids = _uuid_values("00000000-0000-4000-8000", (0x11, 0x19, 0x13, 0x14, 0x15, 0x16))
+validation_ids = _uuid_values("bbbbbbbb-bbbb-4bbb-8bbb", (0x11, 0x19, 0x13, 0x14, 0x15, 0x16))
+preprocessing_ids = _uuid_values("cccccccc-cccc-4ccc-8ccc", (0x11, 0x19, 0x13, 0x16))
+inference_ids = _uuid_values("dddddddd-dddd-4ddd-8ddd", (0x11, 0x19, 0x13, 0x16))
+processing_run_ids = _uuid_values("eeeeeeee-eeee-4eee-8eee", (0x11, 0x19, 0x13, 0x14, 0x16))
 
 intake_module.uuid4 = lambda: UUID(inspection_ids())
 application.state.inspection_validation._engine._validation_id = validation_ids
@@ -51,8 +51,8 @@ if orchestrator is None:
 orchestrator._preprocess._preprocessing_id = preprocessing_ids
 orchestrator._infer._inference_id = inference_ids
 orchestrator._run_id = processing_run_ids
-orchestrator._errors._preprocessing_id = lambda: "cccccccc-cccc-4ccc-8ccc-000000000004"
-orchestrator._errors._inference_id = lambda: "dddddddd-dddd-4ddd-8ddd-000000000004"
+orchestrator._errors._preprocessing_id = lambda: "cccccccc-cccc-4ccc-8ccc-000000000014"
+orchestrator._errors._inference_id = lambda: "dddddddd-dddd-4ddd-8ddd-000000000014"
 
 query_log = Path(os.environ["PCB_AOI_E2E_QUERY_LOG"])
 query_log.parent.mkdir(parents=True, exist_ok=True)
@@ -101,4 +101,3 @@ if __name__ == "__main__":
         log_level="warning",
         access_log=False,
     )
-

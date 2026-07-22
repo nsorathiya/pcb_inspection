@@ -208,6 +208,56 @@ def test_separate_coordinates_return_exact_native_rgb_and_height_values(tmp_path
     assert missing.json()["code"] == "INVALID_ENGINEERING_VIEW_QUERY"
 
 
+def test_bounded_height_roi_returns_native_statistics_without_side_effects(tmp_path):
+    scenario_id = "valid_rgb_png_height_npy_float32"
+    application, fixtures = _application(tmp_path)
+    with TestClient(application) as client:
+        inspection_id, _rgb_source, height_source = _intake(
+            client, fixtures, scenario_id
+        )
+        before_counts = asyncio.run(_side_effect_counts(application))
+        before_tree = _runtime_tree(application.state.runtime_paths.root)
+        response = client.get(
+            f"/api/v1/inspections/{inspection_id}/engineering-view/height-roi",
+            params={"x": 2, "y": 3, "width": 4, "height": 2},
+            headers={"X-Request-ID": "height-roi-statistics"},
+        )
+        outside = client.get(
+            f"/api/v1/inspections/{inspection_id}/engineering-view/height-roi",
+            params={"x": 14, "y": 11, "width": 3, "height": 2},
+        )
+        empty = client.get(
+            f"/api/v1/inspections/{inspection_id}/engineering-view/height-roi",
+            params={"x": 0, "y": 0, "width": 0, "height": 1},
+        )
+        after_counts = asyncio.run(_side_effect_counts(application))
+        after_tree = _runtime_tree(application.state.runtime_paths.root)
+
+    decoded = decode_height_values(height_source)
+    expected = []
+    for row in range(3, 5):
+        offset = row * decoded.metadata.width + 2
+        expected.extend(decoded.values[offset : offset + 4])
+    payload = response.json()
+    assert response.status_code == 200, response.text
+    assert payload["request_id"] == "height-roi-statistics"
+    assert payload["x"] == 2 and payload["y"] == 3
+    assert payload["width"] == 4 and payload["height"] == 2
+    assert payload["storage_data_type"] == "float32"
+    assert payload["native_min"] == min(expected)
+    assert payload["native_max"] == max(expected)
+    assert payload["native_mean"] == pytest.approx(sum(expected) / len(expected))
+    assert payload["valid_count"] == len(expected)
+    assert payload["invalid_count"] == 0
+    assert payload["physical_unit"] is None
+    assert outside.status_code == 422
+    assert outside.json()["code"] == "ENGINEERING_HEIGHT_ROI_OUT_OF_BOUNDS"
+    assert empty.status_code == 422
+    assert empty.json()["code"] == "ENGINEERING_HEIGHT_ROI_OUT_OF_BOUNDS"
+    assert before_counts == after_counts
+    assert before_tree == after_tree
+
+
 def test_previews_are_browser_pngs_generated_in_memory_without_file_changes(tmp_path):
     application, fixtures = _application(tmp_path)
     with TestClient(application) as client:

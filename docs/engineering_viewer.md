@@ -23,6 +23,7 @@ The default is `false`. When disabled, viewer routes return the safe
 - `GET /api/v1/inspections/{id}/engineering-view/rgb-preview`
 - `GET /api/v1/inspections/{id}/engineering-view/height-preview`
 - `GET /api/v1/inspections/{id}/engineering-view/sample?rgb_x=0&rgb_y=0&height_x=0&height_y=0`
+- `GET /api/v1/inspections/{id}/engineering-view/height-roi?x=0&y=0&width=8&height=8`
 
 The metadata response includes registered integrity identity, native raster metadata,
 finite native-height min/max, valid/invalid counts, a fixed 64-bin histogram,
@@ -59,9 +60,10 @@ SHA-256 and byte size are streamed and compared with database registration befor
 decode.
 
 Viewer requests do not write files or database rows, append audit events, execute
-validation, run preprocessing, or invoke inference. The optional height ROI endpoint
-is intentionally deferred; the current surface provides only strictly bounded point
-sampling and whole-image 64-bin statistics.
+validation, run preprocessing, or invoke inference. The bounded height ROI endpoint
+accepts a positive in-bounds rectangle of at most 1,048,576 pixels and returns native
+finite min/max/mean and valid/invalid counts. It does not convert values to physical
+units or generate a persistent measurement record.
 
 ## Vision engineering workspace
 
@@ -78,6 +80,29 @@ It adapts to desktop, laptop, and tablet widths without changing coordinate sema
 The canvas never treats the derived preview as native height data, never invents a
 physical unit, and never calls a validation or processing endpoint.
 
+### Session-only alignment and measurements
+
+The workspace provides development-only translation X/Y, rotation, scale X/Y,
+overlay opacity, and a visible 3x3 affine matrix. Alignment is applied only to the
+rendered height layer. It is React browser state: reload, route change, or closing
+the page clears it. The frontend does not send alignment to the backend and does not
+claim automatic or production registration.
+
+An operator can pair explicit RGB and height correspondence pixels. Per-pair, mean,
+and maximum residuals are calculated in pixels. An optional translation suggestion
+is displayed and must be applied explicitly; it is never automatic registration.
+Point, rectangle, and line tools retain separate RGB/height coordinate spaces.
+Rectangle width, height, and area and line distance are pixel measurements. Height
+rectangles may read bounded native-value statistics from the read-only ROI endpoint.
+No millimetre or micrometre conversion is performed.
+
+**Export alignment JSON** downloads the versioned
+`pcb-aoi-development-alignment/1.0` contract using the deterministic filename
+`inspection-{id}-development-alignment.json`. It is generated entirely in the
+browser and contains no paths, request ID, confidence, or fabricated physical units.
+The contract always records `development_only=true` and
+`production_approved=false`.
+
 ## Tests
 
 From the repository root:
@@ -90,6 +115,8 @@ From the repository root:
   .\backend\tests\test_inspection_processing_api.py -q
 Set-Location .\frontend
 npm run test:run -- src/pages/EngineeringViewPage.test.tsx
+npm run test:run -- src/utils/engineeringSession.test.ts
 npm run test:run
 npm run build
+npm run test:e2e
 ```

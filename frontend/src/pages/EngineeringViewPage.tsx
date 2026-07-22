@@ -1,16 +1,30 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { engineeringPreviewUrl, getEngineeringSample, getEngineeringView } from '../api/engineeringViewer'
+import { engineeringPreviewUrl, getEngineeringHeightRoi, getEngineeringSample, getEngineeringView } from '../api/engineeringViewer'
 import { toApiClientError, type ApiClientError } from '../api/errors'
 import type { EngineeringRasterMetadata, EngineeringSampleResponse, EngineeringViewResponse } from '../api/types'
 import { ErrorPanel } from '../components/ErrorPanel'
 import { StatusBadge } from '../components/StatusBadge'
 import { formatBytes } from '../utils/format'
+import {
+  DEFAULT_ALIGNMENT,
+  affineMatrix,
+  alignmentExportFilename,
+  buildAlignmentExport,
+  correspondenceResidual,
+  cssAffineMatrix,
+  residualSummary,
+  suggestedTranslation,
+  type CorrespondencePoint,
+  type EngineeringRoi,
+  type PixelPoint,
+  type SessionAlignment,
+} from '../utils/engineeringSession'
 
 const CANONICAL_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const VIEW_MODES = ['RGB', 'Height', 'Side-by-side', 'Alpha overlay', 'Split comparison'] as const
 type ViewMode = (typeof VIEW_MODES)[number]
-type CanvasTool = 'pan' | 'crosshair'
+type CanvasTool = 'pan' | 'crosshair' | 'point' | 'rectangle' | 'line'
 
 interface CoordinateState {
   rgbX: number
@@ -52,17 +66,37 @@ function EvidenceImage({
   metadata,
   crosshair,
   showCrosshair,
+  rois,
+  alignmentTransform,
 }: {
   kind: 'RGB' | 'Height'
   src: string
   metadata: EngineeringRasterMetadata
   crosshair: { x: number; y: number }
   showCrosshair: boolean
+  rois: EngineeringRoi[]
+  alignmentTransform?: string
 }) {
+  const strokeWidth = Math.max(metadata.width, metadata.height) / 200
   return (
-    <div className={`engineering-image-frame engineering-image-${kind.toLowerCase()}`} data-evidence-kind={kind}>
+    <div
+      className={`engineering-image-frame engineering-image-${kind.toLowerCase()}`}
+      data-evidence-kind={kind}
+      data-testid={`${kind.toLowerCase()}-evidence-frame`}
+      style={alignmentTransform ? { transform: alignmentTransform, transformOrigin: 'center' } : undefined}
+    >
       <span className="engineering-image-label">{kind} · {metadata.width} x {metadata.height}</span>
-      <img src={src} alt={`${kind} evidence preview`} draggable={false} />
+      <div className="engineering-raster-layer" style={{ aspectRatio: `${metadata.width} / ${metadata.height}` }}>
+        <img src={src} alt={`${kind} evidence preview`} draggable={false} />
+        <svg className="engineering-roi-overlay" viewBox={`0 0 ${metadata.width} ${metadata.height}`} aria-label={`${kind} measurements`}>
+          <title>{kind} session measurements</title>
+          {rois.filter((roi) => roi.coordinateSpace === kind.toUpperCase()).map((roi) => {
+            if (roi.kind === 'POINT') return <circle key={roi.id} cx={roi.x + 0.5} cy={roi.y + 0.5} r={strokeWidth * 1.8} data-roi-id={roi.id} />
+            if (roi.kind === 'RECTANGLE') return <rect key={roi.id} x={roi.x} y={roi.y} width={roi.width} height={roi.height} data-roi-id={roi.id} />
+            return <line key={roi.id} x1={roi.x1 + 0.5} y1={roi.y1 + 0.5} x2={roi.x2 + 0.5} y2={roi.y2 + 0.5} data-roi-id={roi.id} />
+          })}
+        </svg>
+      </div>
       {showCrosshair && <Crosshair x={crosshair.x} y={crosshair.y} />}
     </div>
   )
@@ -131,7 +165,16 @@ export function EngineeringViewPage() {
   const [sample, setSample] = useState<EngineeringSampleResponse | null>(null)
   const [sampleError, setSampleError] = useState<ApiClientError | null>(null)
   const [sampling, setSampling] = useState(false)
+  const [alignment, setAlignment] = useState<SessionAlignment>(DEFAULT_ALIGNMENT)
+  const [correspondences, setCorrespondences] = useState<CorrespondencePoint[]>([])
+  const [pendingRgbPoint, setPendingRgbPoint] = useState<PixelPoint | null>(null)
+  const [pendingHeightPoint, setPendingHeightPoint] = useState<PixelPoint | null>(null)
+  const [roiSpace, setRoiSpace] = useState<'RGB' | 'HEIGHT'>('RGB')
+  const [rois, setRois] = useState<EngineeringRoi[]>([])
+  const [roiError, setRoiError] = useState<ApiClientError | null>(null)
+  const [roiLoading, setRoiLoading] = useState(false)
   const drag = useRef<{ clientX: number; clientY: number; panX: number; panY: number } | null>(null)
+  const roiStart = useRef<PixelPoint | null>(null)
 
   const load = useCallback(async (signal?: AbortSignal) => {
     if (!validId) return
@@ -153,6 +196,15 @@ export function EngineeringViewPage() {
     void load(controller.signal)
     return () => controller.abort()
   }, [load])
+
+  useEffect(() => {
+    setAlignment(DEFAULT_ALIGNMENT)
+    setCorrespondences([])
+    setPendingRgbPoint(null)
+    setPendingHeightPoint(null)
+    setRois([])
+    setRoiError(null)
+  }, [inspectionId])
 
   if (!validId) {
     return <section className="not-found" role="alert"><p className="eyebrow">Invalid route parameter</p><h2>Malformed inspection ID</h2><p>The engineering-view route requires a lowercase, hyphenated UUID.</p><Link className="button secondary" to="/">Return to inspection history</Link></section>
@@ -178,7 +230,41 @@ export function EngineeringViewPage() {
     y: Math.min(1, Math.max(-1, current.y + y)),
   }))
 
+  const pointerToNativePoint = (event: ReactPointerEvent<HTMLDivElement>): PixelPoint | null => {
+    if (!view) return null
+    const frame = event.currentTarget.querySelector<HTMLElement>(`.engineering-image-${roiSpace.toLowerCase()} .engineering-raster-layer`)
+    if (!frame) return null
+    const bounds = frame.getBoundingClientRect()
+    if (!bounds.width || !bounds.height) return null
+    const metadata = roiSpace === 'RGB' ? view.rgb : view.height
+    const x = Math.floor(((event.clientX - bounds.left) / bounds.width) * metadata.width)
+    const y = Math.floor(((event.clientY - bounds.top) / bounds.height) * metadata.height)
+    if (x < 0 || y < 0 || x >= metadata.width || y >= metadata.height) return null
+    return { x, y }
+  }
+
+  const addPointMeasurement = (point: PixelPoint) => {
+    setRois((current) => [...current, {
+      id: `M${current.length + 1}`,
+      kind: 'POINT',
+      coordinateSpace: roiSpace,
+      ...point,
+    }])
+  }
+
   const pointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (tool === 'point') {
+      const point = pointerToNativePoint(event)
+      if (point) addPointMeasurement(point)
+      return
+    }
+    if (tool === 'rectangle' || tool === 'line') {
+      const point = pointerToNativePoint(event)
+      if (!point) return
+      roiStart.current = point
+      event.currentTarget.setPointerCapture?.(event.pointerId)
+      return
+    }
     if (tool !== 'pan') return
     event.currentTarget.setPointerCapture?.(event.pointerId)
     drag.current = { clientX: event.clientX, clientY: event.clientY, panX: pan.x, panY: pan.y }
@@ -193,6 +279,89 @@ export function EngineeringViewPage() {
       x: Math.min(1, Math.max(-1, drag.current.panX + (event.clientX - drag.current.clientX) / width)),
       y: Math.min(1, Math.max(-1, drag.current.panY + (event.clientY - drag.current.clientY) / height)),
     })
+  }
+
+  const pointerUp = async (event: ReactPointerEvent<HTMLDivElement>) => {
+    drag.current = null
+    const start = roiStart.current
+    roiStart.current = null
+    if (!start || (tool !== 'rectangle' && tool !== 'line')) return
+    const end = pointerToNativePoint(event)
+    if (!end) return
+    setRoiError(null)
+    if (tool === 'line') {
+      setRois((current) => [...current, {
+        id: `M${current.length + 1}`,
+        kind: 'LINE',
+        coordinateSpace: roiSpace,
+        x1: start.x,
+        y1: start.y,
+        x2: end.x,
+        y2: end.y,
+        distancePixels: Number(Math.hypot(end.x - start.x, end.y - start.y).toFixed(4)),
+      }])
+      return
+    }
+    const rectangle = {
+      x: Math.min(start.x, end.x),
+      y: Math.min(start.y, end.y),
+      width: Math.abs(end.x - start.x) + 1,
+      height: Math.abs(end.y - start.y) + 1,
+    }
+    let nativeHeightStatistics: Extract<EngineeringRoi, { kind: 'RECTANGLE' }>['nativeHeightStatistics']
+    if (roiSpace === 'HEIGHT') {
+      setRoiLoading(true)
+      try {
+        const response = await getEngineeringHeightRoi(inspectionId, rectangle)
+        nativeHeightStatistics = {
+          nativeMin: response.data.native_min,
+          nativeMax: response.data.native_max,
+          nativeMean: response.data.native_mean,
+          validCount: response.data.valid_count,
+          invalidCount: response.data.invalid_count,
+          storageDataType: response.data.storage_data_type,
+        }
+      } catch (caught) {
+        setRoiError(toApiClientError(caught))
+        setRoiLoading(false)
+        return
+      }
+      setRoiLoading(false)
+    }
+    setRois((current) => [...current, {
+      id: `M${current.length + 1}`,
+      kind: 'RECTANGLE',
+      coordinateSpace: roiSpace,
+      ...rectangle,
+      nativeHeightStatistics,
+    }])
+  }
+
+  const addCorrespondencePoint = (space: 'RGB' | 'HEIGHT') => {
+    const point = space === 'RGB'
+      ? { x: coordinates.rgbX, y: coordinates.rgbY }
+      : { x: coordinates.heightX, y: coordinates.heightY }
+    const rgb = space === 'RGB' ? point : pendingRgbPoint
+    const height = space === 'HEIGHT' ? point : pendingHeightPoint
+    if (rgb && height) {
+      setCorrespondences((current) => [...current, { id: `P${current.length + 1}`, rgb, height }])
+      setPendingRgbPoint(null)
+      setPendingHeightPoint(null)
+    } else if (space === 'RGB') {
+      setPendingRgbPoint(point)
+    } else {
+      setPendingHeightPoint(point)
+    }
+  }
+
+  const exportAlignment = () => {
+    const payload = buildAlignmentExport(inspectionId, alignment, correspondences, rois, overlayOpacity)
+    const url = URL.createObjectURL(new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: 'application/json' }))
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = alignmentExportFilename(inspectionId)
+    anchor.click()
+    URL.revokeObjectURL(url)
   }
 
   const sampleCoordinates = async (event: FormEvent) => {
@@ -223,9 +392,12 @@ export function EngineeringViewPage() {
   const heightCrosshair = { x: ((coordinates.heightX + 0.5) / view.height.width) * 100, y: ((coordinates.heightY + 0.5) / view.height.height) * 100 }
   const showCrosshair = tool === 'crosshair'
   const transform = `translate(${pan.x * 100}%, ${pan.y * 100}%) scale(${zoom})`
+  const matrix = affineMatrix(alignment)
+  const residuals = residualSummary(correspondences, alignment)
+  const translationSuggestion = suggestedTranslation(correspondences, alignment)
 
-  const rgbImage = <EvidenceImage kind="RGB" src={rgbUrl} metadata={view.rgb} crosshair={rgbCrosshair} showCrosshair={showCrosshair} />
-  const heightImage = <EvidenceImage kind="Height" src={heightUrl} metadata={view.height} crosshair={heightCrosshair} showCrosshair={showCrosshair} />
+  const rgbImage = <EvidenceImage kind="RGB" src={rgbUrl} metadata={view.rgb} crosshair={rgbCrosshair} showCrosshair={showCrosshair} rois={rois} />
+  const heightImage = <EvidenceImage kind="Height" src={heightUrl} metadata={view.height} crosshair={heightCrosshair} showCrosshair={showCrosshair} rois={rois} alignmentTransform={cssAffineMatrix(alignment)} />
 
   return (
     <section className="engineering-page" aria-labelledby="engineering-workspace-title">
@@ -268,6 +440,9 @@ export function EngineeringViewPage() {
             <span className="toolbar-separator" aria-hidden="true" />
             <button type="button" aria-pressed={tool === 'pan'} onClick={() => setTool('pan')}>Pan</button>
             <button type="button" aria-pressed={tool === 'crosshair'} onClick={() => setTool('crosshair')}>Shared crosshair</button>
+            <button type="button" aria-pressed={tool === 'point'} onClick={() => setTool('point')}>Point</button>
+            <button type="button" aria-pressed={tool === 'rectangle'} onClick={() => setTool('rectangle')}>Rectangle</button>
+            <button type="button" aria-pressed={tool === 'line'} onClick={() => setTool('line')}>Line</button>
             <div className="pan-nudges" aria-label="Pan position controls">
               <button type="button" onClick={() => movePan(-0.05, 0)} aria-label="Pan left">←</button>
               <button type="button" onClick={() => movePan(0, -0.05)} aria-label="Pan up">↑</button>
@@ -283,12 +458,13 @@ export function EngineeringViewPage() {
           )}
           <div
             className={`vision-canvas tool-${tool} scale-${scaleMode}`}
+            data-testid="vision-canvas"
             data-view-mode={mode}
             data-pan={`${pan.x.toFixed(2)},${pan.y.toFixed(2)}`}
             onPointerDown={pointerDown}
             onPointerMove={pointerMove}
-            onPointerUp={() => { drag.current = null }}
-            onPointerCancel={() => { drag.current = null }}
+            onPointerUp={(event) => void pointerUp(event)}
+            onPointerCancel={() => { drag.current = null; roiStart.current = null }}
           >
             <div className="vision-canvas-grid" aria-hidden="true" />
             <div className="vision-transform-surface" style={{ transform }}>
@@ -327,6 +503,56 @@ export function EngineeringViewPage() {
             {sampleError && <div className="sample-error" role="alert"><strong>{sampleError.code}</strong><span>{sampleError.message}</span></div>}
             {sample && <div className="sample-result" aria-live="polite"><dl className="engineering-definition-list"><div><dt>RGB [{sample.rgb.x}, {sample.rgb.y}]</dt><dd className="mono">[{sample.rgb.values.join(', ')}]</dd></div><div><dt>RGB type</dt><dd>{sample.rgb.storage_data_type ?? 'Not reported'}</dd></div><div><dt>Height [{sample.height.x}, {sample.height.y}]</dt><dd className="mono">{sample.height.value === null ? 'Invalid / NaN' : sample.height.value}</dd></div><div><dt>Height type</dt><dd>{sample.height.storage_data_type ?? 'Not reported'}</dd></div><div><dt>Physical unit</dt><dd>Unavailable</dd></div><div><dt>Validity</dt><dd>{sample.height.valid ? 'Valid' : 'Invalid'}</dd></div></dl></div>}
           </form>
+
+          <section className="engineering-session-panel" aria-labelledby="session-alignment-title">
+            <div className="subpanel-heading"><h4 id="session-alignment-title">Session alignment</h4><span>Not persisted</span></div>
+            <p className="engineering-panel-note">Development-only visual alignment. It is cleared when this page reloads and never updates inspection evidence.</p>
+            <div className="alignment-control-grid">
+              <label>Translation X (pixels)<input type="number" value={alignment.translationX} onChange={(event) => setAlignment((current) => ({ ...current, translationX: Number(event.target.value) }))} /></label>
+              <label>Translation Y (pixels)<input type="number" value={alignment.translationY} onChange={(event) => setAlignment((current) => ({ ...current, translationY: Number(event.target.value) }))} /></label>
+              <label>Rotation (degrees)<input type="number" step="0.1" value={alignment.rotationDegrees} onChange={(event) => setAlignment((current) => ({ ...current, rotationDegrees: Number(event.target.value) }))} /></label>
+              <label>Scale X<input type="number" min="0.01" step="0.01" value={alignment.scaleX} onChange={(event) => setAlignment((current) => ({ ...current, scaleX: Math.max(0.01, Number(event.target.value)) }))} /></label>
+              <label>Scale Y<input type="number" min="0.01" step="0.01" value={alignment.scaleY} onChange={(event) => setAlignment((current) => ({ ...current, scaleY: Math.max(0.01, Number(event.target.value)) }))} /></label>
+              <label>Overlay opacity<input type="range" min="0" max="100" value={overlayOpacity} onChange={(event) => setOverlayOpacity(Number(event.target.value))} /><output>{overlayOpacity}%</output></label>
+            </div>
+            <button type="button" className="button secondary" onClick={() => setAlignment(DEFAULT_ALIGNMENT)}>Reset alignment</button>
+            <div className="affine-matrix" role="table" aria-label="3 by 3 affine matrix">
+              {matrix.flatMap((row, rowIndex) => row.map((value, columnIndex) => (
+                <output key={`${rowIndex}-${columnIndex}`} role="cell" data-testid={`matrix-${rowIndex}-${columnIndex}`}>{value}</output>
+              )))}
+            </div>
+
+            <div className="subpanel-heading correspondence-heading"><h4>Correspondence points</h4><span>Pixel residuals</span></div>
+            <div className="correspondence-actions">
+              <button type="button" onClick={() => addCorrespondencePoint('RGB')}>Add RGB point</button>
+              <button type="button" onClick={() => addCorrespondencePoint('HEIGHT')}>Add height point</button>
+              <button type="button" disabled={!correspondences.length && !pendingRgbPoint && !pendingHeightPoint} onClick={() => { setCorrespondences([]); setPendingRgbPoint(null); setPendingHeightPoint(null) }}>Clear correspondence points</button>
+            </div>
+            {(pendingRgbPoint || pendingHeightPoint) && <p className="engineering-panel-note" aria-live="polite">Pending {pendingRgbPoint ? `RGB (${pendingRgbPoint.x}, ${pendingRgbPoint.y})` : `height (${pendingHeightPoint!.x}, ${pendingHeightPoint!.y})`} point; add the matching coordinate.</p>}
+            {correspondences.length ? (
+              <ul className="correspondence-list">
+                {correspondences.map((point) => <li key={point.id}><span><strong>{point.id}</strong> RGB ({point.rgb.x}, {point.rgb.y}) / height ({point.height.x}, {point.height.y})</span><span>Pixel residual: <output>{correspondenceResidual(point, alignment)}</output> px</span><button type="button" aria-label={`Remove ${point.id}`} onClick={() => setCorrespondences((current) => current.filter((item) => item.id !== point.id))}>Remove</button></li>)}
+              </ul>
+            ) : <p className="engineering-empty-inline">No correspondence pairs in this browser session.</p>}
+            <dl className="engineering-definition-list compact residual-summary">
+              <div><dt>Mean residual</dt><dd>{residuals.meanPixels === null ? 'Unavailable' : `${residuals.meanPixels} px`}</dd></div>
+              <div><dt>Maximum residual</dt><dd>{residuals.maximumPixels === null ? 'Unavailable' : `${residuals.maximumPixels} px`}</dd></div>
+            </dl>
+            {translationSuggestion && <div className="translation-suggestion"><span>Suggested translation: X {translationSuggestion.x}px, Y {translationSuggestion.y}px</span><button type="button" onClick={() => setAlignment((current) => ({ ...current, translationX: translationSuggestion.x, translationY: translationSuggestion.y }))}>Apply translation suggestion</button></div>}
+            <button type="button" className="button secondary export-alignment" onClick={exportAlignment}>Export alignment JSON</button>
+          </section>
+
+          <section className="engineering-session-panel" aria-labelledby="measurement-tools-title">
+            <div className="subpanel-heading"><h4 id="measurement-tools-title">Pixel measurement tools</h4><span>Session only</span></div>
+            <label>Measurement coordinate space<select value={roiSpace} onChange={(event) => setRoiSpace(event.target.value as 'RGB' | 'HEIGHT')}><option value="RGB">RGB</option><option value="HEIGHT">Height</option></select></label>
+            <p className="engineering-panel-note">Choose Point, Rectangle, or Line above, then draw on the selected native raster. Values stay in pixels; height rectangles request bounded native-value statistics.</p>
+            {roiLoading && <p role="status">Calculating native height statistics...</p>}
+            {roiError && <div className="sample-error" role="alert"><strong>{roiError.code}</strong><span>{roiError.message}</span></div>}
+            <div className="measurement-heading"><strong>Measurements</strong><button type="button" disabled={!rois.length} onClick={() => setRois([])}>Clear measurements</button></div>
+            {rois.length ? <ul className="measurement-list">
+              {rois.map((roi) => <li key={roi.id} data-measurement-kind={roi.kind}><div><strong>{roi.id} - {roi.coordinateSpace} {roi.kind.toLowerCase()}</strong>{roi.kind === 'POINT' && <span>({roi.x}, {roi.y}) px</span>}{roi.kind === 'RECTANGLE' && <span>{roi.width} x {roi.height} px; area {roi.width * roi.height} px^2</span>}{roi.kind === 'LINE' && <span>({roi.x1}, {roi.y1}) to ({roi.x2}, {roi.y2}); distance {roi.distancePixels} px</span>}{roi.kind === 'RECTANGLE' && roi.nativeHeightStatistics && <span>Native height min {roi.nativeHeightStatistics.nativeMin}, max {roi.nativeHeightStatistics.nativeMax}, mean {roi.nativeHeightStatistics.nativeMean} ({roi.nativeHeightStatistics.storageDataType ?? 'native type unavailable'}; {roi.nativeHeightStatistics.validCount} valid / {roi.nativeHeightStatistics.invalidCount} invalid)</span>}</div><button type="button" aria-label={`Remove ${roi.id}`} onClick={() => setRois((current) => current.filter((item) => item.id !== roi.id))}>Remove</button></li>)}
+            </ul> : <p className="engineering-empty-inline">No pixel measurements in this browser session.</p>}
+          </section>
         </aside>
       </div>
 

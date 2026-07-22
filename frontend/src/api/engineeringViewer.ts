@@ -1,5 +1,5 @@
 import { apiRequest, resolveApiUrl, type ApiResponse } from './client'
-import type { EngineeringSampleResponse, EngineeringViewResponse } from './types'
+import type { EngineeringHeightRoiResponse, EngineeringSampleResponse, EngineeringViewResponse } from './types'
 
 export function getEngineeringView(
   inspectionId: string,
@@ -24,4 +24,18 @@ export function getEngineeringSample(
 
 export function engineeringPreviewUrl(inspectionId: string, kind: 'rgb' | 'height'): string {
   return resolveApiUrl(`/api/v1/inspections/${inspectionId}/engineering-view/${kind}-preview`)
+}
+
+export function getEngineeringHeightRoi(
+  inspectionId: string,
+  roi: { x: number; y: number; width: number; height: number },
+  signal?: AbortSignal,
+): Promise<ApiResponse<EngineeringHeightRoiResponse>> {
+  const query = new URLSearchParams({
+    x: String(roi.x),
+    y: String(roi.y),
+    width: String(roi.width),
+    height: String(roi.height),
+  })
+  return apiRequest(`/api/v1/inspections/${inspectionId}/engineering-view/height-roi?${query}`, { signal })
 }

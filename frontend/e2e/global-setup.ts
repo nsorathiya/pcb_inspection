@@ -64,6 +64,8 @@ export default async function globalSetup(): Promise<void> {
       PCB_AOI_ENVIRONMENT: 'synthetic-e2e-development',
       PCB_AOI_RUNTIME_ROOT: runtimeRoot,
       PCB_AOI_LOG_LEVEL: 'WARNING',
+      PCB_AOI_ENABLE_DEMO_WORKSPACE: 'true',
+      PCB_AOI_ENABLE_ENGINEERING_VIEWER: 'true',
       PCB_AOI_ENABLE_SYNTHETIC_PROCESSING_API: 'true',
       PCB_AOI_SYNTHETIC_FIXTURE_ROOT: fixtureRoot,
       PCB_AOI_E2E_BACKEND_HOST: '127.0.0.1',

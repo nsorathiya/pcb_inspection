@@ -40,6 +40,7 @@ from app.testing.synthetic_aoi.raster_generation import encode_png
 
 HISTOGRAM_BIN_COUNT = 64
 MAX_ENGINEERING_PIXEL_COUNT = 16_777_216
+MAX_ENGINEERING_ROI_PIXEL_COUNT = 1_048_576
 
 SAFE_ENGINEERING_WARNINGS = (
     "DEVELOPMENT_ENGINEERING_VIEW_ONLY",
@@ -78,6 +79,10 @@ class EngineeringRasterTooLargeError(EngineeringViewerError):
 
 
 class EngineeringSampleBoundsError(EngineeringViewerError):
+    pass
+
+
+class EngineeringRoiBoundsError(EngineeringViewerError):
     pass
 
 
@@ -172,6 +177,23 @@ class EngineeringSample:
     inspection_id: str
     rgb: SampleValue
     height: SampleValue
+    warnings: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class EngineeringHeightRoiStatistics:
+    inspection_id: str
+    x: int
+    y: int
+    width: int
+    height: int
+    storage_data_type: str | None
+    native_min: int | float
+    native_max: int | float
+    native_mean: float
+    valid_count: int
+    invalid_count: int
+    physical_unit: None
     warnings: tuple[str, ...]
 
 
@@ -286,6 +308,43 @@ class EngineeringViewerService:
                 valid=height_valid,
                 physical_unit=None,
             ),
+            warnings=SAFE_ENGINEERING_WARNINGS,
+        )
+
+    async def height_roi_statistics(
+        self,
+        inspection_id: str,
+        *,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+    ) -> EngineeringHeightRoiStatistics:
+        pair = await self._verified_pair(inspection_id)
+        self._assert_height_roi(pair.height, x, y, width, height)
+        values: list[int | float] = []
+        raster_width = pair.height.metadata.width
+        for row in range(y, y + height):
+            offset = row * raster_width + x
+            values.extend(pair.height.values[offset : offset + width])
+        valid = [value for value in values if self._is_valid_height(value)]
+        if not valid:
+            raise EngineeringFormatUnsupportedError(
+                "height ROI contains no finite native values"
+            )
+        return EngineeringHeightRoiStatistics(
+            inspection_id=inspection_id,
+            x=x,
+            y=y,
+            width=width,
+            height=height,
+            storage_data_type=pair.height.metadata.storage_data_type,
+            native_min=min(valid),
+            native_max=max(valid),
+            native_mean=sum(float(value) for value in valid) / len(valid),
+            valid_count=len(valid),
+            invalid_count=len(values) - len(valid),
+            physical_unit=None,
             warnings=SAFE_ENGINEERING_WARNINGS,
         )
 
@@ -515,6 +574,30 @@ class EngineeringViewerService:
         ):
             raise EngineeringSampleBoundsError(
                 f"{label} sample coordinates are outside the raster bounds"
+            )
+
+    @staticmethod
+    def _assert_height_roi(
+        raster: DecodedRaster,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+    ) -> None:
+        values = (x, y, width, height)
+        if any(isinstance(value, bool) for value in values):
+            raise EngineeringRoiBoundsError("height ROI values must be integers")
+        if (
+            x < 0
+            or y < 0
+            or width <= 0
+            or height <= 0
+            or width * height > MAX_ENGINEERING_ROI_PIXEL_COUNT
+            or x + width > raster.metadata.width
+            or y + height > raster.metadata.height
+        ):
+            raise EngineeringRoiBoundsError(
+                "height ROI is outside bounds or exceeds the bounded pixel limit"
             )
 
     async def _persisted_evidence(

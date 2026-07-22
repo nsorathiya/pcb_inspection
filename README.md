@@ -102,7 +102,10 @@ inference, or production approval. See
 
 The backend also provides an optional disabled-by-default read-only engineering
 viewer for integrity-verified synthetic RGB/native-height metadata, derived in-memory
-previews, and native point sampling. When enabled, open an inspection's
+previews, native point/ROI sampling, and client-only pixel alignment and measurement
+tools. Session alignment and correspondence points are cleared on reload and are never
+persisted; exported JSON is explicitly development-only and never production-approved.
+When enabled, open an inspection's
 `/inspections/{id}/engineering-view` frontend route for the responsive 2D/3D vision
 engineering workspace. See
 [docs/engineering_viewer.md](docs/engineering_viewer.md).

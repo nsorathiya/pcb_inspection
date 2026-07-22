@@ -15,6 +15,7 @@ from app.services.engineering_viewer import (
     EngineeringFormatUnsupportedError,
     EngineeringInspectionNotFoundError,
     EngineeringRasterTooLargeError,
+    EngineeringRoiBoundsError,
     EngineeringSampleBoundsError,
     EngineeringViewerDisabledError,
     EngineeringViewerService,
@@ -113,6 +114,23 @@ class EngineeringSampleResponse(BaseModel):
     request_id: str
 
 
+class EngineeringHeightRoiStatisticsResponse(BaseModel):
+    inspection_id: str
+    x: int
+    y: int
+    width: int
+    height: int
+    storage_data_type: str | None
+    native_min: int | float
+    native_max: int | float
+    native_mean: float
+    valid_count: int
+    invalid_count: int
+    physical_unit: None
+    warnings: list[str]
+    request_id: str
+
+
 def _canonical_inspection_id(value: str) -> str:
     try:
         parsed = UUID(value)
@@ -169,6 +187,12 @@ def _map_error(error: Exception) -> ApiError:
             422,
             "ENGINEERING_SAMPLE_OUT_OF_BOUNDS",
             "RGB or height sample coordinates are outside their respective raster bounds.",
+        )
+    if isinstance(error, EngineeringRoiBoundsError):
+        return ApiError(
+            422,
+            "ENGINEERING_HEIGHT_ROI_OUT_OF_BOUNDS",
+            "The height ROI is outside raster bounds or exceeds the bounded pixel limit.",
         )
     if isinstance(error, EngineeringEvidenceReadError):
         return ApiError(
@@ -313,5 +337,49 @@ async def get_engineering_sample(
             physical_unit=None,
         ),
         warnings=list(sample.warnings),
+        request_id=request.state.request_id,
+    )
+
+
+@router.get(
+    "/inspections/{inspection_id}/engineering-view/height-roi",
+    response_model=EngineeringHeightRoiStatisticsResponse,
+    responses={
+        400: {"model": ApiErrorResponse},
+        404: {"model": ApiErrorResponse},
+        409: {"model": ApiErrorResponse},
+        413: {"model": ApiErrorResponse},
+        422: {"model": ApiErrorResponse},
+        500: {"model": ApiErrorResponse},
+    },
+    summary="Read bounded native height ROI statistics",
+    description=(
+        "Verifies the registered artifact pair, then calculates native min, max, "
+        "mean, and valid/invalid counts for a bounded rectangular height ROI. "
+        "It does not persist the ROI, create audit records, or fabricate units."
+    ),
+)
+async def get_engineering_height_roi(
+    inspection_id: str,
+    request: Request,
+    x: int,
+    y: int,
+    width: int,
+    height: int,
+) -> EngineeringHeightRoiStatisticsResponse:
+    canonical_id = _canonical_inspection_id(inspection_id)
+    service: EngineeringViewerService = request.app.state.engineering_viewer
+    statistics = await _call(
+        request,
+        service.height_roi_statistics(
+            canonical_id,
+            x=x,
+            y=y,
+            width=width,
+            height=height,
+        ),
+    )
+    return EngineeringHeightRoiStatisticsResponse(
+        **asdict(statistics),
         request_id=request.state.request_id,
     )
