@@ -295,6 +295,7 @@ $env:PCB_AOI_MAX_MASK_BYTES = "67108864"
 $env:PCB_AOI_MAX_CALIBRATION_BYTES = "5242880"
 $env:PCB_AOI_MAX_GENERATED_ARTIFACT_BYTES = "52428800"
 $env:PCB_AOI_ENABLE_DEMO_WORKSPACE = "false"
+$env:PCB_AOI_ENABLE_ENGINEERING_VIEWER = "false"
 $env:PCB_AOI_ENABLE_SYNTHETIC_PROCESSING_API = "false"
 $env:PCB_AOI_SYNTHETIC_FIXTURE_ROOT = ""
 ```
@@ -320,6 +321,7 @@ The supported variables are:
 | `PCB_AOI_MAX_CALIBRATION_BYTES` | `5242880` (5 MiB) |
 | `PCB_AOI_MAX_GENERATED_ARTIFACT_BYTES` | `52428800` (50 MiB) |
 | `PCB_AOI_ENABLE_DEMO_WORKSPACE` | `false` |
+| `PCB_AOI_ENABLE_ENGINEERING_VIEWER` | `false` |
 | `PCB_AOI_ENABLE_SYNTHETIC_PROCESSING_API` | `false` |
 | `PCB_AOI_SYNTHETIC_FIXTURE_ROOT` | Unset |
 
@@ -345,6 +347,14 @@ POST load action under `/api/v1/development/demo-workspace`, never deletes
 existing inspections, and does not require a schema change. See
 `docs/development_demo_workspace.md` for its exact synthetic outcomes, retry,
 concurrency, and safety behaviour.
+
+The read-only engineering viewer is independently disabled by default. Set
+`PCB_AOI_ENABLE_ENGINEERING_VIEWER=true` to expose integrity-verified metadata,
+in-memory derived PNG previews, and separate native RGB/height point sampling
+under `/api/v1/inspections/{id}/engineering-view`. Viewer requests cannot select
+paths or artifact IDs and do not write files, create audit events, or execute
+validation or processing. See `docs/engineering_viewer.md` for the supported
+synthetic formats and safety contract.
 
 `PCB_AOI_LOG_LEVEL` accepts `DEBUG`, `INFO`, `WARNING`, `ERROR`, or
 `CRITICAL`. The current `plain` format is readable development output with

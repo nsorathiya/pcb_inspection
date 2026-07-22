@@ -99,3 +99,8 @@ reprocessing, continuous polling, PDF generation, image previews, real
 inference, or production approval. See
 [docs/inspection_audit_api.md](docs/inspection_audit_api.md) and
 [docs/inspection_development_report.md](docs/inspection_development_report.md).
+
+The backend also provides an optional disabled-by-default read-only engineering
+viewer for integrity-verified synthetic RGB/native-height metadata, derived in-memory
+previews, and native point sampling. See
+[docs/engineering_viewer.md](docs/engineering_viewer.md).

@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     max_calibration_bytes: int = Field(default=5 * 1024 * 1024, gt=0)
     max_generated_artifact_bytes: int = Field(default=50 * 1024 * 1024, gt=0)
     enable_demo_workspace: bool = False
+    enable_engineering_viewer: bool = False
     enable_synthetic_processing_api: bool = False
     synthetic_fixture_root: Path | None = None
 

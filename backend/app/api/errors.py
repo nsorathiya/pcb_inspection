@@ -51,6 +51,10 @@ async def request_validation_error_handler(
         request.method == "GET"
         and request.url.path.rstrip("/").endswith("/recipes")
     )
+    is_engineering_view_query = (
+        request.method == "GET"
+        and "/engineering-view" in request.url.path
+    )
     payload = ApiErrorResponse(
         code=(
             "INCOMPLETE_OR_INVALID_MULTIPART_REQUEST"
@@ -64,7 +68,11 @@ async def request_validation_error_handler(
                     else (
                         "INVALID_RECIPE_CATALOGUE_QUERY"
                         if is_recipe_catalogue_query
-                        else "INVALID_VALIDATION_REQUEST"
+                        else (
+                            "INVALID_ENGINEERING_VIEW_QUERY"
+                            if is_engineering_view_query
+                            else "INVALID_VALIDATION_REQUEST"
+                        )
                     )
                 )
             )
@@ -81,7 +89,11 @@ async def request_validation_error_handler(
                     else (
                         "Recipe catalogue query parameters are invalid."
                         if is_recipe_catalogue_query
-                        else "The validation request body is missing or invalid."
+                        else (
+                            "Engineering-view query parameters are invalid."
+                            if is_engineering_view_query
+                            else "The validation request body is missing or invalid."
+                        )
                     )
                 )
             )

@@ -6,6 +6,7 @@ from fastapi.exceptions import RequestValidationError
 from app.api.errors import ApiError, api_error_handler, request_validation_error_handler
 from app.api.health import router as health_router
 from app.api.demo_workspace import router as demo_workspace_router
+from app.api.engineering_viewer import router as engineering_viewer_router
 from app.api.inspections import router as inspections_router
 from app.api.recipes import router as recipes_router
 from app.core.config import Settings, get_settings
@@ -49,6 +50,7 @@ from app.services.inspection_validation.policy_loader import (
 from app.services.recipe_catalogue import RecipeCatalogueService
 from app.services.inspection_report import InspectionReportRepository, InspectionReportService
 from app.services.demo_workspace import DemoWorkspaceService
+from app.services.engineering_viewer import EngineeringViewerService
 
 
 def create_app(
@@ -96,14 +98,15 @@ def create_app(
     # validation lifecycle.
     policy_loader.load(DEVELOPMENT_POLICY_ID, DEVELOPMENT_POLICY_VERSION)
     findings = FindingFactory()
+    artifact_retriever = DatabaseValidationArtifactRetriever(
+        repositories.inspections,
+        repositories.artifacts,
+    )
+    artifact_resolver = ManagedArtifactPathResolver(runtime_paths)
+    integrity_inspector = StreamingFilesystemIntegrityInspector(artifact_resolver)
     validation_engine = InspectionValidationService(
-        DatabaseValidationArtifactRetriever(
-            repositories.inspections,
-            repositories.artifacts,
-        ),
-        StreamingFilesystemIntegrityInspector(
-            ManagedArtifactPathResolver(runtime_paths)
-        ),
+        artifact_retriever,
+        integrity_inspector,
         PurposeSpecificNativeFormatInspector(findings),
         ContractValidationPolicyEvaluator(findings),
         findings,
@@ -163,6 +166,13 @@ def create_app(
         validation_reader=inspection_validation,
         processing_reader=inspection_processing,
     )
+    engineering_viewer = EngineeringViewerService(
+        enabled=application_settings.enable_engineering_viewer,
+        repositories=repositories,
+        resolver=artifact_resolver,
+        validation_reader=inspection_validation,
+        processing_reader=inspection_processing,
+    )
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -217,6 +227,7 @@ def create_app(
     application.state.inspection_report = inspection_report
     application.state.recipe_catalogue = recipe_catalogue
     application.state.demo_workspace = demo_workspace
+    application.state.engineering_viewer = engineering_viewer
     application.add_exception_handler(ApiError, api_error_handler)
     application.add_exception_handler(
         RequestValidationError,
@@ -237,6 +248,10 @@ def create_app(
     )
     application.include_router(
         demo_workspace_router,
+        prefix=application_settings.api_prefix,
+    )
+    application.include_router(
+        engineering_viewer_router,
         prefix=application_settings.api_prefix,
     )
     return application
