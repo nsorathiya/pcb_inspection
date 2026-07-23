@@ -4,7 +4,7 @@ import asyncio
 import math
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
+from typing import Literal, Sequence
 
 from app.db.models import ArtifactType, Inspection, InspectionArtifact
 from app.db.repositories import Repositories
@@ -41,6 +41,21 @@ from app.testing.synthetic_aoi.raster_generation import encode_png
 HISTOGRAM_BIN_COUNT = 64
 MAX_ENGINEERING_PIXEL_COUNT = 16_777_216
 MAX_ENGINEERING_ROI_PIXEL_COUNT = 1_048_576
+HEIGHT_PREVIEW_PALETTES = (
+    "grayscale",
+    "blue-yellow",
+    "viridis-like",
+    "high-contrast",
+)
+HeightPreviewPalette = Literal[
+    "grayscale",
+    "blue-yellow",
+    "viridis-like",
+    "high-contrast",
+]
+HEIGHT_PREVIEW_WARNING = (
+    "DISPLAY_RANGE_CHANGES_DERIVED_COLOUR_VIEW_ONLY_NATIVE_VALUES_UNCHANGED"
+)
 
 SAFE_ENGINEERING_WARNINGS = (
     "DEVELOPMENT_ENGINEERING_VIEW_ONLY",
@@ -83,6 +98,10 @@ class EngineeringSampleBoundsError(EngineeringViewerError):
 
 
 class EngineeringRoiBoundsError(EngineeringViewerError):
+    pass
+
+
+class EngineeringPreviewOptionsError(EngineeringViewerError):
     pass
 
 
@@ -202,6 +221,13 @@ class GeneratedPreview:
     content: bytes
     preview_kind: str
     transform: str
+    palette: str | None = None
+    native_min: int | float | None = None
+    native_max: int | float | None = None
+    display_min: int | float | None = None
+    display_max: int | float | None = None
+    show_invalid: bool | None = None
+    warning: str | None = None
 
 
 @dataclass(frozen=True)
@@ -268,10 +294,55 @@ class EngineeringViewerService:
         content = await asyncio.to_thread(self._rgb_preview_png, pair.rgb)
         return GeneratedPreview(content, "RGB", "NATIVE_VALUES_TO_8_BIT_RGB")
 
-    async def height_preview(self, inspection_id: str) -> GeneratedPreview:
+    async def height_preview(
+        self,
+        inspection_id: str,
+        *,
+        palette: str = "grayscale",
+        display_min: float | None = None,
+        display_max: float | None = None,
+        show_invalid: bool = False,
+    ) -> GeneratedPreview:
         pair = await self._verified_pair(inspection_id)
-        content = await asyncio.to_thread(self._height_preview_png, pair.height)
-        return GeneratedPreview(content, "HEIGHT", "NATIVE_MIN_MAX_GRAYSCALE")
+        selected_palette = self._validate_height_preview_options(
+            palette,
+            display_min,
+            display_max,
+        )
+        statistics = await asyncio.to_thread(
+            self._height_statistics,
+            pair.height.values,
+        )
+        selected_min = statistics.native_min if display_min is None else display_min
+        selected_max = statistics.native_max if display_max is None else display_max
+        content = await asyncio.to_thread(
+            self._height_preview_png,
+            pair.height,
+            selected_palette,
+            selected_min,
+            selected_max,
+            show_invalid,
+        )
+        transform = (
+            "NATIVE_MIN_MAX_GRAYSCALE"
+            if selected_palette == "grayscale"
+            and display_min is None
+            and display_max is None
+            and not show_invalid
+            else "DISPLAY_RANGE_COLOUR_MAPPING"
+        )
+        return GeneratedPreview(
+            content,
+            "HEIGHT",
+            transform,
+            palette=selected_palette,
+            native_min=statistics.native_min,
+            native_max=statistics.native_max,
+            display_min=selected_min,
+            display_max=selected_max,
+            show_invalid=show_invalid,
+            warning=HEIGHT_PREVIEW_WARNING,
+        )
 
     async def sample(
         self,
@@ -534,28 +605,117 @@ class EngineeringViewerService:
         )
 
     @classmethod
-    def _height_preview_png(cls, raster: DecodedRaster) -> bytes:
+    def _height_preview_png(
+        cls,
+        raster: DecodedRaster,
+        palette: HeightPreviewPalette = "grayscale",
+        display_min: int | float | None = None,
+        display_max: int | float | None = None,
+        show_invalid: bool = False,
+    ) -> bytes:
         valid = [value for value in raster.values if cls._is_valid_height(value)]
         if not valid:
             raise EngineeringFormatUnsupportedError(
                 "height raster contains no finite native values"
             )
-        low = float(min(valid))
-        high = float(max(valid))
+        low = float(min(valid) if display_min is None else display_min)
+        high = float(max(valid) if display_max is None else display_max)
         span = high - low
-        pixels = bytes(
-            0
-            if not cls._is_valid_height(value) or span == 0
-            else max(0, min(255, round((float(value) - low) * 255 / span)))
-            for value in raster.values
-        )
+        intensity = bytearray()
+        rgb_pixels = bytearray()
+        for value in raster.values:
+            valid_value = cls._is_valid_height(value)
+            mapped = (
+                0
+                if not valid_value or span == 0
+                else max(
+                    0,
+                    min(255, round((float(value) - low) * 255 / span)),
+                )
+            )
+            intensity.append(mapped)
+            rgb_pixels.extend(
+                (255, 0, 255)
+                if not valid_value and show_invalid
+                else cls._palette_colour(palette, mapped)
+            )
+        grayscale_compatible = palette == "grayscale" and not show_invalid
         return encode_png(
             raster.metadata.width,
             raster.metadata.height,
             bit_depth=8,
-            color_type=0,
-            pixel_bytes=pixels,
+            color_type=0 if grayscale_compatible else 2,
+            pixel_bytes=bytes(intensity if grayscale_compatible else rgb_pixels),
         )
+
+    @staticmethod
+    def _validate_height_preview_options(
+        palette: str,
+        display_min: float | None,
+        display_max: float | None,
+    ) -> HeightPreviewPalette:
+        if palette not in HEIGHT_PREVIEW_PALETTES:
+            raise EngineeringPreviewOptionsError(
+                "height preview palette is not supported"
+            )
+        if (display_min is None) != (display_max is None):
+            raise EngineeringPreviewOptionsError(
+                "display_min and display_max must be supplied together"
+            )
+        if display_min is not None and display_max is not None:
+            if not math.isfinite(display_min) or not math.isfinite(display_max):
+                raise EngineeringPreviewOptionsError(
+                    "height preview display bounds must be finite"
+                )
+            if display_min >= display_max:
+                raise EngineeringPreviewOptionsError(
+                    "display_min must be less than display_max"
+                )
+        return palette
+
+    @staticmethod
+    def _palette_colour(
+        palette: HeightPreviewPalette,
+        intensity: int,
+    ) -> tuple[int, int, int]:
+        if palette == "grayscale":
+            return intensity, intensity, intensity
+        position = intensity / 255.0
+        if palette == "blue-yellow":
+            return (
+                int(round(255 * position)),
+                int(round(230 * position)),
+                int(round(180 * (1.0 - position) + 40 * position)),
+            )
+        if palette == "high-contrast":
+            if intensity < 64:
+                return (0, 0, 0)
+            if intensity < 128:
+                return (0, 104, 255)
+            if intensity < 192:
+                return (255, 214, 0)
+            return (255, 255, 255)
+        anchors = (
+            (0.00, (68, 1, 84)),
+            (0.33, (49, 104, 142)),
+            (0.66, (53, 183, 121)),
+            (1.00, (253, 231, 37)),
+        )
+        for index in range(len(anchors) - 1):
+            start_at, start = anchors[index]
+            end_at, end = anchors[index + 1]
+            if position <= end_at:
+                fraction = (position - start_at) / (end_at - start_at)
+                return tuple(
+                    int(
+                        round(
+                            start[channel]
+                            + (end[channel] - start[channel]) * fraction
+                        )
+                    )
+                    for channel in range(3)
+                )
+        return anchors[-1][1]
 
     @staticmethod
     def _assert_coordinate(

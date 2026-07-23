@@ -14,6 +14,7 @@ from app.services.engineering_viewer import (
     EngineeringEvidenceReadError,
     EngineeringFormatUnsupportedError,
     EngineeringInspectionNotFoundError,
+    EngineeringPreviewOptionsError,
     EngineeringRasterTooLargeError,
     EngineeringRoiBoundsError,
     EngineeringSampleBoundsError,
@@ -194,6 +195,12 @@ def _map_error(error: Exception) -> ApiError:
             "ENGINEERING_HEIGHT_ROI_OUT_OF_BOUNDS",
             "The height ROI is outside raster bounds or exceeds the bounded pixel limit.",
         )
+    if isinstance(error, EngineeringPreviewOptionsError):
+        return ApiError(
+            422,
+            "ENGINEERING_HEIGHT_PREVIEW_OPTIONS_INVALID",
+            "Height preview palette or display-range options are invalid.",
+        )
     if isinstance(error, EngineeringEvidenceReadError):
         return ApiError(
             500,
@@ -250,17 +257,32 @@ async def get_engineering_view(
 
 
 def _preview_response(preview) -> Response:
+    headers = {
+        "Cache-Control": "no-store",
+        "X-PCB-AOI-Preview-Derived": "true",
+        "X-PCB-AOI-Preview-Persisted": "false",
+        "X-PCB-AOI-Preview-Kind": preview.preview_kind,
+        "X-PCB-AOI-Preview-Transform": preview.transform,
+        "X-PCB-AOI-Physical-Units": "unavailable",
+    }
+    if preview.palette is not None:
+        headers.update(
+            {
+                "X-PCB-AOI-Height-Palette": preview.palette,
+                "X-PCB-AOI-Height-Native-Min": format(preview.native_min, ".17g"),
+                "X-PCB-AOI-Height-Native-Max": format(preview.native_max, ".17g"),
+                "X-PCB-AOI-Height-Display-Min": format(preview.display_min, ".17g"),
+                "X-PCB-AOI-Height-Display-Max": format(preview.display_max, ".17g"),
+                "X-PCB-AOI-Height-Invalid-Visible": str(
+                    preview.show_invalid
+                ).lower(),
+                "X-PCB-AOI-Height-Warning": preview.warning,
+            }
+        )
     return Response(
         content=preview.content,
         media_type="image/png",
-        headers={
-            "Cache-Control": "no-store",
-            "X-PCB-AOI-Preview-Derived": "true",
-            "X-PCB-AOI-Preview-Persisted": "false",
-            "X-PCB-AOI-Preview-Kind": preview.preview_kind,
-            "X-PCB-AOI-Preview-Transform": preview.transform,
-            "X-PCB-AOI-Physical-Units": "unavailable",
-        },
+        headers=headers,
     )
 
 
@@ -281,10 +303,26 @@ async def get_rgb_preview(inspection_id: str, request: Request) -> Response:
     responses={200: {"content": {"image/png": {}}}, 404: {"model": ApiErrorResponse}},
     summary="Generate an in-memory derived height PNG preview",
 )
-async def get_height_preview(inspection_id: str, request: Request) -> Response:
+async def get_height_preview(
+    inspection_id: str,
+    request: Request,
+    palette: str = "grayscale",
+    display_min: float | None = None,
+    display_max: float | None = None,
+    show_invalid: bool = False,
+) -> Response:
     canonical_id = _canonical_inspection_id(inspection_id)
     service: EngineeringViewerService = request.app.state.engineering_viewer
-    preview = await _call(request, service.height_preview(canonical_id))
+    preview = await _call(
+        request,
+        service.height_preview(
+            canonical_id,
+            palette=palette,
+            display_min=display_min,
+            display_max=display_max,
+            show_invalid=show_invalid,
+        ),
+    )
     return _preview_response(preview)
 
 

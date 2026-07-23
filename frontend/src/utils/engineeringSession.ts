@@ -15,6 +15,7 @@ export type EngineeringCoordinateSpace = 'RGB' | 'HEIGHT'
 export type EngineeringTool = 'pointer' | 'pan' | 'sample' | 'correspondence' | 'rectangle' | 'line'
 export type EngineeringViewMode = 'RGB' | 'Height' | 'Side-by-side' | 'Alpha overlay' | 'Split comparison'
 export type AlignmentViewState = 'ORIGINAL' | 'DEVELOPMENT'
+export type HeightPreviewPalette = 'grayscale' | 'blue-yellow' | 'viridis-like' | 'high-contrast'
 
 export interface RasterComparisonDimensions {
   rgb: { width: number; height: number }
@@ -49,7 +50,7 @@ export interface NativeHeightRoiStatistics {
 export type EngineeringRoi =
   | { id: string; kind: 'POINT'; coordinateSpace: 'RGB' | 'HEIGHT'; x: number; y: number }
   | { id: string; kind: 'RECTANGLE'; coordinateSpace: 'RGB' | 'HEIGHT'; x: number; y: number; width: number; height: number; nativeHeightStatistics?: NativeHeightRoiStatistics }
-  | { id: string; kind: 'LINE'; coordinateSpace: 'RGB' | 'HEIGHT'; x1: number; y1: number; x2: number; y2: number; distancePixels: number }
+  | { id: string; kind: 'LINE'; coordinateSpace: 'RGB' | 'HEIGHT'; x1: number; y1: number; x2: number; y2: number; deltaXPixels: number; deltaYPixels: number; distancePixels: number; directionDegrees: number }
 
 export interface EngineeringSessionSnapshot {
   mode: EngineeringViewMode
@@ -58,6 +59,10 @@ export interface EngineeringSessionSnapshot {
   pan: PixelPoint
   overlayOpacity: number
   splitPosition: number
+  heightPalette: HeightPreviewPalette
+  heightDisplayMin: number | null
+  heightDisplayMax: number | null
+  showInvalidHeight: boolean
   coordinates: EngineeringCoordinates
   alignment: SessionAlignment
   alignmentView: AlignmentViewState
@@ -67,6 +72,7 @@ export interface EngineeringSessionSnapshot {
   correspondences: CorrespondencePoint[]
   pendingRgbPoint: PixelPoint | null
   pendingHeightPoint: PixelPoint | null
+  selectedRoiId: string | null
   rois: EngineeringRoi[]
 }
 
@@ -93,6 +99,10 @@ export const DEFAULT_ENGINEERING_SESSION: EngineeringSessionSnapshot = {
   pan: { x: 0, y: 0 },
   overlayOpacity: 50,
   splitPosition: 50,
+  heightPalette: 'grayscale',
+  heightDisplayMin: null,
+  heightDisplayMax: null,
+  showInvalidHeight: false,
   coordinates: {
     rgbX: 0,
     rgbY: 0,
@@ -110,6 +120,7 @@ export const DEFAULT_ENGINEERING_SESSION: EngineeringSessionSnapshot = {
   correspondences: [],
   pendingRgbPoint: null,
   pendingHeightPoint: null,
+  selectedRoiId: null,
   rois: [],
 }
 

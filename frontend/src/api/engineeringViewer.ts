@@ -1,5 +1,6 @@
 import { apiRequest, resolveApiUrl, type ApiResponse } from './client'
 import type { EngineeringHeightRoiResponse, EngineeringSampleResponse, EngineeringViewResponse } from './types'
+import type { HeightPreviewPalette } from '../utils/engineeringSession'
 
 export function getEngineeringView(
   inspectionId: string,
@@ -22,8 +23,27 @@ export function getEngineeringSample(
   return apiRequest(`/api/v1/inspections/${inspectionId}/engineering-view/sample?${query}`, { signal })
 }
 
-export function engineeringPreviewUrl(inspectionId: string, kind: 'rgb' | 'height'): string {
-  return resolveApiUrl(`/api/v1/inspections/${inspectionId}/engineering-view/${kind}-preview`)
+export function engineeringPreviewUrl(
+  inspectionId: string,
+  kind: 'rgb' | 'height',
+  options?: {
+    palette: HeightPreviewPalette
+    displayMin: number | null
+    displayMax: number | null
+    showInvalid: boolean
+  },
+): string {
+  const path = `/api/v1/inspections/${inspectionId}/engineering-view/${kind}-preview`
+  if (kind === 'rgb' || !options) return resolveApiUrl(path)
+  const query = new URLSearchParams({
+    palette: options.palette,
+    show_invalid: String(options.showInvalid),
+  })
+  if (options.displayMin !== null && options.displayMax !== null) {
+    query.set('display_min', String(options.displayMin))
+    query.set('display_max', String(options.displayMax))
+  }
+  return resolveApiUrl(`${path}?${query}`)
 }
 
 export function getEngineeringHeightRoi(

@@ -21,7 +21,7 @@ The default is `false`. When disabled, viewer routes return the safe
 
 - `GET /api/v1/inspections/{id}/engineering-view`
 - `GET /api/v1/inspections/{id}/engineering-view/rgb-preview`
-- `GET /api/v1/inspections/{id}/engineering-view/height-preview`
+- `GET /api/v1/inspections/{id}/engineering-view/height-preview?palette=grayscale&display_min=0&display_max=65535&show_invalid=false`
 - `GET /api/v1/inspections/{id}/engineering-view/sample?rgb_x=0&rgb_y=0&height_x=0&height_y=0`
 - `GET /api/v1/inspections/{id}/engineering-view/height-roi?x=0&y=0&width=8&height=8`
 
@@ -43,8 +43,26 @@ narrow synthetic subset fail closed.
 
 Both previews are generated in memory as browser-compatible PNG responses. They are
 never stored or registered. The height preview is explicitly marked as a derived
-native-min/max grayscale visualization; it is not raw height evidence. Preview
-responses use `Cache-Control: no-store` and safe headers identifying the derivation.
+visualization; it is not raw height evidence. With no query parameters it remains the
+deterministic native-min/max grayscale rendering. `palette` accepts the stable,
+project-owned names `grayscale`, `blue-yellow`, `viridis-like`, and `high-contrast`.
+The latter two names describe this project's deterministic colour tables and do not
+claim compatibility with a third-party palette library.
+
+`display_min` and `display_max` must be finite, supplied together, and satisfy
+`display_min < display_max`. The service accepts bounds outside the native range:
+each finite native sample is clipped to the nearest display endpoint before colour
+mapping; the requested bounds themselves are not silently changed. `show_invalid`
+defaults to `false`. When `true`, values invalid according to the current synthetic
+decoder are rendered magenta; when `false`, they use the low-end display colour.
+Invalid samples remain excluded from the native histogram and valid count either
+way. These options never change sampling or ROI statistics.
+
+Height preview response headers expose the selected palette, native min/max, display
+min/max, invalid-visibility state, and the warning
+`DISPLAY_RANGE_CHANGES_DERIVED_COLOUR_VIEW_ONLY_NATIVE_VALUES_UNCHANGED`.
+Preview responses use `Cache-Control: no-store`, expose no paths, and verify source
+ownership, SHA-256, and byte size before decoding.
 
 RGB and height sample coordinates are independent because physical registration is
 not established. Sampling returns native RGB samples and the native height value.
@@ -107,7 +125,31 @@ The RGB and height inspectors report their own selected coordinate, native value
 dimensions, and integrity/calibration/registration evidence. Before an explicit
 sample, values say **Not sampled**. Physical values and units remain **Unavailable**.
 A persistent status bar reports inspection identity, raster dimensions, zoom, active
-tool, selections, pair count, registration status, and unavailable units.
+tool, selections, palette, display interval, invalid visibility, pair count,
+registration status, and unavailable units.
+
+### Height visualization and native measurement UX
+
+The derived-height controls select one of the four stable palettes, apply or reset a
+display interval within the metadata-reported native limits, and show or hide invalid
+pixels. Palette, interval, and invalid visibility are browser-session values in the
+same bounded undo/redo history as the other engineering controls. They return to
+grayscale, native min/max, and hidden invalid pixels on reload or full session reset.
+The interface always states:
+
+> Display range changes only the derived colour view. Native height values remain unchanged.
+
+The legend labels the selected palette and applied display endpoints. Invalid pixels
+have a separate magenta key and the exact explanation **Invalid according to the
+current synthetic decoder.** This has no vendor, defect, tolerance, or production
+meaning.
+
+The 64-bin histogram remains a histogram of finite native samples. It shows the
+current display endpoints, the latest valid sampled height, and the selected height
+ROI's native min/max interval. Each bin is keyboard-focusable and reports its native
+range and count on focus or hover. Clicking or pressing Enter/Space merely selects a
+bin; the operator must then explicitly choose **Use selected bin as display range**.
+Valid and excluded-invalid totals remain visible.
 
 A non-blocking quick-start guide opens on entry, can be dismissed or reopened, and is
 session-only. Toolbar buttons expose pressed state and keyboard shortcuts to assistive
@@ -156,9 +198,22 @@ mode/page is left or the tab is hidden, and is unavailable when reduced motion i
 requested. Flicker is a visual aid, not proof of alignment.
 
 Rectangle and line tools retain separate RGB/height coordinate spaces. Rectangle
-width, height, and area and line distance are pixel measurements. Height
-rectangles may read bounded native-value statistics from the read-only ROI endpoint.
-No millimetre or micrometre conversion is performed.
+X/Y, width, height, and area are pixel measurements. Height rectangles read bounded
+native min/max/mean/range and valid/invalid counts from the existing read-only ROI
+endpoint. A newer ROI request aborts the older browser request, and structured errors
+retain the request ID. The 1,048,576-pixel backend maximum is unchanged. Selecting a
+height ROI marks its native min/max on the existing histogram; no matrix or new
+histogram data is requested.
+
+Lines report coordinate space, start/end X/Y, dx/dy, Euclidean distance in pixels,
+and the screen-coordinate direction from `atan2(dy, dx)` in degrees. There is no line
+profile, calibration, or persistence.
+
+**Reset Engineering Session** requires confirmation and resets the active tool,
+crosshairs and coordinates, view mode, zoom/pan, palette/range/invalid state,
+alignment, correspondences, ROI/line measurements, and undo/redo history. It does
+not reload backend evidence or mutate persisted state. It is distinct from
+**Reset view** and **Reset transform to identity**.
 
 **Export alignment JSON** downloads the versioned
 `pcb-aoi-development-alignment/1.0` contract using the deterministic filename

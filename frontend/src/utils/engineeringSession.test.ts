@@ -58,7 +58,7 @@ describe('session-only engineering calculations', () => {
   })
 
   it('exports a versioned, deterministic development-only contract without operational metadata', () => {
-    const rois: EngineeringRoi[] = [{ id: 'M1', kind: 'LINE', coordinateSpace: 'RGB', x1: 0, y1: 0, x2: 3, y2: 4, distancePixels: 5 }]
+    const rois: EngineeringRoi[] = [{ id: 'M1', kind: 'LINE', coordinateSpace: 'RGB', x1: 0, y1: 0, x2: 3, y2: 4, deltaXPixels: 3, deltaYPixels: 4, distancePixels: 5, directionDegrees: 53.1301 }]
     const first = buildAlignmentExport('inspection-id', DEFAULT_ALIGNMENT, points, rois, 45, { activeView: 'DEVELOPMENT' })
     const second = buildAlignmentExport('inspection-id', DEFAULT_ALIGNMENT, points, rois, 45, { activeView: 'DEVELOPMENT' })
     expect(first).toEqual(second)

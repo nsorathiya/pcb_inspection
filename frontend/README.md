@@ -20,6 +20,13 @@ Controls and the 3x3 matrix are explicitly display-only: no viewer interaction
 persists alignment, changes an artifact, or creates a production decision. See
 `../docs/engineering_viewer.md`.
 
+The height workspace also provides four deterministic derived-preview palettes,
+session-only native display-range controls, an explicit invalid-pixel view, an
+accessible 64-bin native histogram with display/sample/ROI markers, bounded native
+height ROI statistics, complete pixel-only line geometry, and a confirmed
+**Reset Engineering Session** action. Display changes participate in undo/redo and
+never alter native sampling, source artifacts, database state, or audit history.
+
 ## Run locally
 
 Start the FastAPI application on `http://127.0.0.1:8000`, then:

@@ -272,6 +272,9 @@ def test_previews_are_browser_pngs_generated_in_memory_without_file_changes(tmp_
         height = client.get(
             f"/api/v1/inspections/{inspection_id}/engineering-view/height-preview"
         )
+        height_repeat = client.get(
+            f"/api/v1/inspections/{inspection_id}/engineering-view/height-preview"
+        )
         after = _runtime_tree(runtime_root)
 
     for response, kind in ((rgb, "RGB"), (height, "HEIGHT")):
@@ -283,8 +286,99 @@ def test_previews_are_browser_pngs_generated_in_memory_without_file_changes(tmp_
         assert response.headers["x-pcb-aoi-preview-kind"] == kind
         assert response.headers["cache-control"] == "no-store"
     assert height.headers["x-pcb-aoi-preview-transform"] == "NATIVE_MIN_MAX_GRAYSCALE"
+    assert height.content == height_repeat.content
+    assert height.headers["x-pcb-aoi-height-palette"] == "grayscale"
+    assert height.headers["x-pcb-aoi-height-invalid-visible"] == "false"
     assert height.headers["x-pcb-aoi-physical-units"] == "unavailable"
     assert before == after
+
+
+@pytest.mark.parametrize(
+    "palette",
+    ["grayscale", "blue-yellow", "viridis-like", "high-contrast"],
+)
+def test_height_preview_palettes_are_deterministic_and_read_only(tmp_path, palette):
+    application, fixtures = _application(tmp_path)
+    with TestClient(application) as client:
+        inspection_id, _rgb_source, height_source = _intake(
+            client, fixtures, "valid_rgb_png_height_npy_float32"
+        )
+        source_hash = hashlib.sha256(height_source.read_bytes()).hexdigest()
+        before_counts = asyncio.run(_side_effect_counts(application))
+        before_tree = _runtime_tree(application.state.runtime_paths.root)
+        first = client.get(
+            f"/api/v1/inspections/{inspection_id}/engineering-view/height-preview",
+            params={
+                "palette": palette,
+                "display_min": 120,
+                "display_max": 1800,
+                "show_invalid": True,
+            },
+        )
+        second = client.get(
+            f"/api/v1/inspections/{inspection_id}/engineering-view/height-preview",
+            params={
+                "palette": palette,
+                "display_min": 120,
+                "display_max": 1800,
+                "show_invalid": True,
+            },
+        )
+        after_counts = asyncio.run(_side_effect_counts(application))
+        after_tree = _runtime_tree(application.state.runtime_paths.root)
+
+    assert first.status_code == 200, first.text
+    assert first.content == second.content
+    assert first.headers["x-pcb-aoi-height-palette"] == palette
+    assert first.headers["x-pcb-aoi-height-display-min"] == "120"
+    assert first.headers["x-pcb-aoi-height-display-max"] == "1800"
+    assert first.headers["x-pcb-aoi-height-invalid-visible"] == "true"
+    assert "NATIVE_VALUES_UNCHANGED" in first.headers["x-pcb-aoi-height-warning"]
+    assert first.headers["cache-control"] == "no-store"
+    assert hashlib.sha256(height_source.read_bytes()).hexdigest() == source_hash
+    assert before_counts == after_counts
+    assert before_tree == after_tree
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"palette": "rainbow"},
+        {"display_min": 10},
+        {"display_max": 10},
+        {"display_min": 10, "display_max": 10},
+        {"display_min": 20, "display_max": 10},
+    ],
+)
+def test_height_preview_rejects_invalid_options(tmp_path, params):
+    application, fixtures = _application(tmp_path)
+    with TestClient(application) as client:
+        inspection_id, _rgb_source, _height_source = _intake(
+            client, fixtures, "valid_rgb_png_height_tiff"
+        )
+        response = client.get(
+            f"/api/v1/inspections/{inspection_id}/engineering-view/height-preview",
+            params=params,
+        )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "ENGINEERING_HEIGHT_PREVIEW_OPTIONS_INVALID"
+
+
+def test_height_preview_out_of_native_range_is_clipped_not_rejected(tmp_path):
+    application, fixtures = _application(tmp_path)
+    with TestClient(application) as client:
+        inspection_id, _rgb_source, _height_source = _intake(
+            client, fixtures, "valid_rgb_png_height_tiff"
+        )
+        response = client.get(
+            f"/api/v1/inspections/{inspection_id}/engineering-view/height-preview",
+            params={"display_min": -1000000, "display_max": 1000000},
+        )
+
+    assert response.status_code == 200
+    assert response.headers["x-pcb-aoi-height-display-min"] == "-1000000"
+    assert response.headers["x-pcb-aoi-height-display-max"] == "1000000"
 
 
 def test_persisted_validation_and_processing_evidence_is_read_without_new_audit(
@@ -469,6 +563,10 @@ def test_nonfinite_float32_height_values_are_counted_and_sampled_safely(tmp_path
         preview = client.get(
             f"/api/v1/inspections/{inspection_id}/engineering-view/height-preview"
         )
+        invalid_visible = client.get(
+            f"/api/v1/inspections/{inspection_id}/engineering-view/height-preview",
+            params={"show_invalid": True},
+        )
 
     assert view.status_code == 200, view.text
     assert view.json()["height_statistics"]["valid_count"] == 190
@@ -478,6 +576,10 @@ def test_nonfinite_float32_height_values_are_counted_and_sampled_safely(tmp_path
     assert sample.json()["height"]["value"] is None
     assert sample.json()["height"]["valid"] is False
     assert preview.status_code == 200
+    assert invalid_visible.status_code == 200
+    assert preview.content != invalid_visible.content
+    assert preview.headers["x-pcb-aoi-height-invalid-visible"] == "false"
+    assert invalid_visible.headers["x-pcb-aoi-height-invalid-visible"] == "true"
 
 
 def test_disabled_viewer_and_invalid_or_unknown_inspection_fail_safely(tmp_path):

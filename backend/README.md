@@ -356,6 +356,13 @@ paths or artifact IDs and do not write files, create audit events, or execute
 validation or processing. See `docs/engineering_viewer.md` for the supported
 synthetic formats and safety contract.
 
+The derived height-preview GET accepts optional `palette` (`grayscale`,
+`blue-yellow`, `viridis-like`, or `high-contrast`), paired finite `display_min` /
+`display_max` bounds with minimum less than maximum, and boolean `show_invalid`.
+With no parameters it retains the native-min/max grayscale default. Values outside
+the selected interval are clipped for display only; native artifacts and values are
+unchanged. Responses remain in-memory PNGs with `Cache-Control: no-store`.
+
 `PCB_AOI_LOG_LEVEL` accepts `DEBUG`, `INFO`, `WARNING`, `ERROR`, or
 `CRITICAL`. The current `plain` format is readable development output with
 timestamps, severity, logger name, service name, and request ID. Format

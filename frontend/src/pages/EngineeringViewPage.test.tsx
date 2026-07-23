@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getEngineeringSample, getEngineeringView } from '../api/engineeringViewer'
+import { engineeringPreviewUrl, getEngineeringHeightRoi, getEngineeringSample, getEngineeringView } from '../api/engineeringViewer'
 import { ApiClientError } from '../api/errors'
 import type { EngineeringSampleResponse, EngineeringViewResponse } from '../api/types'
 import { INSPECTION_ID } from '../test/fixtures'
@@ -17,6 +17,8 @@ vi.mock('../api/engineeringViewer', () => ({
 
 const viewMock = vi.mocked(getEngineeringView)
 const sampleMock = vi.mocked(getEngineeringSample)
+const roiMock = vi.mocked(getEngineeringHeightRoi)
+const previewUrlMock = vi.mocked(engineeringPreviewUrl)
 
 function engineeringResponse(mismatched = false): EngineeringViewResponse {
   const counts = Array.from({ length: 64 }, (_, index) => index + 1)
@@ -105,8 +107,21 @@ describe('vision engineering workspace', () => {
     })
     viewMock.mockReset()
     sampleMock.mockReset()
+    roiMock.mockReset()
+    previewUrlMock.mockClear()
     viewMock.mockResolvedValue({ data: engineeringResponse(), requestId: 'engineering-request' })
     sampleMock.mockResolvedValue({ data: sampleResponse, requestId: 'sample-request' })
+    roiMock.mockResolvedValue({
+      data: {
+        inspection_id: INSPECTION_ID,
+        x: 10, y: 20, width: 21, height: 21,
+        storage_data_type: 'uint16',
+        native_min: 800, native_max: 1600, native_mean: 1200,
+        valid_count: 440, invalid_count: 1,
+        physical_unit: null, warnings: [], request_id: 'roi-request',
+      },
+      requestId: 'roi-request',
+    })
   })
 
   it('switches among all five view modes and exposes comparison controls', async () => {
@@ -160,11 +175,61 @@ describe('vision engineering workspace', () => {
 
   it('renders the SVG 64-bin histogram with native bounds and counts', async () => {
     const { container } = renderPage()
-    expect(await screen.findByRole('img', { name: '64-bin native height histogram' })).toBeInTheDocument()
+    expect(await screen.findByRole('group', { name: '64-bin native height histogram' })).toBeInTheDocument()
     expect(container.querySelectorAll('[data-histogram-bin]')).toHaveLength(64)
-    const validCount = screen.getByText('Valid').parentElement?.textContent ?? ''
+    const validCount = screen.getByText('Valid total').parentElement?.textContent ?? ''
     expect(validCount.replace(/\D/g, '')).toBe('153600')
     expect(screen.getAllByText('4000').length).toBeGreaterThan(0)
+  })
+
+  it('changes palette and display range only in session state with validation and undo redo', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'Derived height display' })
+    expect(screen.getByText('Display range changes only the derived colour view. Native height values remain unchanged.')).toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText('Height palette'), 'viridis-like')
+    await user.clear(screen.getByLabelText('Height display minimum'))
+    await user.type(screen.getByLabelText('Height display minimum'), '500')
+    await user.clear(screen.getByLabelText('Height display maximum'))
+    await user.type(screen.getByLabelText('Height display maximum'), '2500')
+    await user.click(screen.getByRole('button', { name: 'Apply display range' }))
+    expect(screen.getByText(/Palette viridis-like; native 100 to 4000; display 500 to 2500/)).toBeInTheDocument()
+    expect(previewUrlMock).toHaveBeenLastCalledWith(INSPECTION_ID, 'height', {
+      palette: 'viridis-like', displayMin: 500, displayMax: 2500, showInvalid: false,
+    })
+
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true })
+    await waitFor(() => expect(screen.getByLabelText('Height display minimum')).toHaveValue(100))
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true })
+    expect(screen.getByLabelText('Height palette')).toHaveValue('grayscale')
+    fireEvent.keyDown(window, { key: 'y', ctrlKey: true })
+    expect(screen.getByLabelText('Height palette')).toHaveValue('viridis-like')
+
+    await user.clear(screen.getByLabelText('Height display minimum'))
+    await user.type(screen.getByLabelText('Height display minimum'), '50')
+    await user.click(screen.getByRole('button', { name: 'Apply display range' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('within native limits')
+    await user.click(screen.getByRole('button', { name: 'Reset to native range' }))
+    expect(screen.getByLabelText('Height display minimum')).toHaveValue(100)
+    expect(screen.getByLabelText('Height display maximum')).toHaveValue(4000)
+  }, 10_000)
+
+  it('supports invalid visibility and accessible histogram range and sample markers', async () => {
+    const user = userEvent.setup()
+    const { container } = renderPage()
+    await screen.findByRole('heading', { name: 'Derived height display' })
+    expect(screen.getByText(/Invalid according to the current synthetic decoder/)).toBeInTheDocument()
+    await user.click(screen.getByRole('checkbox', { name: /Show invalid pixels/ }))
+    expect(screen.getByText(/invalid pixels shown in magenta/)).toBeInTheDocument()
+    expect(previewUrlMock).toHaveBeenLastCalledWith(INSPECTION_ID, 'height', expect.objectContaining({ showInvalid: true }))
+
+    const firstBin = screen.getByRole('button', { name: /Bin 1, native range/ })
+    firstBin.focus()
+    fireEvent.keyDown(firstBin, { key: 'Enter' })
+    await user.click(screen.getByRole('button', { name: 'Use selected bin as display range' }))
+    expect(container.querySelectorAll('.display-range-marker')).toHaveLength(2)
+    await user.click(screen.getByRole('button', { name: 'Sample values' }))
+    await waitFor(() => expect(container.querySelector('.sample-value-marker')).toBeInTheDocument())
   })
 
   it('shows integrity metadata and persisted pipeline evidence without execution actions', async () => {
@@ -490,6 +555,61 @@ describe('vision engineering workspace', () => {
     expect(screen.getByText(/Pending P1: RGB/)).toBeInTheDocument()
     fireEvent.keyDown(document.body, { key: 'Escape' })
     expect(screen.queryByText(/Pending P1: RGB/)).not.toBeInTheDocument()
+  })
+
+  it('reports bounded height ROI statistics and complete pixel-only line geometry', async () => {
+    const user = userEvent.setup()
+    const { container } = renderPage()
+    await screen.findByRole('heading', { name: 'PCB 2D/3D Vision Engineering Workspace' })
+    const modes = screen.getByRole('group', { name: 'Vision view modes' })
+    await user.click(within(modes).getByRole('button', { name: /^Height$/ }))
+    const heightRaster = screen.getByTestId('height-raster')
+    setRasterGeometry(heightRaster, { left: 0, top: 0, width: 320, height: 240 })
+    await user.click(within(screen.getByRole('toolbar', { name: 'Engineering tools' })).getByRole('button', { name: /Rectangle/ }))
+    const canvas = screen.getByTestId('vision-canvas')
+    fireEvent.pointerDown(canvas, { clientX: 10, clientY: 10, pointerId: 1 })
+    fireEvent.pointerUp(canvas, { clientX: 20, clientY: 20, pointerId: 1 })
+    await waitFor(() => expect(roiMock).toHaveBeenCalledWith(INSPECTION_ID, expect.objectContaining({ width: 21, height: 21 }), expect.any(AbortSignal)))
+    const rectangle = await screen.findByText(/Native min 800, max 1600, mean 1200, range 800/)
+    expect(rectangle).toHaveTextContent('440 valid / 1 invalid')
+    expect(container.querySelector('.roi-range-marker')).toBeInTheDocument()
+    expect(screen.getByText(/Native values; physical units unavailable\./)).toBeInTheDocument()
+
+    await user.click(within(modes).getByRole('button', { name: /^RGB$/ }))
+    const rgbRaster = screen.getByTestId('rgb-raster')
+    setRasterGeometry(rgbRaster, { left: 0, top: 0, width: 320, height: 240 })
+    await user.click(within(screen.getByRole('toolbar', { name: 'Engineering tools' })).getByRole('button', { name: /Line/ }))
+    fireEvent.pointerDown(canvas, { clientX: 10, clientY: 10, pointerId: 2 })
+    fireEvent.pointerUp(canvas, { clientX: 20, clientY: 20, pointerId: 2 })
+    expect(screen.getByText(/dx 20, dy 20 pixels; distance 28.2843 pixels; direction 45 degrees/)).toBeInTheDocument()
+    expect(screen.queryByText(/millimetre|micrometre|tolerance/i)).not.toBeInTheDocument()
+  })
+
+  it('confirms and resets the complete engineering session without reloading evidence', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'PCB 2D/3D Vision Engineering Workspace' })
+    await user.selectOptions(screen.getByLabelText('Height palette'), 'high-contrast')
+    await user.click(screen.getByRole('checkbox', { name: /Show invalid pixels/ }))
+    await user.click(screen.getByRole('button', { name: 'Zoom in' }))
+    fireEvent.change(screen.getByLabelText('Translation X (pixels)'), { target: { value: '9' } })
+    fireEvent.change(screen.getByLabelText('RGB X coordinate'), { target: { value: '12' } })
+    await user.click(screen.getByRole('button', { name: 'Use selected RGB point' }))
+
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
+    await user.click(screen.getByRole('button', { name: 'Reset Engineering Session' }))
+    expect(screen.getByLabelText('Height palette')).toHaveValue('high-contrast')
+    await user.click(screen.getByRole('button', { name: 'Reset Engineering Session' }))
+    expect(screen.getByLabelText('Height palette')).toHaveValue('grayscale')
+    expect(screen.getByRole('checkbox', { name: /Show invalid pixels/ })).not.toBeChecked()
+    expect(screen.getByLabelText('Zoom level')).toHaveTextContent('100%')
+    expect(screen.getByLabelText('Translation X (pixels)')).toHaveValue(0)
+    expect(screen.queryByTestId('rgb-crosshair')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Pending P1/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
+    expect(viewMock).toHaveBeenCalledTimes(1)
+    expect(confirm).toHaveBeenCalledTimes(2)
+    confirm.mockRestore()
   })
 
   it('clears session selections and history when the workspace remounts', async () => {

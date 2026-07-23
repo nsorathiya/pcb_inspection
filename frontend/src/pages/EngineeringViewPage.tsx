@@ -31,6 +31,7 @@ import {
   type EngineeringSessionSnapshot,
   type EngineeringTool,
   type EngineeringViewMode,
+  type HeightPreviewPalette,
   type PixelPoint,
   type SessionHistory,
 } from '../utils/engineeringSession'
@@ -177,31 +178,113 @@ function EvidenceImage({
   )
 }
 
-function HeightLegend({ minimum, maximum }: { minimum: number; maximum: number }) {
+function HeightLegend({
+  palette,
+  minimum,
+  maximum,
+  showInvalid,
+}: {
+  palette: HeightPreviewPalette
+  minimum: number
+  maximum: number
+  showInvalid: boolean
+}) {
   return (
     <div className="height-palette-legend" aria-label="Derived height preview palette legend">
-      <span>{minimum}</span><span className="height-palette-ramp" aria-hidden="true" /><span>{maximum}</span>
-      <small>Derived display intensity - native values remain unchanged</small>
+      <span>{minimum}</span><span className={`height-palette-ramp palette-${palette}`} aria-hidden="true" /><span>{maximum}</span>
+      {showInvalid && <span className="invalid-height-key"><i aria-hidden="true" />Invalid</span>}
+      <small>{palette} derived colour view</small>
     </div>
   )
 }
 
-function Histogram({ view }: { view: EngineeringViewResponse }) {
+function Histogram({
+  view,
+  displayMin,
+  displayMax,
+  sampledHeight,
+  selectedRoi,
+  onUseRange,
+  onResetRange,
+}: {
+  view: EngineeringViewResponse
+  displayMin: number
+  displayMax: number
+  sampledHeight: number | null
+  selectedRoi: Extract<EngineeringRoi, { kind: 'RECTANGLE' }> | null
+  onUseRange: (minimum: number, maximum: number) => void
+  onResetRange: () => void
+}) {
   const histogram = view.height_statistics.histogram
   const maximum = Math.max(...histogram.counts, 1)
+  const [activeBin, setActiveBin] = useState<number | null>(null)
+  const [selectedBin, setSelectedBin] = useState<number | null>(null)
+  const span = histogram.native_max - histogram.native_min
+  const binBounds = (index: number) => {
+    if (span === 0) return [histogram.native_min, histogram.native_max] as const
+    const width = span / 64
+    return [
+      histogram.native_min + width * index,
+      index === 63 ? histogram.native_max : histogram.native_min + width * (index + 1),
+    ] as const
+  }
+  const xForValue = (value: number) => span === 0 ? 0 : Math.max(0, Math.min(640, ((value - histogram.native_min) / span) * 640))
+  const activeBounds = activeBin === null ? null : binBounds(activeBin)
+  const selectedStatistics = selectedRoi?.nativeHeightStatistics
   return (
     <section className="engineering-histogram" aria-labelledby="height-histogram-title">
       <div className="subpanel-heading"><h4 id="height-histogram-title">Native height distribution</h4><span className="mono">64 bins</span></div>
-      <svg viewBox="0 0 640 130" role="img" aria-label="64-bin native height histogram" preserveAspectRatio="none">
+      <svg viewBox="0 0 640 130" role="group" aria-label="64-bin native height histogram" preserveAspectRatio="none">
         <title>64-bin native height histogram</title>
         {histogram.counts.map((count, index) => {
           const height = (count / maximum) * 110
-          return <rect key={index} data-histogram-bin={index} x={index * 10 + 1} y={120 - height} width="8" height={height} />
+          const [minimum, maximumValue] = binBounds(index)
+          return (
+            <g
+              key={index}
+              role="button"
+              tabIndex={0}
+              aria-label={`Bin ${index + 1}, native range ${minimum} to ${maximumValue}, count ${count}`}
+              data-histogram-bin={index}
+              onMouseEnter={() => setActiveBin(index)}
+              onMouseLeave={() => setActiveBin(null)}
+              onFocus={() => setActiveBin(index)}
+              onBlur={() => setActiveBin(null)}
+              onClick={() => setSelectedBin(index)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  setSelectedBin(index)
+                }
+              }}
+            >
+              <rect x={index * 10 + 1} y={120 - height} width="8" height={height} />
+            </g>
+          )
         })}
+        {selectedStatistics && <rect className="roi-range-marker" x={xForValue(selectedStatistics.nativeMin)} y="2" width={Math.max(2, xForValue(selectedStatistics.nativeMax) - xForValue(selectedStatistics.nativeMin))} height="116" />}
+        <line className="display-range-marker" x1={xForValue(displayMin)} y1="0" x2={xForValue(displayMin)} y2="120" />
+        <line className="display-range-marker" x1={xForValue(displayMax)} y1="0" x2={xForValue(displayMax)} y2="120" />
+        {sampledHeight !== null && <line className="sample-value-marker" x1={xForValue(sampledHeight)} y1="0" x2={xForValue(sampledHeight)} y2="120" />}
         <line x1="0" y1="120" x2="640" y2="120" />
       </svg>
       <div className="histogram-axis"><span>{histogram.native_min}</span><span>Native sample value</span><span>{histogram.native_max}</span></div>
-      <dl className="engineering-definition-list compact"><div><dt>Valid</dt><dd>{view.height_statistics.valid_count.toLocaleString()}</dd></div><div><dt>Invalid</dt><dd>{view.height_statistics.invalid_count.toLocaleString()}</dd></div></dl>
+      <p className="histogram-bin-detail" aria-live="polite">{activeBounds ? `Bin ${activeBin! + 1}: ${activeBounds[0]} to ${activeBounds[1]}; count ${histogram.counts[activeBin!]}` : 'Focus or hover a bin for its native range and count.'}</p>
+      <div className="histogram-actions">
+        <button type="button" disabled={selectedBin === null} onClick={() => {
+          if (selectedBin !== null) {
+            const [minimum, maximumValue] = binBounds(selectedBin)
+            onUseRange(minimum, maximumValue)
+          }
+        }}>Use selected bin as display range</button>
+        <button type="button" onClick={onResetRange}>Reset display range</button>
+      </div>
+      <dl className="engineering-definition-list compact">
+        <div><dt>Valid total</dt><dd>{view.height_statistics.valid_count.toLocaleString()}</dd></div>
+        <div><dt>Excluded invalid</dt><dd>{view.height_statistics.invalid_count.toLocaleString()}</dd></div>
+        <div><dt>Display range</dt><dd>{displayMin} to {displayMax}</dd></div>
+        <div><dt>Selected ROI range</dt><dd>{selectedStatistics ? `${selectedStatistics.nativeMin} to ${selectedStatistics.nativeMax}` : 'None'}</dd></div>
+      </dl>
     </section>
   )
 }
@@ -227,6 +310,9 @@ export function EngineeringViewPage() {
   const [sampling, setSampling] = useState(false)
   const [roiError, setRoiError] = useState<ApiClientError | null>(null)
   const [roiLoading, setRoiLoading] = useState(false)
+  const [displayMinDraft, setDisplayMinDraft] = useState('')
+  const [displayMaxDraft, setDisplayMaxDraft] = useState('')
+  const [displayRangeError, setDisplayRangeError] = useState<string | null>(null)
   const [guideOpen, setGuideOpen] = useState(true)
   const [keyboardHelpOpen, setKeyboardHelpOpen] = useState(false)
   const [flickerRunning, setFlickerRunning] = useState(false)
@@ -237,6 +323,8 @@ export function EngineeringViewPage() {
   const roiStart = useRef<{ point: PixelPoint; space: EngineeringCoordinateSpace } | null>(null)
   const sampleAbort = useRef<AbortController | null>(null)
   const sampleSequence = useRef(0)
+  const roiAbort = useRef<AbortController | null>(null)
+  const roiSequence = useRef(0)
   const session = history.present
 
   const commit = useCallback((update: (current: EngineeringSessionSnapshot) => EngineeringSessionSnapshot) => {
@@ -289,9 +377,26 @@ export function EngineeringViewPage() {
     drag.current = null
     roiStart.current = null
     sampleAbort.current?.abort()
+    roiAbort.current?.abort()
+    roiSequence.current += 1
+    setRoiError(null)
+    setRoiLoading(false)
+    setDisplayMinDraft('')
+    setDisplayMaxDraft('')
+    setDisplayRangeError(null)
   }, [inspectionId])
 
-  useEffect(() => () => sampleAbort.current?.abort(), [])
+  useEffect(() => () => {
+    sampleAbort.current?.abort()
+    roiAbort.current?.abort()
+  }, [])
+
+  useEffect(() => {
+    if (!view) return
+    setDisplayMinDraft(String(session.heightDisplayMin ?? view.height_statistics.native_min))
+    setDisplayMaxDraft(String(session.heightDisplayMax ?? view.height_statistics.native_max))
+    setDisplayRangeError(null)
+  }, [session.heightDisplayMax, session.heightDisplayMin, view])
 
   useEffect(() => {
     const query = window.matchMedia?.('(prefers-reduced-motion: reduce)')
@@ -369,6 +474,9 @@ export function EngineeringViewPage() {
     drag.current = null
     roiStart.current = null
     sampleAbort.current?.abort()
+    roiAbort.current?.abort()
+    roiSequence.current += 1
+    setRoiLoading(false)
     if (session.pendingRgbPoint || session.pendingHeightPoint) {
       commit((current) => ({ ...current, pendingRgbPoint: null, pendingHeightPoint: null }))
     }
@@ -550,27 +658,110 @@ export function EngineeringViewPage() {
     if (!end) return
     setRoiError(null)
     if (tool === 'line') {
-      commit((current) => ({ ...current, coordinates: { ...current.coordinates, activeSpace: start.space }, rois: [...current.rois, { id: `M${current.rois.length + 1}`, kind: 'LINE', coordinateSpace: start.space, x1: start.point.x, y1: start.point.y, x2: end.point.x, y2: end.point.y, distancePixels: Number(Math.hypot(end.point.x - start.point.x, end.point.y - start.point.y).toFixed(4)) }] }))
+      const deltaX = end.point.x - start.point.x
+      const deltaY = end.point.y - start.point.y
+      commit((current) => {
+        const id = `M${current.rois.length + 1}`
+        return {
+          ...current,
+          coordinates: { ...current.coordinates, activeSpace: start.space },
+          selectedRoiId: id,
+          rois: [...current.rois, {
+            id,
+            kind: 'LINE',
+            coordinateSpace: start.space,
+            x1: start.point.x,
+            y1: start.point.y,
+            x2: end.point.x,
+            y2: end.point.y,
+            deltaXPixels: deltaX,
+            deltaYPixels: deltaY,
+            distancePixels: Number(Math.hypot(deltaX, deltaY).toFixed(4)),
+            directionDegrees: Number((Math.atan2(deltaY, deltaX) * 180 / Math.PI).toFixed(4)),
+          }],
+        }
+      })
       return
     }
     const rectangle = { x: Math.min(start.point.x, end.point.x), y: Math.min(start.point.y, end.point.y), width: Math.abs(end.point.x - start.point.x) + 1, height: Math.abs(end.point.y - start.point.y) + 1 }
     let nativeHeightStatistics: Extract<EngineeringRoi, { kind: 'RECTANGLE' }>['nativeHeightStatistics']
     if (start.space === 'HEIGHT') {
+      roiAbort.current?.abort()
+      const controller = new AbortController()
+      roiAbort.current = controller
+      const sequence = ++roiSequence.current
       setRoiLoading(true)
       try {
-        const response = await getEngineeringHeightRoi(inspectionId, rectangle)
+        const response = await getEngineeringHeightRoi(inspectionId, rectangle, controller.signal)
+        if (sequence !== roiSequence.current) return
         nativeHeightStatistics = { nativeMin: response.data.native_min, nativeMax: response.data.native_max, nativeMean: response.data.native_mean, validCount: response.data.valid_count, invalidCount: response.data.invalid_count, storageDataType: response.data.storage_data_type }
       } catch (caught) {
-        setRoiError(toApiClientError(caught)); setRoiLoading(false); return
+        const mapped = toApiClientError(caught)
+        if (sequence === roiSequence.current && mapped.code !== 'REQUEST_ABORTED') setRoiError(mapped)
+        if (sequence === roiSequence.current) setRoiLoading(false)
+        return
       }
-      setRoiLoading(false)
+      if (sequence === roiSequence.current) setRoiLoading(false)
     }
-    commit((current) => ({ ...current, coordinates: { ...current.coordinates, activeSpace: start.space }, rois: [...current.rois, { id: `M${current.rois.length + 1}`, kind: 'RECTANGLE', coordinateSpace: start.space, ...rectangle, nativeHeightStatistics }] }))
+    commit((current) => {
+      const id = `M${current.rois.length + 1}`
+      return { ...current, coordinates: { ...current.coordinates, activeSpace: start.space }, selectedRoiId: id, rois: [...current.rois, { id, kind: 'RECTANGLE', coordinateSpace: start.space, ...rectangle, nativeHeightStatistics }] }
+    })
   }
 
   const sampleCoordinates = (event: FormEvent) => { event.preventDefault(); void requestSample(session.coordinates) }
   const coordinateValid = session.coordinates.rgbX >= 0 && session.coordinates.rgbX < view.rgb.width && session.coordinates.rgbY >= 0 && session.coordinates.rgbY < view.rgb.height && session.coordinates.heightX >= 0 && session.coordinates.heightX < view.height.width && session.coordinates.heightY >= 0 && session.coordinates.heightY < view.height.height
   const resetCanvas = () => commit((current) => ({ ...current, mode: 'Side-by-side', zoom: 1, scaleMode: 'fit', pan: { x: 0, y: 0 }, overlayOpacity: 50, splitPosition: 50 }))
+  const nativeHeightMin = view.height_statistics.native_min
+  const nativeHeightMax = view.height_statistics.native_max
+  const activeDisplayMin = session.heightDisplayMin ?? nativeHeightMin
+  const activeDisplayMax = session.heightDisplayMax ?? nativeHeightMax
+  const applyDisplayRange = (minimum: number, maximum: number) => {
+    if (!Number.isFinite(minimum) || !Number.isFinite(maximum)) {
+      setDisplayRangeError('Display minimum and maximum must be finite numbers.')
+      return
+    }
+    if (minimum >= maximum) {
+      setDisplayRangeError('Display minimum must be less than display maximum.')
+      return
+    }
+    if (minimum < nativeHeightMin || maximum > nativeHeightMax) {
+      setDisplayRangeError(`Display range must remain within native limits ${nativeHeightMin} to ${nativeHeightMax}.`)
+      return
+    }
+    setDisplayRangeError(null)
+    setDisplayMinDraft(String(minimum))
+    setDisplayMaxDraft(String(maximum))
+    commit((current) => ({ ...current, heightDisplayMin: minimum, heightDisplayMax: maximum }))
+  }
+  const resetDisplayRange = () => {
+    setDisplayRangeError(null)
+    setDisplayMinDraft(String(nativeHeightMin))
+    setDisplayMaxDraft(String(nativeHeightMax))
+    commit((current) => ({ ...current, heightDisplayMin: null, heightDisplayMax: null }))
+  }
+  const resetEngineeringSession = () => {
+    if (!window.confirm('Reset all engineering session controls and measurements? Persisted evidence will not be reloaded or changed.')) return
+    sampleAbort.current?.abort()
+    roiAbort.current?.abort()
+    sampleSequence.current += 1
+    roiSequence.current += 1
+    drag.current = null
+    roiStart.current = null
+    setHistory(createSessionHistory(DEFAULT_ENGINEERING_SESSION))
+    setTool('pointer')
+    setSample(null)
+    setSampleError(null)
+    setSampling(false)
+    setRoiError(null)
+    setRoiLoading(false)
+    setDisplayRangeError(null)
+    setDisplayMinDraft(String(nativeHeightMin))
+    setDisplayMaxDraft(String(nativeHeightMax))
+    setFlickerRunning(false)
+    setFlickerPhase('DEVELOPMENT')
+    setFlickerNotice(null)
+  }
   const clearSelections = () => commit((current) => ({ ...current, coordinates: { ...current.coordinates, rgbSelected: false, heightSelected: false } }))
   const rgbSelectedPoint = session.coordinates.rgbSelected ? { x: session.coordinates.rgbX, y: session.coordinates.rgbY } : null
   const heightSelectedPoint = session.coordinates.heightSelected ? { x: session.coordinates.heightX, y: session.coordinates.heightY } : null
@@ -582,6 +773,7 @@ export function EngineeringViewPage() {
   const toolDefinition = TOOL_DEFINITIONS.find((item) => item.tool === tool) ?? TOOL_DEFINITIONS[0]!
   const transform = `translate(${session.pan.x * 100}%, ${session.pan.y * 100}%) scale(${session.zoom})`
   const dimensionMismatch = view.rgb.width !== view.height.width || view.rgb.height !== view.height.height
+  const selectedHeightRoi = session.rois.find((roi): roi is Extract<EngineeringRoi, { kind: 'RECTANGLE' }> => roi.id === session.selectedRoiId && roi.kind === 'RECTANGLE' && roi.coordinateSpace === 'HEIGHT') ?? null
   const selectCorrespondence = (id: string) => commit((current) => ({ ...current, selectedCorrespondenceId: id }))
   const sharedEvidenceProps = {
     correspondences: session.correspondences,
@@ -593,7 +785,7 @@ export function EngineeringViewPage() {
     highestResidualId: residuals.highestPairId,
   }
   const rgbImage = <EvidenceImage kind="RGB" src={engineeringPreviewUrl(inspectionId, 'rgb')} metadata={view.rgb} selectedPoint={rgbSelectedPoint} rois={session.rois} {...sharedEvidenceProps} />
-  const heightImage = <EvidenceImage kind="Height" src={engineeringPreviewUrl(inspectionId, 'height')} metadata={view.height} selectedPoint={heightSelectedPoint} rois={session.rois} alignmentTransform={renderedAlignmentView === 'DEVELOPMENT' ? cssAffineMatrix(session.alignment) : undefined} {...sharedEvidenceProps} />
+  const heightImage = <EvidenceImage kind="Height" src={engineeringPreviewUrl(inspectionId, 'height', { palette: session.heightPalette, displayMin: session.heightDisplayMin, displayMax: session.heightDisplayMax, showInvalid: session.showInvalidHeight })} metadata={view.height} selectedPoint={heightSelectedPoint} rois={session.rois} alignmentTransform={renderedAlignmentView === 'DEVELOPMENT' ? cssAffineMatrix(session.alignment) : undefined} {...sharedEvidenceProps} />
 
   const addManualCorrespondence = (space: EngineeringCoordinateSpace) => {
     const point = space === 'RGB' ? { x: session.coordinates.rgbX, y: session.coordinates.rgbY } : { x: session.coordinates.heightX, y: session.coordinates.heightY }
@@ -649,7 +841,7 @@ export function EngineeringViewPage() {
             <button type="button" onClick={() => changeZoom(-0.25)} aria-label="Zoom out" aria-keyshortcuts="-">-</button><output aria-label="Zoom level">{Math.round(session.zoom * 100)}%</output><button type="button" onClick={() => changeZoom(0.25)} aria-label="Zoom in" aria-keyshortcuts="+ =">+</button>
             <button type="button" aria-pressed={session.scaleMode === 'fit'} onClick={fitToView} aria-keyshortcuts="F">Fit</button><button type="button" aria-pressed={session.scaleMode === 'actual'} onClick={actualPixels} aria-keyshortcuts="0">Actual pixels</button><button type="button" onClick={resetCanvas}>Reset view</button>
             <span className="toolbar-separator" aria-hidden="true" />
-            <button type="button" onClick={undo} disabled={!history.past.length} aria-keyshortcuts="Control+Z Meta+Z">Undo</button><button type="button" onClick={redo} disabled={!history.future.length} aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y">Redo</button><button type="button" onClick={() => setKeyboardHelpOpen((current) => !current)} aria-expanded={keyboardHelpOpen} aria-controls="engineering-keyboard-help">Keyboard help</button>
+            <button type="button" onClick={undo} disabled={!history.past.length} aria-keyshortcuts="Control+Z Meta+Z">Undo</button><button type="button" onClick={redo} disabled={!history.future.length} aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y">Redo</button><button type="button" onClick={() => setKeyboardHelpOpen((current) => !current)} aria-expanded={keyboardHelpOpen} aria-controls="engineering-keyboard-help">Keyboard help</button><button type="button" className="danger-outline" onClick={resetEngineeringSession}>Reset Engineering Session</button>
           </div>
           <div className="engineering-tool-strip" role="toolbar" aria-label="Engineering tools">{TOOL_DEFINITIONS.map((item) => <button key={item.tool} type="button" aria-pressed={tool === item.tool} aria-keyshortcuts={item.shortcut} onClick={() => selectTool(item.tool)}>{item.label}<kbd>{item.shortcut}</kbd></button>)}</div>
           <div className="active-tool-status" id="active-tool-help" role="status" aria-live="polite"><strong>Active tool: {toolDefinition.label}</strong><span>{toolDefinition.help}</span><span>Active coordinate space: {session.coordinates.activeSpace === 'RGB' ? 'RGB' : 'Height'}</span></div>
@@ -661,7 +853,22 @@ export function EngineeringViewPage() {
               {session.mode === 'RGB' && <div id="rgb-evidence" className="single-evidence">{rgbImage}</div>}{session.mode === 'Height' && <div id="height-evidence" className="single-evidence">{heightImage}</div>}{session.mode === 'Side-by-side' && <div className="side-by-side-evidence"><div id="rgb-evidence">{rgbImage}</div><div id="height-evidence">{heightImage}</div></div>}{session.mode === 'Alpha overlay' && <div className="stacked-evidence"><div>{rgbImage}</div><div className="overlay-layer" style={{ opacity: session.overlayOpacity / 100 }}>{heightImage}</div></div>}{session.mode === 'Split comparison' && <div className="stacked-evidence"><div>{rgbImage}</div><div className="split-layer" style={{ clipPath: `inset(0 0 0 ${session.splitPosition}%)` }}>{heightImage}</div><span className="split-divider" style={{ left: `${session.splitPosition}%` }} aria-hidden="true" /></div>}
             </div>
           </div>
-          {session.mode !== 'RGB' && <HeightLegend minimum={view.height_statistics.native_min} maximum={view.height_statistics.native_max} />}
+          {session.mode !== 'RGB' && <section className="height-display-controls" aria-labelledby="height-display-controls-title">
+            <div className="subpanel-heading"><h3 id="height-display-controls-title">Derived height display</h3><span>Preview only</span></div>
+            <div className="height-display-control-grid">
+              <label>Palette<select aria-label="Height palette" value={session.heightPalette} onChange={(event) => commit((current) => ({ ...current, heightPalette: event.target.value as HeightPreviewPalette }))}><option value="grayscale">Grayscale</option><option value="blue-yellow">Blue-yellow</option><option value="viridis-like">Viridis-like</option><option value="high-contrast">High-contrast</option></select></label>
+              <label>Display minimum<input aria-label="Height display minimum" type="number" min={nativeHeightMin} max={nativeHeightMax} value={displayMinDraft} onChange={(event) => setDisplayMinDraft(event.target.value)} /></label>
+              <label>Display maximum<input aria-label="Height display maximum" type="number" min={nativeHeightMin} max={nativeHeightMax} value={displayMaxDraft} onChange={(event) => setDisplayMaxDraft(event.target.value)} /></label>
+              <button type="button" onClick={() => applyDisplayRange(Number(displayMinDraft), Number(displayMaxDraft))}>Apply display range</button>
+              <button type="button" onClick={resetDisplayRange}>Reset to native range</button>
+              <label className="invalid-height-toggle"><input type="checkbox" checked={session.showInvalidHeight} onChange={(event) => commit((current) => ({ ...current, showInvalidHeight: event.target.checked }))} />Show invalid pixels <span className="invalid-height-swatch" aria-hidden="true" /></label>
+            </div>
+            {displayRangeError && <p className="field-error" role="alert">{displayRangeError}</p>}
+            <p className="height-display-status">Palette {session.heightPalette}; native {nativeHeightMin} to {nativeHeightMax}; display {activeDisplayMin} to {activeDisplayMax}; invalid pixels {session.showInvalidHeight ? 'shown in magenta' : 'hidden in the low-end display colour'}.</p>
+            <p className="height-display-warning">Display range changes only the derived colour view. Native height values remain unchanged.</p>
+            <p className="engineering-panel-note">Invalid according to the current synthetic decoder. Count: {view.height_statistics.invalid_count.toLocaleString()}.</p>
+            <HeightLegend palette={session.heightPalette} minimum={activeDisplayMin} maximum={activeDisplayMax} showInvalid={session.showInvalidHeight} />
+          </section>}
           <div className="pan-nudges" aria-label="Pan position controls"><button type="button" onClick={() => movePan(-0.05, 0)} aria-label="Pan left">Left</button><button type="button" onClick={() => movePan(0, -0.05)} aria-label="Pan up">Up</button><button type="button" onClick={() => movePan(0, 0.05)} aria-label="Pan down">Down</button><button type="button" onClick={() => movePan(0.05, 0)} aria-label="Pan right">Right</button></div>
         </section>
 
@@ -673,7 +880,7 @@ export function EngineeringViewPage() {
             {!coordinateValid && <p className="field-error" role="alert">Coordinates must remain inside their respective raster bounds.</p>}<button className="button primary" type="submit" disabled={!coordinateValid || sampling}>{sampling ? 'Sampling...' : 'Sample values'}</button>
             {sampleError && <div className="sample-error" role="alert"><strong>{sampleError.code}</strong><span>{sampleError.message}</span><span>Request ID: {sampleError.requestId}</span></div>}{sample && <p className="sample-evidence-note" aria-live="polite">Last authoritative sample: RGB X {sample.rgb.x}, Y {sample.rgb.y}; height X {sample.height.x}, Y {sample.height.y}. Coordinate spaces remain independent.</p>}
           </form>
-          <Histogram view={view} />
+          <Histogram view={view} displayMin={activeDisplayMin} displayMax={activeDisplayMax} sampledHeight={sample?.height.valid && sample.height.value !== null ? sample.height.value : null} selectedRoi={selectedHeightRoi} onUseRange={applyDisplayRange} onResetRange={resetDisplayRange} />
 
           <section className="engineering-session-panel" aria-labelledby="session-alignment-title">
             <div className="subpanel-heading"><h4 id="session-alignment-title">Session alignment</h4><span className="development-badge">Development · not persisted</span></div>
@@ -741,11 +948,36 @@ export function EngineeringViewPage() {
             </section>
           </section>
 
-          <section className="engineering-session-panel" aria-labelledby="measurement-tools-title"><div className="subpanel-heading"><h4 id="measurement-tools-title">Pixel measurements</h4><span>{session.coordinates.activeSpace === 'RGB' ? 'RGB' : 'Height'} space</span></div><p className="engineering-panel-note">Use Rectangle or Line on the canvas. Height rectangles may request bounded native statistics. Values remain pixels or native samples.</p>{roiLoading && <p role="status">Calculating native height statistics...</p>}{roiError && <div className="sample-error" role="alert"><strong>{roiError.code}</strong><span>{roiError.message}</span><span>Request ID: {roiError.requestId}</span></div>}<div className="measurement-heading"><strong>Measurements</strong><button type="button" disabled={!session.rois.length} onClick={() => commit((current) => ({ ...current, rois: [] }))}>Clear measurements</button></div>{session.rois.length ? <ul className="measurement-list">{session.rois.map((roi) => <li key={roi.id} data-measurement-kind={roi.kind}><div><strong>{roi.id} - {roi.coordinateSpace} {roi.kind.toLowerCase()}</strong>{roi.kind === 'POINT' && <span>({roi.x}, {roi.y}) px</span>}{roi.kind === 'RECTANGLE' && <span>{roi.width} x {roi.height} px; area {roi.width * roi.height} px^2</span>}{roi.kind === 'LINE' && <span>({roi.x1}, {roi.y1}) to ({roi.x2}, {roi.y2}); distance {roi.distancePixels} px</span>}{roi.kind === 'RECTANGLE' && roi.nativeHeightStatistics && <span>Native height min {roi.nativeHeightStatistics.nativeMin}, max {roi.nativeHeightStatistics.nativeMax}, mean {roi.nativeHeightStatistics.nativeMean} ({roi.nativeHeightStatistics.storageDataType ?? 'native type unavailable'}; {roi.nativeHeightStatistics.validCount} valid / {roi.nativeHeightStatistics.invalidCount} invalid)</span>}</div><button type="button" aria-label={`Remove ${roi.id}`} onClick={() => commit((current) => ({ ...current, rois: current.rois.filter((item) => item.id !== roi.id) }))}>Remove</button></li>)}</ul> : <p className="engineering-empty-inline">No pixel measurements in this browser session.</p>}</section>
+          <section className="engineering-session-panel" aria-labelledby="measurement-tools-title">
+            <div className="subpanel-heading"><h4 id="measurement-tools-title">Pixel measurements</h4><span>{session.coordinates.activeSpace === 'RGB' ? 'RGB' : 'Height'} space</span></div>
+            <p className="engineering-panel-note">Use Rectangle or Line on the canvas. Height rectangles request bounded native statistics. Native values; physical units unavailable.</p>
+            {roiLoading && <p role="status">Calculating native height statistics...</p>}
+            {roiError && <div className="sample-error" role="alert"><strong>{roiError.code}</strong><span>{roiError.message}</span><span>Request ID: {roiError.requestId}</span></div>}
+            <div className="measurement-heading">
+              <strong>Measurements</strong>
+              <button type="button" disabled={!selectedHeightRoi} onClick={() => {
+                if (!selectedHeightRoi) return
+                commit((current) => ({ ...current, selectedRoiId: null, rois: current.rois.filter((item) => item.id !== selectedHeightRoi.id) }))
+              }}>Clear ROI</button>
+              <button type="button" disabled={!session.rois.length} onClick={() => commit((current) => ({ ...current, selectedRoiId: null, rois: [] }))}>Clear measurements</button>
+            </div>
+            {session.rois.length ? <ul className="measurement-list">{session.rois.map((roi) => (
+              <li key={roi.id} className={session.selectedRoiId === roi.id ? 'selected' : ''} data-measurement-kind={roi.kind}>
+                <button type="button" className="measurement-select" aria-pressed={session.selectedRoiId === roi.id} onClick={() => commit((current) => ({ ...current, selectedRoiId: roi.id }))}>
+                  <strong>{roi.id} - {roi.coordinateSpace} {roi.kind.toLowerCase()}</strong>
+                  {roi.kind === 'POINT' && <span>X {roi.x}, Y {roi.y} pixels</span>}
+                  {roi.kind === 'RECTANGLE' && <span>X {roi.x}, Y {roi.y}; W {roi.width}, H {roi.height} pixels; area {roi.width * roi.height} pixels squared</span>}
+                  {roi.kind === 'LINE' && <span>Start X {roi.x1}, Y {roi.y1}; end X {roi.x2}, Y {roi.y2}; dx {roi.deltaXPixels}, dy {roi.deltaYPixels} pixels; distance {roi.distancePixels} pixels; direction {roi.directionDegrees} degrees</span>}
+                  {roi.kind === 'RECTANGLE' && roi.nativeHeightStatistics && <span>Native min {roi.nativeHeightStatistics.nativeMin}, max {roi.nativeHeightStatistics.nativeMax}, mean {roi.nativeHeightStatistics.nativeMean}, range {Number((roi.nativeHeightStatistics.nativeMax - roi.nativeHeightStatistics.nativeMin).toFixed(6))}; {roi.nativeHeightStatistics.validCount} valid / {roi.nativeHeightStatistics.invalidCount} invalid</span>}
+                </button>
+                <button type="button" aria-label={`Remove ${roi.id}`} onClick={() => commit((current) => ({ ...current, selectedRoiId: current.selectedRoiId === roi.id ? null : current.selectedRoiId, rois: current.rois.filter((item) => item.id !== roi.id) }))}>Remove</button>
+              </li>
+            ))}</ul> : <p className="engineering-empty-inline">No pixel measurements in this browser session.</p>}
+          </section>
         </aside>
       </div>
 
-      <div className="engineering-status-bar" role="status" aria-live="polite" aria-label="Engineering workspace status"><span>Inspection <strong className="mono">{inspectionId}</strong></span><span>RGB {view.rgb.width}x{view.rgb.height}</span><span>Height {view.height.width}x{view.height.height}</span><span>Zoom {Math.round(session.zoom * 100)}%</span><span>Tool {toolDefinition.label}</span><span>RGB {session.coordinates.rgbSelected ? `${session.coordinates.rgbX},${session.coordinates.rgbY}` : 'none'}</span><span>Height {session.coordinates.heightSelected ? `${session.coordinates.heightX},${session.coordinates.heightY}` : 'none'}</span><span>Pairs {session.correspondences.length}</span><span>Registration {view.registration_status}</span><span>Units unavailable</span></div>
+      <div className="engineering-status-bar" role="status" aria-live="polite" aria-label="Engineering workspace status"><span>Inspection <strong className="mono">{inspectionId}</strong></span><span>RGB {view.rgb.width}x{view.rgb.height}</span><span>Height {view.height.width}x{view.height.height}</span><span>Zoom {Math.round(session.zoom * 100)}%</span><span>Tool {toolDefinition.label}</span><span>RGB {session.coordinates.rgbSelected ? `${session.coordinates.rgbX},${session.coordinates.rgbY}` : 'none'}</span><span>Height {session.coordinates.heightSelected ? `${session.coordinates.heightX},${session.coordinates.heightY}` : 'none'}</span><span>Palette {session.heightPalette}</span><span>Display {activeDisplayMin}..{activeDisplayMax}</span><span>Invalid {session.showInvalidHeight ? 'shown' : 'hidden'}</span><span>Pairs {session.correspondences.length}</span><span>Registration {view.registration_status}</span><span>Units unavailable</span></div>
 
       <section className="pipeline-evidence-panel" aria-labelledby="pipeline-evidence-title"><div className="panel-heading"><div><p className="step-number">Pipeline evidence and limitations</p><h3 id="pipeline-evidence-title">Persisted workflow record</h3></div><p>No validation or processing is executed by this workspace.</p></div><div className="pipeline-evidence-grid"><PipelineCard id="technical-validation" title="Technical validation" available={view.validation.available}><dl><div><dt>Outcome</dt><dd>{view.validation.outcome ?? 'Not recorded'}</dd></div><div><dt>Policy</dt><dd>{view.validation.policy_id ? `${view.validation.policy_id} ${view.validation.policy_version}` : 'Not recorded'}</dd></div><div><dt>Findings</dt><dd>{view.validation.finding_codes.join(', ') || 'None recorded'}</dd></div></dl></PipelineCard><PipelineCard id="synthetic-preprocessing" title="Synthetic preprocessing" available={view.processing.available}><dl><div><dt>Outcome</dt><dd>{view.processing.preprocessing_outcome ?? 'Not recorded'}</dd></div><div><dt>Synthetic input verified</dt><dd>{view.processing.synthetic_input_verified === null ? 'Not recorded' : view.processing.synthetic_input_verified ? 'Yes' : 'No'}</dd></div></dl></PipelineCard><PipelineCard id="mock-inference" title="Deterministic mock inference" available={view.processing.available}><dl><div><dt>Decision</dt><dd>{view.processing.mock_decision ?? 'Not recorded'}</dd></div><div><dt>Processing status</dt><dd>{view.processing.processing_status ?? 'Not recorded'}</dd></div></dl></PipelineCard><PipelineCard id="persisted-result" title="Persisted result" available={true}><dl><div><dt>Inspection status</dt><dd>{view.inspection_status}</dd></div><div><dt>Calibration</dt><dd>{view.calibration_status}</dd></div><div><dt>Registration</dt><dd>{view.registration_status}</dd></div></dl></PipelineCard></div><div className="engineering-limitations"><h4>Engineering limitations</h4><ul><li>Synthetic engineering data only.</li><li>No production measurement or fabricated physical units.</li><li>No physical calibration.</li><li>No real registration.</li><li>No production inspection decision.</li>{view.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul></div></section>
     </section>
