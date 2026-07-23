@@ -21,11 +21,24 @@ export interface RuntimeSnapshot {
     exists: boolean
     actual_sha256: string | null
     actual_byte_size: number | null
+    actual_mtime_ns: number | null
   }>
   runtime_files: string[]
   report_files: string[]
   fixture_tree_sha256: string
   fixture_files_verified: boolean
+  fixture_integrity: Array<{
+    path: string
+    sha256: string
+    byte_size: number
+    mtime_ns: number
+  }>
+  fixture_control_files: Array<{
+    path: string
+    sha256: string
+    byte_size: number
+    mtime_ns: number
+  }>
 }
 
 export interface QueryProfile {

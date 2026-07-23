@@ -14,6 +14,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:engineering": "playwright test e2e/specs/zz-engineering-workspace.spec.ts e2e/specs/zzz-engineering-hardening.spec.ts",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:report": "playwright show-report",
     "lint": "eslint .",

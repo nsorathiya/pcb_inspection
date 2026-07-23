@@ -44,6 +44,8 @@ launcher to the isolated backend port; normal development still defaults to
 2. Invokes `scripts/generate_synthetic_inspection_fixtures.py` with fixed seed
    `20260717` for only `valid_rgb_png_height_tiff` and
    `valid_different_dimensions`.
+   It also creates a deterministic Full HD pair below the same temporary root
+   for engineering-viewer hardening; those binaries never enter the repository.
 3. Applies the normal migrations and seeds two versions of recipe
    `synthetic-e2e`: `1.0` ACTIVE and `0.9` DRAFT. Catalogue status is not
    production approval.
@@ -162,6 +164,7 @@ From `frontend`:
 npm ci
 npx playwright install chromium
 npm run test:e2e
+npm run test:e2e:engineering
 npm run test:e2e:headed
 npm run test:e2e:report
 ```
@@ -191,9 +194,11 @@ with `npm run test:e2e:report`. Diagnostics contain metadata and request
 summaries, not uploaded artifact bytes or secrets.
 
 Successful runs remove normal diagnostics, generated fixtures, database/WAL/SHM
-files, runtime artifacts, downloads, and the unique temporary root. Setup and
-teardown handle partial startup; process-tree fallback is scoped to recorded
-owned PIDs and never scans or terminates unrelated developer services.
+files, runtime artifacts, downloads, and the unique temporary root only after
+the reporter confirms the complete suite passed. Failed runs retain diagnostics
+even when an earlier test succeeded. Setup and teardown handle partial startup;
+process-tree fallback is scoped to recorded owned PIDs and never scans or
+terminates unrelated developer services.
 
 ## CI behavior
 

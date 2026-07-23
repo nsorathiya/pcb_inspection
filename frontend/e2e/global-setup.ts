@@ -1,18 +1,18 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { defaultPythonExecutable, diagnosticsRoot, frontendRoot, repositoryRoot, stateFile, successMarker } from './helpers/paths'
+import { defaultPythonExecutable, diagnosticsRoot, frontendRoot, repositoryRoot, stateFile } from './helpers/paths'
 import { availablePort, runChecked, spawnLogged, stopOwnedProcess, waitForUrl } from './helpers/processes'
 import type { RuntimeState } from './helpers/runtime'
 
 export default async function globalSetup(): Promise<void> {
   rmSync(diagnosticsRoot, { recursive: true, force: true })
-  rmSync(successMarker, { force: true })
   mkdirSync(diagnosticsRoot, { recursive: true })
 
   const temporaryRoot = mkdtempSync(path.join(os.tmpdir(), 'pcb-aoi-e2e-'))
   const runtimeRoot = path.join(temporaryRoot, 'runtime')
   const fixtureRoot = path.join(temporaryRoot, 'fixtures')
+  const largeEvidenceRoot = path.join(temporaryRoot, 'large-evidence')
   const databaseFile = path.join(runtimeRoot, 'database', 'pcb_aoi.sqlite3')
   const pythonExecutable = defaultPythonExecutable()
   const backendPort = await availablePort()
@@ -29,6 +29,7 @@ export default async function globalSetup(): Promise<void> {
     temporaryRoot,
     runtimeRoot,
     fixtureRoot,
+    largeEvidenceRoot,
     databaseFile,
     frontendUrl,
     backendUrl,
@@ -52,6 +53,12 @@ export default async function globalSetup(): Promise<void> {
     ], { cwd: repositoryRoot })
     const manifest = JSON.parse(readFileSync(path.join(fixtureRoot, 'generation_manifest.json'), 'utf8')) as { output_tree_sha256: string }
     state.fixtureTreeSha256 = manifest.output_tree_sha256
+
+    runChecked(pythonExecutable, [
+      path.join(frontendRoot, 'e2e', 'support', 'runtime_control.py'),
+      'generate-large-evidence', '--runtime-root', runtimeRoot,
+      '--evidence-root', largeEvidenceRoot,
+    ], { cwd: repositoryRoot })
 
     runChecked(pythonExecutable, [
       path.join(frontendRoot, 'e2e', 'support', 'runtime_control.py'),

@@ -431,6 +431,24 @@ describe('vision engineering workspace', () => {
     expect(screen.getByText(/Manual flicker alternates/)).toBeInTheDocument()
   })
 
+  it('releases the temporary object URL immediately after exporting session JSON', async () => {
+    const user = userEvent.setup()
+    const createObjectUrl = vi.fn(() => 'blob:engineering-export')
+    const revokeObjectUrl = vi.fn()
+    const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+    vi.stubGlobal('URL', { ...URL, createObjectURL: createObjectUrl, revokeObjectURL: revokeObjectUrl })
+    renderPage()
+    await screen.findByRole('heading', { name: 'PCB 2D/3D Vision Engineering Workspace' })
+
+    await user.click(screen.getByRole('button', { name: 'Export alignment JSON' }))
+
+    expect(createObjectUrl).toHaveBeenCalledTimes(1)
+    expect(anchorClick).toHaveBeenCalledTimes(1)
+    expect(revokeObjectUrl).toHaveBeenCalledWith('blob:engineering-export')
+    anchorClick.mockRestore()
+    vi.unstubAllGlobals()
+  })
+
   it('labels the display matrix context without calibration or production meaning', async () => {
     renderPage()
     await screen.findByRole('heading', { name: 'Results' })
@@ -583,6 +601,79 @@ describe('vision engineering workspace', () => {
     fireEvent.pointerUp(canvas, { clientX: 20, clientY: 20, pointerId: 2 })
     expect(screen.getByText(/dx 20, dy 20 pixels; distance 28.2843 pixels; direction 45 degrees/)).toBeInTheDocument()
     expect(screen.queryByText(/millimetre|micrometre|tolerance/i)).not.toBeInTheDocument()
+  })
+
+  it('creates line and height rectangle measurements from coordinate inputs without pointer input', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByRole('heading', { name: 'PCB 2D/3D Vision Engineering Workspace' })
+
+    await user.clear(screen.getByLabelText('RGB X coordinate'))
+    await user.type(screen.getByLabelText('RGB X coordinate'), '10')
+    await user.clear(screen.getByLabelText('RGB Y coordinate'))
+    await user.type(screen.getByLabelText('RGB Y coordinate'), '20')
+    await user.click(screen.getByRole('button', { name: /Line L/ }))
+    await user.click(screen.getByRole('button', { name: 'Set selected coordinate as measurement start' }))
+    expect(screen.getByText(/Measurement start: RGB X 10, Y 20/)).toBeInTheDocument()
+    await user.clear(screen.getByLabelText('RGB X coordinate'))
+    await user.type(screen.getByLabelText('RGB X coordinate'), '13')
+    await user.clear(screen.getByLabelText('RGB Y coordinate'))
+    await user.type(screen.getByLabelText('RGB Y coordinate'), '24')
+    await user.click(screen.getByRole('button', { name: 'Complete line at selected coordinate' }))
+    expect(screen.getByText(/dx 3, dy 4 pixels; distance 5 pixels/)).toBeInTheDocument()
+
+    await user.click(within(screen.getByRole('group', { name: 'Active coordinate space' })).getByRole('button', { name: 'Height' }))
+    await user.clear(screen.getByLabelText('Height X coordinate'))
+    await user.type(screen.getByLabelText('Height X coordinate'), '10')
+    await user.clear(screen.getByLabelText('Height Y coordinate'))
+    await user.type(screen.getByLabelText('Height Y coordinate'), '20')
+    await user.click(screen.getByRole('button', { name: /Rectangle R/ }))
+    await user.click(screen.getByRole('button', { name: 'Set selected coordinate as measurement start' }))
+    await user.clear(screen.getByLabelText('Height X coordinate'))
+    await user.type(screen.getByLabelText('Height X coordinate'), '30')
+    await user.clear(screen.getByLabelText('Height Y coordinate'))
+    await user.type(screen.getByLabelText('Height Y coordinate'), '40')
+    await user.click(screen.getByRole('button', { name: 'Complete rectangle at selected coordinate' }))
+
+    await waitFor(() => expect(roiMock).toHaveBeenCalledWith(
+      INSPECTION_ID,
+      { x: 10, y: 20, width: 21, height: 21 },
+      expect.any(AbortSignal),
+    ))
+    expect(await screen.findByText(/W 21, H 21 pixels; area 441 pixels squared/)).toBeInTheDocument()
+    expect(screen.getByText(/Native min 800, max 1600, mean 1200/)).toBeInTheDocument()
+  })
+
+  it('aborts an in-flight height ROI request when the viewer unmounts', async () => {
+    const user = userEvent.setup()
+    let resolveRoi!: (value: Awaited<ReturnType<typeof getEngineeringHeightRoi>>) => void
+    roiMock.mockImplementationOnce(() => new Promise((resolve) => { resolveRoi = resolve }))
+    const rendered = renderPage()
+    await screen.findByRole('heading', { name: 'PCB 2D/3D Vision Engineering Workspace' })
+
+    await user.click(within(screen.getByRole('group', { name: 'Active coordinate space' })).getByRole('button', { name: 'Height' }))
+    await user.clear(screen.getByLabelText('Height X coordinate'))
+    await user.type(screen.getByLabelText('Height X coordinate'), '10')
+    await user.clear(screen.getByLabelText('Height Y coordinate'))
+    await user.type(screen.getByLabelText('Height Y coordinate'), '20')
+    await user.click(screen.getByRole('button', { name: /Rectangle R/ }))
+    await user.click(screen.getByRole('button', { name: 'Set selected coordinate as measurement start' }))
+    await user.clear(screen.getByLabelText('Height X coordinate'))
+    await user.type(screen.getByLabelText('Height X coordinate'), '30')
+    await user.click(screen.getByRole('button', { name: 'Complete rectangle at selected coordinate' }))
+    await waitFor(() => expect(roiMock).toHaveBeenCalledTimes(1))
+    const signal = roiMock.mock.calls[0]?.[2]
+
+    rendered.unmount()
+    expect(signal?.aborted).toBe(true)
+    resolveRoi({
+      data: {
+        inspection_id: INSPECTION_ID, x: 10, y: 20, width: 21, height: 1,
+        storage_data_type: 'uint16', native_min: 800, native_max: 1600, native_mean: 1200,
+        valid_count: 21, invalid_count: 0, physical_unit: null, warnings: [], request_id: 'late-roi',
+      },
+      requestId: 'late-roi',
+    })
   })
 
   it('confirms and resets the complete engineering session without reloading evidence', async () => {

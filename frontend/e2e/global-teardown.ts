@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { diagnosticsRoot, stateFile, successMarker } from './helpers/paths'
+import { diagnosticsRoot, stateFile } from './helpers/paths'
 import { stopOwnedProcess } from './helpers/processes'
 import type { RuntimeState } from './helpers/runtime'
 
@@ -41,10 +41,5 @@ export default async function globalTeardown(): Promise<void> {
     database_sidecars_before_root_removal: sidecars,
   }
   writeFileSync(path.join(diagnosticsRoot, 'cleanup.json'), JSON.stringify(summary, null, 2))
-  if (existsSync(successMarker)) {
-    rmSync(diagnosticsRoot, { recursive: true, force: true })
-    rmSync(stateFile, { force: true })
-    rmSync(successMarker, { force: true })
-  }
   process.stdout.write('Synthetic E2E cleanup: processes stopped and temporary runtime removed.\n')
 }

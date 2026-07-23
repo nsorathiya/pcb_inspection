@@ -1,8 +1,7 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { test, expect, type NetworkRecord } from '../fixtures/test'
 import { assertNoDuplicateIds, collectKeys } from '../helpers/assertions'
 import { queryProfiles, seedHistory, snapshot, tamperRgb, verifyReportEnvelope, type RuntimeSnapshot } from '../helpers/control'
-import { successMarker } from '../helpers/paths'
 import { runtimeState, scenarioFiles } from '../helpers/runtime'
 import { createInspection, processInspection, validateInspection } from '../helpers/workflow'
 
@@ -408,7 +407,6 @@ test.describe.serial('full synthetic operator workflow and release hardening', (
       contentType: 'application/json',
     })
     process.stdout.write(`\nLIVE_DEMONSTRATION ${JSON.stringify(finalDemonstration)}\n`)
-    writeFileSync(successMarker, 'success\n')
     expect(networkRecords.some((item) => item.requestId && item.requestId !== 'controlled-503-request')).toBe(true)
   })
 })

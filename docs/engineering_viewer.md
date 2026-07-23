@@ -1,5 +1,9 @@
 # Read-only synthetic engineering viewer
 
+Task 30D responsive, keyboard, accessibility, large-evidence, request, memory,
+integrity, and cleanup evidence is documented in
+[`engineering_workspace_usability_verification.md`](engineering_workspace_usability_verification.md).
+
 The engineering viewer is a disabled-by-default development feature for inspecting
 the exact RGB and native-height pair already registered to an inspection. It is not
 a production AOI decision tool and does not establish physical calibration or
@@ -205,6 +209,11 @@ retain the request ID. The 1,048,576-pixel backend maximum is unchanged. Selecti
 height ROI marks its native min/max on the existing histogram; no matrix or new
 histogram data is requested.
 
+Canvas dragging and a keyboard-equivalent coordinate path are both supported.
+For keyboard operation, select Line or Rectangle, enter X/Y in the active
+coordinate space, set the selected coordinate as the measurement start, change
+X/Y, and complete the measurement. This remains session-only.
+
 Lines report coordinate space, start/end X/Y, dx/dy, Euclidean distance in pixels,
 and the screen-coordinate direction from `atan2(dy, dx)` in degrees. There is no line
 profile, calibration, or persistence.
@@ -239,5 +248,6 @@ npm run test:run -- src/pages/EngineeringViewPage.test.tsx
 npm run test:run -- src/utils/engineeringSession.test.ts
 npm run test:run
 npm run build
+npm run test:e2e:engineering
 npm run test:e2e
 ```

@@ -1,6 +1,8 @@
 import asyncio
 import hashlib
 import json
+import struct
+import time
 from pathlib import Path
 
 import pytest
@@ -23,7 +25,11 @@ from app.services.dataset_validation.file_inspection import (
     decode_rgb_values,
 )
 from app.testing.synthetic_aoi import generate_fixtures
-from app.testing.synthetic_aoi.raster_generation import encode_npy_float32
+from app.testing.synthetic_aoi.raster_generation import (
+    encode_classic_tiff,
+    encode_npy_float32,
+    encode_png,
+)
 
 PASS_ID = "00000000-0000-4000-8000-000000000003"
 
@@ -95,6 +101,16 @@ async def _side_effect_counts(application) -> tuple[int, int, int]:
         return tuple(counts)
 
 
+async def _artifact_relative_paths(application, inspection_id: str) -> tuple[str, ...]:
+    async with application.state.database.session() as session:
+        rows = await session.scalars(
+            select(InspectionArtifact.relative_path)
+            .where(InspectionArtifact.inspection_id == inspection_id)
+            .order_by(InspectionArtifact.artifact_type)
+        )
+        return tuple(str(value) for value in rows)
+
+
 def _runtime_tree(root: Path) -> dict[str, str]:
     return {
         path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
@@ -102,6 +118,65 @@ def _runtime_tree(root: Path) -> dict[str, str]:
         for path in sorted((root / category).rglob("*"))
         if path.is_file()
     }
+
+
+def _large_test_evidence(
+    *,
+    rgb_width: int,
+    rgb_height: int,
+    height_width: int,
+    height_height: int,
+    rgb_format: str,
+    height_format: str,
+) -> tuple[dict[str, tuple[str, bytes, str]], int]:
+    rgb_pixels = b"\x11\x22\x33" * (rgb_width * rgb_height)
+    if rgb_format == "PNG":
+        rgb = encode_png(
+            rgb_width,
+            rgb_height,
+            bit_depth=8,
+            color_type=2,
+            pixel_bytes=rgb_pixels,
+        )
+        rgb_name, rgb_media = "large-rgb.png", "image/png"
+    else:
+        rgb = encode_classic_tiff(
+            rgb_width,
+            rgb_height,
+            samples=3,
+            bits=8,
+            photometric=2,
+            pixel_bytes=rgb_pixels,
+        )
+        rgb_name, rgb_media = "large-rgb.tiff", "image/tiff"
+
+    height_row_values = tuple(100 + (x % 4096) for x in range(height_width))
+    if height_format == "TIFF":
+        height_pixels = struct.pack("<" + ("H" * height_width), *height_row_values) * height_height
+        height = encode_classic_tiff(
+            height_width,
+            height_height,
+            samples=1,
+            bits=16,
+            photometric=1,
+            pixel_bytes=height_pixels,
+        )
+        height_name, height_media = "large-height.tiff", "image/tiff"
+    else:
+        height_pixels = struct.pack(">" + ("H" * height_width), *height_row_values) * height_height
+        height = encode_png(
+            height_width,
+            height_height,
+            bit_depth=16,
+            color_type=0,
+            pixel_bytes=height_pixels,
+        )
+        height_name, height_media = "large-height.png", "image/png"
+
+    return {
+        "rgb_image": (rgb_name, rgb, rgb_media),
+        "height_map": (height_name, height, height_media),
+    }, 117
 
 
 @pytest.mark.parametrize(
@@ -161,6 +236,167 @@ def test_supported_synthetic_formats_return_native_metadata_and_histogram(
     assert str(tmp_path.resolve()) not in response.text
     assert before == after
     assert inspection is not None and inspection.status is InspectionStatus.RECEIVED
+
+
+@pytest.mark.parametrize(
+    (
+        "rgb_width",
+        "rgb_height",
+        "height_width",
+        "height_height",
+        "rgb_format",
+        "height_format",
+    ),
+    [
+        (1920, 1080, 1920, 1080, "PNG", "TIFF"),
+        (2560, 1440, 1920, 1080, "TIFF", "PNG"),
+    ],
+    ids=("full-hd-matching-png-tiff", "qhd-differing-tiff-png16"),
+)
+def test_large_temporary_evidence_remains_read_only_and_usable(
+    tmp_path,
+    record_property,
+    rgb_width,
+    rgb_height,
+    height_width,
+    height_height,
+    rgb_format,
+    height_format,
+):
+    files, expected_height = _large_test_evidence(
+        rgb_width=rgb_width,
+        rgb_height=rgb_height,
+        height_width=height_width,
+        height_height=height_height,
+        rgb_format=rgb_format,
+        height_format=height_format,
+    )
+    source_fingerprints = {
+        key: {
+            "sha256": hashlib.sha256(value[1]).hexdigest(),
+            "byte_size": len(value[1]),
+        }
+        for key, value in files.items()
+    }
+    application, _fixtures = _application(tmp_path)
+    timings: dict[str, float] = {}
+    with TestClient(application) as client:
+        started = time.perf_counter()
+        intake = client.post(
+            "/api/v1/inspections",
+            data={
+                "board_id": f"LARGE-{rgb_width}x{rgb_height}",
+                "recipe_id": "engineering-viewer-large-test",
+                "recipe_version": "1.0",
+            },
+            files=files,
+        )
+        timings["intake_seconds"] = time.perf_counter() - started
+        assert intake.status_code == 201, intake.text
+        inspection_id = intake.json()["inspection_id"]
+        before_side_effects = asyncio.run(_side_effect_counts(application))
+        artifact_paths = [
+            (tmp_path / "runtime" / relative_path).resolve()
+            for relative_path in asyncio.run(
+                _artifact_relative_paths(application, inspection_id)
+            )
+        ]
+        assert len(artifact_paths) == 2
+        before_artifacts = {
+            path.name: {
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                "byte_size": path.stat().st_size,
+                "mtime_ns": path.stat().st_mtime_ns,
+            }
+            for path in artifact_paths
+        }
+
+        started = time.perf_counter()
+        metadata = client.get(
+            f"/api/v1/inspections/{inspection_id}/engineering-view"
+        )
+        timings["metadata_seconds"] = time.perf_counter() - started
+        started = time.perf_counter()
+        rgb_preview = client.get(
+            f"/api/v1/inspections/{inspection_id}/engineering-view/rgb-preview"
+        )
+        timings["rgb_preview_seconds"] = time.perf_counter() - started
+        started = time.perf_counter()
+        height_preview = client.get(
+            f"/api/v1/inspections/{inspection_id}/engineering-view/height-preview"
+        )
+        timings["height_preview_seconds"] = time.perf_counter() - started
+        started = time.perf_counter()
+        sample = client.get(
+            f"/api/v1/inspections/{inspection_id}/engineering-view/sample",
+            params={"rgb_x": 17, "rgb_y": 23, "height_x": 17, "height_y": 23},
+        )
+        timings["sample_seconds"] = time.perf_counter() - started
+        started = time.perf_counter()
+        roi = client.get(
+            f"/api/v1/inspections/{inspection_id}/engineering-view/height-roi",
+            params={"x": 0, "y": 0, "width": 64, "height": 64},
+        )
+        timings["roi_seconds"] = time.perf_counter() - started
+        after_side_effects = asyncio.run(_side_effect_counts(application))
+
+    assert metadata.status_code == 200, metadata.text
+    payload = metadata.json()
+    assert (payload["rgb"]["width"], payload["rgb"]["height"]) == (
+        rgb_width,
+        rgb_height,
+    )
+    assert (payload["height"]["width"], payload["height"]["height"]) == (
+        height_width,
+        height_height,
+    )
+    assert sum(payload["height_statistics"]["histogram"]["counts"]) == (
+        height_width * height_height
+    )
+    assert rgb_preview.status_code == 200
+    assert rgb_preview.headers["content-type"] == "image/png"
+    assert height_preview.status_code == 200
+    assert height_preview.headers["content-type"] == "image/png"
+    assert sample.status_code == 200, sample.text
+    assert sample.json()["rgb"]["values"] == [17, 34, 51]
+    assert sample.json()["height"]["value"] == expected_height
+    assert roi.status_code == 200, roi.text
+    assert roi.json()["valid_count"] == 64 * 64
+    assert roi.json()["native_min"] == 100
+    assert roi.json()["native_max"] == 163
+    assert before_side_effects == after_side_effects
+
+    after_artifacts = {
+        path.name: {
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "byte_size": path.stat().st_size,
+            "mtime_ns": path.stat().st_mtime_ns,
+        }
+        for path in artifact_paths
+    }
+    assert after_artifacts == before_artifacts
+    assert sorted(
+        (item["sha256"], item["byte_size"]) for item in after_artifacts.values()
+    ) == sorted(
+        (item["sha256"], item["byte_size"])
+        for item in source_fingerprints.values()
+    )
+    assert all(value >= 0 for value in timings.values())
+    record_property(
+        "engineering_large_evidence_diagnostics",
+        json.dumps(
+            {
+                "rgb": [rgb_width, rgb_height, rgb_format],
+                "height": [height_width, height_height, height_format],
+                "timings_seconds": timings,
+            },
+            sort_keys=True,
+        ),
+    )
+    print(
+        "ENGINEERING_LARGE_EVIDENCE_DIAGNOSTIC "
+        + json.dumps(timings, sort_keys=True)
+    )
 
 
 def test_separate_coordinates_return_exact_native_rgb_and_height_values(tmp_path):

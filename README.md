@@ -108,4 +108,5 @@ persisted; exported JSON is explicitly development-only and never production-app
 When enabled, open an inspection's
 `/inspections/{id}/engineering-view` frontend route for the responsive 2D/3D vision
 engineering workspace. See
-[docs/engineering_viewer.md](docs/engineering_viewer.md).
+[docs/engineering_viewer.md](docs/engineering_viewer.md) and the
+[Task 30D usability verification](docs/engineering_workspace_usability_verification.md).

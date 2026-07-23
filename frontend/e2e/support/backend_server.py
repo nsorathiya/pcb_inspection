@@ -37,7 +37,7 @@ def _uuid_values(prefix: str, order: tuple[int, ...]):
 settings = Settings()
 application = create_app(settings)
 
-inspection_ids = _uuid_values("00000000-0000-4000-8000", (0x11, 0x19, 0x13, 0x14, 0x15, 0x16))
+inspection_ids = _uuid_values("00000000-0000-4000-8000", (0x11, 0x19, 0x13, 0x14, 0x15, 0x16, 0x17))
 validation_ids = _uuid_values("bbbbbbbb-bbbb-4bbb-8bbb", (0x11, 0x19, 0x13, 0x14, 0x15, 0x16))
 preprocessing_ids = _uuid_values("cccccccc-cccc-4ccc-8ccc", (0x11, 0x19, 0x13, 0x16))
 inference_ids = _uuid_values("dddddddd-dddd-4ddd-8ddd", (0x11, 0x19, 0x13, 0x16))

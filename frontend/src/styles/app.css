@@ -426,6 +426,10 @@ input:hover, select:hover { border-color: var(--slate-700); }
 .matrix-context strong { color: var(--navy-900); }
 .export-alignment { margin-top: .7rem !important; }
 .measurement-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .65rem; padding-top: .55rem; border-top: 1px solid var(--slate-300); font-size: .72rem; }
+.keyboard-measurement-controls { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .35rem; margin-top: .55rem; }
+.keyboard-measurement-controls button { min-height: 2rem; padding: .35rem .45rem; color: var(--navy-800); background: white; border: 1px solid var(--slate-300); font-size: .64rem; font-weight: 750; cursor: pointer; }
+.keyboard-measurement-controls button:last-child { grid-column: 1 / -1; }
+.keyboard-measurement-controls button:disabled { opacity: .48; cursor: not-allowed; }
 .measurement-list li > div { display: grid; gap: .18rem; min-width: 0; }
 .measurement-list li span { color: var(--slate-500); overflow-wrap: anywhere; }
 .measurement-list li.selected { border-color: var(--blue-600); box-shadow: inset 3px 0 var(--blue-600); }
@@ -498,6 +502,15 @@ input:hover, select:hover { border-color: var(--slate-700); }
   .active-tool-status { grid-template-columns: 1fr; }
   .active-tool-status span:nth-child(2) { grid-column: auto; grid-row: auto; }
   .height-display-control-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 800px) {
+  .view-mode-toolbar button, .canvas-toolbar button, .engineering-tool-strip button,
+  .evidence-navigator a, .evidence-navigator button, .coordinate-space-controls button,
+  .keyboard-measurement-controls button, .correspondence-actions button,
+  .segmented-controls button, .flicker-controls button {
+    min-height: 2.75rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

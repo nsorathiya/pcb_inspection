@@ -5,6 +5,7 @@ import asyncio
 import hashlib
 import json
 import sqlite3
+import struct
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -18,6 +19,10 @@ from app.core.runtime_paths import RuntimePaths  # noqa: E402
 from app.db import Database, Repositories  # noqa: E402
 from app.db.models import InspectionStatus, RecipeStatus  # noqa: E402
 from app.db.repositories import InspectionCreate, RecipeCreate  # noqa: E402
+from app.testing.synthetic_aoi.raster_generation import (  # noqa: E402
+    encode_classic_tiff,
+    encode_png,
+)
 
 
 def _database(runtime_root: Path) -> tuple[RuntimePaths, Database, Repositories]:
@@ -92,6 +97,67 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def generate_large_evidence(evidence_root: Path) -> None:
+    width, height = 1920, 1080
+    evidence_root.mkdir(parents=True, exist_ok=False)
+    rgb_path = evidence_root / "engineering-large-rgb-1920x1080.png"
+    height_path = evidence_root / "engineering-large-height-1920x1080.tiff"
+    rgb_path.write_bytes(
+        encode_png(
+            width,
+            height,
+            bit_depth=8,
+            color_type=2,
+            pixel_bytes=b"\x11\x22\x33" * (width * height),
+        )
+    )
+    height_row = struct.pack(
+        "<" + ("H" * width),
+        *(100 + (x % 4096) for x in range(width)),
+    )
+    height_path.write_bytes(
+        encode_classic_tiff(
+            width,
+            height,
+            samples=1,
+            bits=16,
+            photometric=1,
+            pixel_bytes=height_row * height,
+        )
+    )
+    files = [
+        {
+            "kind": "rgb",
+            "name": rgb_path.name,
+            "sha256": _sha256(rgb_path),
+            "byte_size": rgb_path.stat().st_size,
+            "mtime_ns": rgb_path.stat().st_mtime_ns,
+        },
+        {
+            "kind": "height",
+            "name": height_path.name,
+            "sha256": _sha256(height_path),
+            "byte_size": height_path.stat().st_size,
+            "mtime_ns": height_path.stat().st_mtime_ns,
+        },
+    ]
+    (evidence_root / "manifest.json").write_text(
+        json.dumps(
+            {
+                "contract": "pcb-aoi-e2e-large-evidence/1.0",
+                "deterministic_identity": "full-hd-matching-png-tiff",
+                "width": width,
+                "height": height,
+                "files": files,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 def snapshot(runtime_root: Path, fixture_root: Path | None) -> dict[str, object]:
     paths = RuntimePaths.from_root(runtime_root)
     tables = (
@@ -153,6 +219,7 @@ def snapshot(runtime_root: Path, fixture_root: Path | None) -> dict[str, object]
             "exists": exists,
             "actual_sha256": _sha256(file_path) if contained and exists else None,
             "actual_byte_size": file_path.stat().st_size if contained and exists else None,
+            "actual_mtime_ns": file_path.stat().st_mtime_ns if contained and exists else None,
         })
 
     runtime_files = sorted(
@@ -161,13 +228,19 @@ def snapshot(runtime_root: Path, fixture_root: Path | None) -> dict[str, object]
     )
     fixture_tree_sha256 = None
     fixture_files_verified = None
+    fixture_integrity = None
+    fixture_control_files = None
     if fixture_root is not None:
         manifest = json.loads((fixture_root / "generation_manifest.json").read_text(encoding="utf-8"))
         inventory = []
         verified = True
         for item in manifest["files"]:
             file_path = fixture_root / Path(item["path"])
-            actual = {"path": item["path"], "sha256": _sha256(file_path), "byte_size": file_path.stat().st_size}
+            actual = {
+                "path": item["path"],
+                "sha256": _sha256(file_path),
+                "byte_size": file_path.stat().st_size,
+            }
             inventory.append(actual)
             verified = verified and actual == item
         canonical = json.dumps(sorted(inventory, key=lambda item: item["path"]), sort_keys=True, separators=(",", ":")).encode()
@@ -175,6 +248,25 @@ def snapshot(runtime_root: Path, fixture_root: Path | None) -> dict[str, object]
         # every inventoried hash and size is independently checked above.
         fixture_tree_sha256 = manifest["output_tree_sha256"]
         fixture_files_verified = verified and bool(canonical)
+        fixture_integrity = [
+            {
+                **item,
+                "mtime_ns": (fixture_root / Path(item["path"])).stat().st_mtime_ns,
+            }
+            for item in inventory
+        ]
+        fixture_control_files = [
+            {
+                "path": name,
+                "sha256": _sha256(fixture_root / name),
+                "byte_size": (fixture_root / name).stat().st_size,
+                "mtime_ns": (fixture_root / name).stat().st_mtime_ns,
+            }
+            for name in (
+                "SYNTHETIC_FIXTURES_MARKER.json",
+                "generation_manifest.json",
+            )
+        ]
 
     return {
         "schema_version": schema_version,
@@ -189,6 +281,8 @@ def snapshot(runtime_root: Path, fixture_root: Path | None) -> dict[str, object]
         "report_files": [item for item in runtime_files if item.startswith("reports/")],
         "fixture_tree_sha256": fixture_tree_sha256,
         "fixture_files_verified": fixture_files_verified,
+        "fixture_integrity": fixture_integrity,
+        "fixture_control_files": fixture_control_files,
     }
 
 
@@ -226,17 +320,22 @@ def verify_report(envelope_file: Path) -> dict[str, object]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=("seed-recipes", "seed-history", "snapshot", "tamper-rgb", "verify-report"))
+    parser.add_argument("command", choices=("seed-recipes", "seed-history", "generate-large-evidence", "snapshot", "tamper-rgb", "verify-report"))
     parser.add_argument("--runtime-root", required=True, type=Path)
     parser.add_argument("--fixture-root", type=Path)
     parser.add_argument("--count", type=int, default=25)
     parser.add_argument("--inspection-id")
     parser.add_argument("--envelope-file", type=Path)
+    parser.add_argument("--evidence-root", type=Path)
     args = parser.parse_args()
     if args.command == "seed-recipes":
         asyncio.run(seed_recipes(args.runtime_root))
     elif args.command == "seed-history":
         asyncio.run(seed_history(args.runtime_root, args.count))
+    elif args.command == "generate-large-evidence":
+        if args.evidence_root is None:
+            parser.error("--evidence-root is required for generate-large-evidence")
+        generate_large_evidence(args.evidence_root)
     elif args.command == "tamper-rgb":
         if not args.inspection_id:
             parser.error("--inspection-id is required for tamper-rgb")

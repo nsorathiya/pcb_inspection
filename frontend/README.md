@@ -64,6 +64,7 @@ npm run lint
 npm run typecheck
 npm run test:run
 npm run build
+npm run test:e2e:engineering
 npm run test:e2e
 ```
 
@@ -71,8 +72,14 @@ Focused engineering-workspace verification:
 
 ```powershell
 npm run test:run -- src/utils/engineeringSession.test.ts src/pages/EngineeringViewPage.test.tsx
-npx playwright test e2e/specs/zz-engineering-workspace.spec.ts
+npm run test:e2e:engineering
 ```
+
+The focused browser command covers exact desktop/laptop/tablet viewports,
+keyboard-only measurement controls, accessibility semantics, bounded network
+and memory diagnostics, temporary Full HD evidence, read-only database/source
+integrity, and engineering error states. Generated large evidence exists only
+under the isolated temporary root.
 
 For interactive diagnosis use `npm run test:e2e:headed`; after a failed run,
 open retained ignored diagnostics with `npm run test:e2e:report`. The suite uses

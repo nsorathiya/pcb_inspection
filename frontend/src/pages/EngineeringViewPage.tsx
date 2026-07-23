@@ -319,6 +319,7 @@ export function EngineeringViewPage() {
   const [flickerPhase, setFlickerPhase] = useState<AlignmentViewState>('DEVELOPMENT')
   const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
   const [flickerNotice, setFlickerNotice] = useState<string | null>(null)
+  const [keyboardMeasurementStart, setKeyboardMeasurementStart] = useState<{ point: PixelPoint; space: EngineeringCoordinateSpace } | null>(null)
   const drag = useRef<{ clientX: number; clientY: number; panX: number; panY: number; before: EngineeringSessionSnapshot; moved: boolean } | null>(null)
   const roiStart = useRef<{ point: PixelPoint; space: EngineeringCoordinateSpace } | null>(null)
   const sampleAbort = useRef<AbortController | null>(null)
@@ -334,12 +335,14 @@ export function EngineeringViewPage() {
   const undo = useCallback(() => {
     drag.current = null
     roiStart.current = null
+    setKeyboardMeasurementStart(null)
     setHistory((current) => undoSessionHistory(current))
   }, [])
 
   const redo = useCallback(() => {
     drag.current = null
     roiStart.current = null
+    setKeyboardMeasurementStart(null)
     setHistory((current) => redoSessionHistory(current))
   }, [])
 
@@ -376,6 +379,7 @@ export function EngineeringViewPage() {
     setFlickerNotice(null)
     drag.current = null
     roiStart.current = null
+    setKeyboardMeasurementStart(null)
     sampleAbort.current?.abort()
     roiAbort.current?.abort()
     roiSequence.current += 1
@@ -464,6 +468,7 @@ export function EngineeringViewPage() {
   const selectTool = useCallback((next: EngineeringTool) => {
     drag.current = null
     roiStart.current = null
+    setKeyboardMeasurementStart(null)
     if (tool === 'correspondence' && next !== 'correspondence' && (session.pendingRgbPoint || session.pendingHeightPoint)) {
       commit((current) => ({ ...current, pendingRgbPoint: null, pendingHeightPoint: null }))
     }
@@ -473,6 +478,7 @@ export function EngineeringViewPage() {
   const cancelCurrentAction = useCallback(() => {
     drag.current = null
     roiStart.current = null
+    setKeyboardMeasurementStart(null)
     sampleAbort.current?.abort()
     roiAbort.current?.abort()
     roiSequence.current += 1
@@ -618,46 +624,13 @@ export function EngineeringViewPage() {
     })
   }
 
-  const pointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (tool === 'pan') {
-      event.currentTarget.setPointerCapture?.(event.pointerId)
-      drag.current = { clientX: event.clientX, clientY: event.clientY, panX: session.pan.x, panY: session.pan.y, before: session, moved: false }
-      return
-    }
-    const interaction = resolveInteraction(event)
-    if (!interaction) return
-    if (tool === 'pointer') { setCoordinate(interaction.space, interaction.point); return }
-    if (tool === 'sample') { setCoordinate(interaction.space, interaction.point, true); return }
-    if (tool === 'correspondence') { addCorrespondenceSelection(interaction.space, interaction.point); return }
-    roiStart.current = interaction
-    event.currentTarget.setPointerCapture?.(event.pointerId)
-  }
-
-  const pointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!drag.current || tool !== 'pan') return
-    const bounds = event.currentTarget.getBoundingClientRect()
-    const nextPan = {
-      x: Math.min(1, Math.max(-1, drag.current.panX + (event.clientX - drag.current.clientX) / Math.max(bounds.width, 1))),
-      y: Math.min(1, Math.max(-1, drag.current.panY + (event.clientY - drag.current.clientY) / Math.max(bounds.height, 1))),
-    }
-    drag.current.moved = drag.current.moved || nextPan.x !== drag.current.panX || nextPan.y !== drag.current.panY
-    setHistory((current) => ({ ...current, present: { ...current.present, pan: nextPan } }))
-  }
-
-  const pointerUp = async (event: ReactPointerEvent<HTMLDivElement>) => {
-    const completedDrag = drag.current
-    drag.current = null
-    if (completedDrag) {
-      if (completedDrag.moved) setHistory((current) => ({ past: [...current.past, completedDrag.before].slice(-SESSION_HISTORY_LIMIT), present: current.present, future: [] }))
-      return
-    }
-    const start = roiStart.current
-    roiStart.current = null
-    if (!start || (tool !== 'rectangle' && tool !== 'line')) return
-    const end = resolveInteraction(event, start.space)
-    if (!end) return
+  const completeMeasurement = async (
+    start: { point: PixelPoint; space: EngineeringCoordinateSpace },
+    end: { point: PixelPoint; space: EngineeringCoordinateSpace },
+    measurementTool: 'rectangle' | 'line',
+  ) => {
     setRoiError(null)
-    if (tool === 'line') {
+    if (measurementTool === 'line') {
       const deltaX = end.point.x - start.point.x
       const deltaY = end.point.y - start.point.y
       commit((current) => {
@@ -709,6 +682,47 @@ export function EngineeringViewPage() {
     })
   }
 
+  const pointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (tool === 'pan') {
+      event.currentTarget.setPointerCapture?.(event.pointerId)
+      drag.current = { clientX: event.clientX, clientY: event.clientY, panX: session.pan.x, panY: session.pan.y, before: session, moved: false }
+      return
+    }
+    const interaction = resolveInteraction(event)
+    if (!interaction) return
+    if (tool === 'pointer') { setCoordinate(interaction.space, interaction.point); return }
+    if (tool === 'sample') { setCoordinate(interaction.space, interaction.point, true); return }
+    if (tool === 'correspondence') { addCorrespondenceSelection(interaction.space, interaction.point); return }
+    roiStart.current = interaction
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+  }
+
+  const pointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!drag.current || tool !== 'pan') return
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const nextPan = {
+      x: Math.min(1, Math.max(-1, drag.current.panX + (event.clientX - drag.current.clientX) / Math.max(bounds.width, 1))),
+      y: Math.min(1, Math.max(-1, drag.current.panY + (event.clientY - drag.current.clientY) / Math.max(bounds.height, 1))),
+    }
+    drag.current.moved = drag.current.moved || nextPan.x !== drag.current.panX || nextPan.y !== drag.current.panY
+    setHistory((current) => ({ ...current, present: { ...current.present, pan: nextPan } }))
+  }
+
+  const pointerUp = async (event: ReactPointerEvent<HTMLDivElement>) => {
+    const completedDrag = drag.current
+    drag.current = null
+    if (completedDrag) {
+      if (completedDrag.moved) setHistory((current) => ({ past: [...current.past, completedDrag.before].slice(-SESSION_HISTORY_LIMIT), present: current.present, future: [] }))
+      return
+    }
+    const start = roiStart.current
+    roiStart.current = null
+    if (!start || (tool !== 'rectangle' && tool !== 'line')) return
+    const end = resolveInteraction(event, start.space)
+    if (!end) return
+    await completeMeasurement(start, end, tool)
+  }
+
   const sampleCoordinates = (event: FormEvent) => { event.preventDefault(); void requestSample(session.coordinates) }
   const coordinateValid = session.coordinates.rgbX >= 0 && session.coordinates.rgbX < view.rgb.width && session.coordinates.rgbY >= 0 && session.coordinates.rgbY < view.rgb.height && session.coordinates.heightX >= 0 && session.coordinates.heightX < view.height.width && session.coordinates.heightY >= 0 && session.coordinates.heightY < view.height.height
   const resetCanvas = () => commit((current) => ({ ...current, mode: 'Side-by-side', zoom: 1, scaleMode: 'fit', pan: { x: 0, y: 0 }, overlayOpacity: 50, splitPosition: 50 }))
@@ -748,6 +762,7 @@ export function EngineeringViewPage() {
     roiSequence.current += 1
     drag.current = null
     roiStart.current = null
+    setKeyboardMeasurementStart(null)
     setHistory(createSessionHistory(DEFAULT_ENGINEERING_SESSION))
     setTool('pointer')
     setSample(null)
@@ -950,7 +965,36 @@ export function EngineeringViewPage() {
 
           <section className="engineering-session-panel" aria-labelledby="measurement-tools-title">
             <div className="subpanel-heading"><h4 id="measurement-tools-title">Pixel measurements</h4><span>{session.coordinates.activeSpace === 'RGB' ? 'RGB' : 'Height'} space</span></div>
-            <p className="engineering-panel-note">Use Rectangle or Line on the canvas. Height rectangles request bounded native statistics. Native values; physical units unavailable.</p>
+            <p className="engineering-panel-note">Drag Rectangle or Line on the canvas, or use the selected coordinate controls below for keyboard-only operation. Height rectangles request bounded native statistics. Native values; physical units unavailable.</p>
+            <div className="keyboard-measurement-controls" role="group" aria-label="Keyboard measurement coordinates">
+              <button
+                type="button"
+                disabled={(tool !== 'rectangle' && tool !== 'line') || (session.coordinates.activeSpace === 'RGB' ? !session.coordinates.rgbSelected : !session.coordinates.heightSelected)}
+                onClick={() => {
+                  const space = session.coordinates.activeSpace
+                  const point = space === 'RGB'
+                    ? { x: session.coordinates.rgbX, y: session.coordinates.rgbY }
+                    : { x: session.coordinates.heightX, y: session.coordinates.heightY }
+                  setKeyboardMeasurementStart({ space, point })
+                }}
+              >Set selected coordinate as measurement start</button>
+              <button
+                type="button"
+                disabled={!keyboardMeasurementStart || (tool !== 'rectangle' && tool !== 'line') || keyboardMeasurementStart.space !== session.coordinates.activeSpace || (session.coordinates.activeSpace === 'RGB' ? !session.coordinates.rgbSelected : !session.coordinates.heightSelected)}
+                onClick={() => {
+                  if (!keyboardMeasurementStart || (tool !== 'rectangle' && tool !== 'line')) return
+                  const space = session.coordinates.activeSpace
+                  const point = space === 'RGB'
+                    ? { x: session.coordinates.rgbX, y: session.coordinates.rgbY }
+                    : { x: session.coordinates.heightX, y: session.coordinates.heightY }
+                  const start = keyboardMeasurementStart
+                  setKeyboardMeasurementStart(null)
+                  void completeMeasurement(start, { space, point }, tool)
+                }}
+              >Complete {tool === 'line' ? 'line' : 'rectangle'} at selected coordinate</button>
+              <button type="button" disabled={!keyboardMeasurementStart} onClick={() => setKeyboardMeasurementStart(null)}>Cancel measurement start</button>
+            </div>
+            <p className="engineering-panel-note" role="status" aria-live="polite">{keyboardMeasurementStart ? `Measurement start: ${keyboardMeasurementStart.space === 'RGB' ? 'RGB' : 'Height'} X ${keyboardMeasurementStart.point.x}, Y ${keyboardMeasurementStart.point.y}. Change the selected coordinate, then complete the measurement.` : 'No keyboard measurement start selected.'}</p>
             {roiLoading && <p role="status">Calculating native height statistics...</p>}
             {roiError && <div className="sample-error" role="alert"><strong>{roiError.code}</strong><span>{roiError.message}</span><span>Request ID: {roiError.requestId}</span></div>}
             <div className="measurement-heading">

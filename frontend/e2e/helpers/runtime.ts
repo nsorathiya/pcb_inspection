@@ -6,6 +6,7 @@ export interface RuntimeState {
   temporaryRoot: string
   runtimeRoot: string
   fixtureRoot: string
+  largeEvidenceRoot: string
   databaseFile: string
   frontendUrl: string
   backendUrl: string
@@ -52,4 +53,3 @@ export function scenarioFiles(state: RuntimeState, scenarioId: string) {
     height: path.join(root, record.artifacts.height.generated_file),
   }
 }
-

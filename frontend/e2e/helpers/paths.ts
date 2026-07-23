@@ -7,7 +7,6 @@ export const repositoryRoot = path.resolve(frontendRoot, '..')
 export const resultsRoot = path.join(frontendRoot, 'test-results')
 export const diagnosticsRoot = path.join(resultsRoot, 'e2e-diagnostics')
 export const stateFile = path.join(resultsRoot, 'e2e-runtime-state.json')
-export const successMarker = path.join(resultsRoot, 'e2e-success.marker')
 
 export function defaultPythonExecutable(): string {
   if (process.env.PCB_AOI_E2E_PYTHON) return process.env.PCB_AOI_E2E_PYTHON
